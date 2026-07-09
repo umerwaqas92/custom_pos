@@ -168,6 +168,33 @@ export default function SalesHistory() {
         </div>
       </div>
 
+      {/* Metrics Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-card border border-border rounded-2xl p-5 flex flex-col justify-between">
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Total Sales Sum</span>
+          <span className="text-lg font-black text-foreground mt-1">
+            Rs. {filteredSales.reduce((acc, curr) => acc + curr.payableAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+          </span>
+        </div>
+        <div className="bg-card border border-border rounded-2xl p-5 flex flex-col justify-between">
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Total Orders Count</span>
+          <span className="text-lg font-black text-foreground mt-1">
+            {filteredSales.length} Invoices
+          </span>
+        </div>
+        <div className="bg-card border border-border rounded-2xl p-5 flex flex-col justify-between">
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Average Sale Value</span>
+          <span className="text-lg font-black text-foreground mt-1">
+            Rs. {
+              (filteredSales.length > 0 
+                ? (filteredSales.reduce((acc, curr) => acc + curr.payableAmount, 0) / filteredSales.length) 
+                : 0
+              ).toLocaleString(undefined, { minimumFractionDigits: 2 })
+            }
+          </span>
+        </div>
+      </div>
+
       {/* Main Table */}
       <div className="bg-card border border-border rounded-2xl p-5">
         <div className="overflow-x-auto">
