@@ -11,15 +11,25 @@ import repairsRouter from "./controllers/repairs.controller";
 import accountingRouter from "./controllers/accounting.controller";
 import reportsRouter from "./controllers/reports.controller";
 
+import path from "path";
+import fs from "fs";
+
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5001;
 
+// Ensure upload directory exists
+const uploadsDir = path.join(__dirname, "../public/uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use("/uploads", express.static(uploadsDir));
 
 // Routing API endpoints
 app.use("/api/auth", authRouter);

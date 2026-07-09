@@ -153,7 +153,11 @@ export default function POS() {
 
   // Automatically adjust amountPaid when payableAmount or paymentMethod changes
   useEffect(() => {
-    setAmountPaid(payableAmount.toFixed(2));
+    if (paymentMethod === "CREDIT" || paymentMethod === "EMI") {
+      setAmountPaid("0");
+    } else {
+      setAmountPaid(payableAmount.toFixed(2));
+    }
   }, [payableAmount, paymentMethod]);
 
   const handleInstantCheckout = async () => {
@@ -164,8 +168,8 @@ export default function POS() {
       return;
     }
 
-    if (paymentMethod === "CREDIT" && !selectedCustId) {
-      addNotification("Please select a customer for Credit Sales.", "warning");
+    if ((paymentMethod === "CREDIT" || paymentMethod === "EMI") && !selectedCustId) {
+      addNotification(`Please select a registered customer for ${paymentMethod} sales.`, "warning");
       return;
     }
 
@@ -537,6 +541,32 @@ export default function POS() {
                 <Wallet className="w-3.5 h-3.5 flex-shrink-0" />
                 <span className="text-[10px] font-extrabold font-black">Wallet</span>
               </button>
+
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("CREDIT")}
+                className={`flex items-center justify-center gap-1 p-2 rounded-lg border text-left transition-all ${
+                  paymentMethod === "CREDIT"
+                    ? "bg-primary/10 border-primary text-primary font-bold shadow"
+                    : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+                }`}
+              >
+                <BookOpen className="w-3.5 h-3.5 flex-shrink-0" />
+                <span className="text-[10px] font-extrabold font-black">Credit</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("EMI")}
+                className={`flex items-center justify-center gap-1 p-2 rounded-lg border text-left transition-all ${
+                  paymentMethod === "EMI"
+                    ? "bg-primary/10 border-primary text-primary font-bold shadow"
+                    : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+                }`}
+              >
+                <CreditCard className="w-3.5 h-3.5 flex-shrink-0" />
+                <span className="text-[10px] font-extrabold font-black">EMI</span>
+              </button>
             </div>
           </div>
 
@@ -640,11 +670,12 @@ export default function POS() {
                   <span>+Rs. {receiptResult.taxAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between font-black text-foreground text-xs pt-1 border-t border-border/40">
-                  <span>Total Paid ({
-                    receiptResult.paymentMethod === "CASH" ? "Cash" :
-                    receiptResult.paymentMethod === "CARD" ? "Bank" :
-                    receiptResult.paymentMethod === "MOBILE" ? "Wallet" : "Credit"
-                  }):</span>
+                  <p className="font-bold text-foreground">
+                    {receiptResult.paymentMethod === "CASH" ? "Cash" :
+                     receiptResult.paymentMethod === "CARD" ? "Bank" :
+                     receiptResult.paymentMethod === "MOBILE" ? "Wallet" :
+                     receiptResult.paymentMethod === "EMI" ? "EMI Installment" : "Credit"}
+                  </p>
                   <span>Rs. {receiptResult.paidAmount.toFixed(2)}</span>
                 </div>
               </div>

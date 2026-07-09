@@ -202,6 +202,7 @@ model Sale {
   @@index([saleDate])
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
+  emiDetails     SaleEmi?
 }
 
 model SaleItem {
@@ -386,6 +387,47 @@ model DailyClosing {
   status            String    @default("OPEN") // 'OPEN', 'CLOSED'
   notes             String?
   closedBy          String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model SaleEmi {
+  id               String           @id @default(uuid())
+  saleId           String           @unique
+  sale             Sale             @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  
+  // Guarantor / Reference Info
+  guarantorName    String
+  guarantorPhone   String
+  guarantorAddress String
+
+  // Document Uploads (Paths saved to backend public/uploads folder)
+  cnicFrontPath    String
+  cnicBackPath     String
+  chequePath       String
+
+  // Installment plan math
+  months           Int              // 3, 6, or 12 months
+  interestRate     Float            // markup percentage added to base price
+  downPayment      Float
+  totalPrincipal   Float            // final price (original + markup interest)
+  monthlyPayment   Float
+  status           String           // 'ACTIVE', 'COMPLETED', 'DEFAULTED'
+  installments     EmiInstallment[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+}
+
+model EmiInstallment {
+  id                String    @id @default(uuid())
+  saleEmiId         String
+  saleEmi           SaleEmi   @relation(fields: [saleEmiId], references: [id], onDelete: Cascade)
+  installmentNumber Int       // e.g. 1, 2, 3...
+  dueDate           DateTime
+  amount            Float
+  amountPaid        Float     @default(0.0)
+  paidDate          DateTime?
+  status            String    @default("PENDING") // 'PENDING', 'PAID', 'OVERDUE'
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 }

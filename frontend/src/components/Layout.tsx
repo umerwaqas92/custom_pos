@@ -65,6 +65,7 @@ export default function Layout() {
     { name: "Dashboard", path: "/", icon: LayoutDashboard, roles: ["OWNER", "MANAGER", "CASHIER", "WAREHOUSE", "TECHNICIAN"] },
     { name: "POS Sales", path: "/pos", icon: ShoppingCart, roles: ["OWNER", "MANAGER", "CASHIER"] },
     { name: "Sales History", path: "/sales-history", icon: FileText, roles: ["OWNER", "MANAGER", "CASHIER"] },
+    { name: "Installments", path: "/installments", icon: CreditCard, roles: ["OWNER", "MANAGER", "CASHIER"] },
     { name: "Inventory", path: "/inventory", icon: Package, roles: ["OWNER", "MANAGER", "WAREHOUSE"] },
     { name: "Brands & Categories", path: "/categories-brands", icon: Layers, roles: ["OWNER", "MANAGER"] },
     { name: "Contacts", path: "/contacts", icon: Users, roles: ["OWNER", "MANAGER", "CASHIER"] },

@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import POS from "./pages/POS";
 import Inventory from "./pages/Inventory";
 import Contacts from "./pages/Contacts";
+import Installments from "./pages/Installments";
 import Accounting from "./pages/Accounting";
 import CategoriesBrands from "./pages/CategoriesBrands";
 import SalesHistory from "./pages/SalesHistory";
@@ -197,6 +198,16 @@ export default function App() {
           />
 
 
+
+          {/* Installments (Owner, Manager, Cashier) */}
+          <Route
+            path="installments"
+            element={
+              <RoleGuard allowedRoles={["OWNER", "MANAGER", "CASHIER"]}>
+                <Installments />
+              </RoleGuard>
+            }
+          />
 
           {/* Contacts (Owner, Manager, Cashier) */}
           <Route

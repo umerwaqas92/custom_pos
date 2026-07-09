@@ -2,8 +2,34 @@ import { Router, Response } from "express";
 import prisma from "../utils/db";
 import { protect, AuthenticatedRequest } from "../middleware/auth";
 import { invalidateCache } from "../utils/cache";
+import multer from "multer";
+import path from "path";
 
 const router = Router();
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, path.join(__dirname, "../../public/uploads"));
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    const filetypes = /jpeg|jpg|png|pdf/;
+    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = filetypes.test(file.mimetype);
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error("Only images (jpeg, jpg, png) and PDF documents are allowed!"));
+    }
+  }
+});
 
 // Process checkout sale
 router.post("/", protect, async (req: AuthenticatedRequest, res: Response) => {
@@ -241,7 +267,8 @@ router.get("/", protect, async (req, res) => {
       include: {
         customer: true,
         cashier: true,
-        items: { include: { product: true } }
+        items: { include: { product: true } },
+        emiDetails: { include: { installments: true } }
       },
       orderBy: { saleDate: "desc" }
     });
@@ -265,7 +292,8 @@ router.get("/:id", protect, async (req, res) => {
           include: {
             product: { include: { category: true, brand: true } }
           }
-        }
+        },
+        emiDetails: { include: { installments: true } }
       }
     });
 
@@ -355,5 +383,226 @@ router.post("/returns", protect, async (req, res) => {
     return res.status(400).json({ error: error.message || "Failed to process return." });
   }
 });
+
+// Create EMI Agreement contract and installments schedule
+router.post(
+  "/:id/emi",
+  protect,
+  upload.fields([
+    { name: "cnicFront", maxCount: 1 },
+    { name: "cnicBack", maxCount: 1 },
+    { name: "cheque", maxCount: 1 }
+  ]),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const {
+      guarantorName,
+      guarantorPhone,
+      guarantorAddress,
+      months,
+      interestRate,
+      downPayment
+    } = req.body;
+
+    if (!guarantorName || !guarantorPhone || !guarantorAddress || !months || !downPayment) {
+      return res.status(400).json({ error: "Missing guarantor or plan details." });
+    }
+
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+    if (!files || !files.cnicFront || !files.cnicBack || !files.cheque) {
+      return res.status(400).json({ error: "Please upload CNIC Front, CNIC Back, and Bank Cheque documents." });
+    }
+
+    const cnicFrontPath = `/uploads/${files.cnicFront[0].filename}`;
+    const cnicBackPath = `/uploads/${files.cnicBack[0].filename}`;
+    const chequePath = `/uploads/${files.cheque[0].filename}`;
+
+    try {
+      const parsedMonths = parseInt(months);
+      const parsedInterest = parseFloat(interestRate || "0");
+      const parsedDown = parseFloat(downPayment);
+
+      const sale = await prisma.sale.findUnique({
+        where: { id }
+      });
+
+      if (!sale) {
+        return res.status(404).json({ error: "Sale transaction not found." });
+      }
+
+      const markupAmount = sale.payableAmount * (parsedInterest / 100);
+      const totalPrincipal = sale.payableAmount + markupAmount;
+      const remainingBalance = totalPrincipal - parsedDown;
+      const monthlyPayment = remainingBalance / parsedMonths;
+
+      // Update total sale price with interest rate markup
+      await prisma.sale.update({
+        where: { id },
+        data: {
+          payableAmount: totalPrincipal,
+          notes: `${sale.notes || ""}\n[EMI Plan Activated: ${parsedMonths} months at ${parsedInterest}% markup]`
+        }
+      });
+
+      // Generate schedule
+      const installmentsToCreate = [];
+      const now = new Date();
+
+      for (let i = 1; i <= parsedMonths; i++) {
+        const dueDate = new Date();
+        dueDate.setDate(now.getDate() + i * 30);
+
+        installmentsToCreate.push({
+          installmentNumber: i,
+          dueDate,
+          amount: monthlyPayment,
+          status: "PENDING"
+        });
+      }
+
+      const emiContract = await prisma.saleEmi.create({
+        data: {
+          saleId: id,
+          guarantorName,
+          guarantorPhone,
+          guarantorAddress,
+          cnicFrontPath,
+          cnicBackPath,
+          chequePath,
+          months: parsedMonths,
+          interestRate: parsedInterest,
+          downPayment: parsedDown,
+          totalPrincipal,
+          monthlyPayment,
+          status: "ACTIVE",
+          installments: {
+            create: installmentsToCreate
+          }
+        },
+        include: {
+          installments: true
+        }
+      });
+
+      // Log Down Payment in bank transactions
+      if (parsedDown > 0) {
+        const bankAccount = await prisma.bankAccount.findFirst({
+          where: { type: "CASH", isActive: true }
+        });
+        if (bankAccount) {
+          await prisma.transaction.create({
+            data: {
+              bankAccountId: bankAccount.id,
+              type: "INCOME",
+              category: "CREDIT_PAYMENT",
+              amount: parsedDown,
+              referenceType: "SALE",
+              referenceId: id,
+              description: `EMI Down Payment collected for Invoice #${id.substring(0,8)}`,
+              branchId: sale.branchId
+            }
+          });
+          await prisma.bankAccount.update({
+            where: { id: bankAccount.id },
+            data: { balance: { increment: parsedDown } }
+          });
+        }
+      }
+
+      invalidateCache("reports:");
+      return res.status(201).json(emiContract);
+    } catch (err: any) {
+      console.error(err);
+      return res.status(500).json({ error: "Failed to create monthly installment agreement." });
+    }
+  }
+);
+
+// Collect monthly installment payment
+router.post(
+  "/:id/installments/:installmentId/pay",
+  protect,
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { id, installmentId } = req.params;
+
+    try {
+      const installment = await prisma.emiInstallment.findUnique({
+        where: { id: installmentId },
+        include: { saleEmi: true }
+      });
+
+      if (!installment || installment.saleEmi.saleId !== id) {
+        return res.status(404).json({ error: "Installment record not found." });
+      }
+
+      if (installment.status === "PAID") {
+        return res.status(400).json({ error: "Installment is already fully paid." });
+      }
+
+      const updatedInstallment = await prisma.emiInstallment.update({
+        where: { id: installmentId },
+        data: {
+          status: "PAID",
+          amountPaid: installment.amount,
+          paidDate: new Date()
+        }
+      });
+
+      const allInstallments = await prisma.emiInstallment.findMany({
+        where: { saleEmiId: installment.saleEmiId }
+      });
+
+      const allPaid = allInstallments.every((inst) => inst.status === "PAID");
+
+      if (allPaid) {
+        await prisma.saleEmi.update({
+          where: { id: installment.saleEmiId },
+          data: { status: "COMPLETED" }
+        });
+
+        await prisma.sale.update({
+          where: { id },
+          data: { paymentStatus: "PAID" }
+        });
+      } else {
+        await prisma.sale.update({
+          where: { id },
+          data: { paymentStatus: "PARTIAL" }
+        });
+      }
+
+      const sale = await prisma.sale.findUnique({ where: { id } });
+      const branchId = sale?.branchId || null;
+
+      const bankAccount = await prisma.bankAccount.findFirst({
+        where: { type: "CASH", isActive: true }
+      });
+      if (bankAccount) {
+        await prisma.transaction.create({
+          data: {
+            bankAccountId: bankAccount.id,
+            type: "INCOME",
+            category: "CREDIT_PAYMENT",
+            amount: installment.amount,
+            referenceType: "SALE",
+            referenceId: id,
+            description: `EMI Installment #${installment.installmentNumber} payment collected for Invoice #${id.substring(0,8)}`,
+            branchId
+          }
+        });
+        await prisma.bankAccount.update({
+          where: { id: bankAccount.id },
+          data: { balance: { increment: installment.amount } }
+        });
+      }
+
+      invalidateCache("reports:");
+      return res.json(updatedInstallment);
+    } catch (err: any) {
+      console.error(err);
+      return res.status(500).json({ error: "Failed to collect installment payment." });
+    }
+  }
+);
 
 export default router;
