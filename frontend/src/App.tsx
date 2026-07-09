@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, Link } from "react-router-dom";
 import axios from "axios";
 import { useStore } from "./store/useStore";
 import Layout from "./components/Layout";
+import TrialExpiredOverlay from "./components/TrialExpiredOverlay";
 
 // Import pages
 import Dashboard from "./pages/Dashboard";
@@ -148,6 +149,55 @@ function RoleGuard({ children, allowedRoles }: GuardProps) {
 
 export default function App() {
   const { token, theme } = useStore();
+  const [trialExpired, setTrialExpired] = useState(false);
+  const [activated, setActivated] = useState(localStorage.getItem("pos_activated") === "true");
+
+  // Handle checking trial duration (30 days)
+  useEffect(() => {
+    let trialStart = localStorage.getItem("pos_trial_start");
+    if (!trialStart) {
+      trialStart = new Date().toISOString();
+      localStorage.setItem("pos_trial_start", trialStart);
+    }
+
+    const checkTrialStatus = () => {
+      const isActivated = localStorage.getItem("pos_activated") === "true";
+      setActivated(isActivated);
+
+      if (isActivated) {
+        setTrialExpired(false);
+        return;
+      }
+
+      const startDate = new Date(trialStart!);
+      const thirtyDays = 0; // Set to 0 so it expires immediately for testing
+      const expiryTime = startDate.getTime() + thirtyDays;
+      
+      if (Date.now() > expiryTime) {
+        setTrialExpired(true);
+      } else {
+        setTrialExpired(false);
+      }
+    };
+
+    checkTrialStatus();
+    const interval = setInterval(checkTrialStatus, 15000); // Check status periodically
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleResetTrial = () => {
+    const newStart = new Date().toISOString();
+    localStorage.setItem("pos_trial_start", newStart);
+    localStorage.removeItem("pos_activated");
+    setActivated(false);
+    setTrialExpired(false);
+    window.location.reload();
+  };
+
+  const handleActivate = () => {
+    setActivated(true);
+    setTrialExpired(false);
+  };
 
   // Configure Axios interceptors for Authorization Header
   useEffect(() => {
@@ -166,7 +216,8 @@ export default function App() {
   }, [theme]);
 
   return (
-    <BrowserRouter>
+    <>
+      <BrowserRouter>
       <Routes>
         <Route path="/login" element={!token ? <Login /> : <Navigate to="/" replace />} />
 
@@ -263,5 +314,9 @@ export default function App() {
         </Route>
       </Routes>
     </BrowserRouter>
-  );
+    {trialExpired && !activated && (
+      <TrialExpiredOverlay onActivate={handleActivate} onResetTrial={handleResetTrial} />
+    )}
+  </>
+);
 }
