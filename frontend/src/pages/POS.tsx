@@ -49,8 +49,38 @@ export default function POS() {
   const [loading, setLoading] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [receiptResult, setReceiptResult] = useState<any | null>(null);
+  const [custModalOpen, setCustModalOpen] = useState(false);
+
+  // New Customer Form State
+  const [newCust, setNewCust] = useState({ name: "", phone: "", email: "", address: "", creditLimit: "5000" });
 
   const barcodeInputRef = useRef<HTMLInputElement>(null);
+
+  const handleCreateCustomer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCust.name || !newCust.phone) {
+      addNotification("Name and phone number are required.", "warning");
+      return;
+    }
+
+    try {
+      const response = await axios.post("/api/accounting/customers", newCust);
+      addNotification("Customer profile created successfully.", "success");
+      
+      // Reload customers list
+      const custRes = await axios.get("/api/accounting/customers");
+      setCustomers(custRes.data);
+      
+      // Auto-select the newly created customer
+      setSelectedCustId(response.data.id);
+      
+      setCustModalOpen(false);
+      setNewCust({ name: "", phone: "", email: "", address: "", creditLimit: "5000" });
+    } catch (err: any) {
+      const msg = err.response?.data?.error || "Failed to create customer.";
+      addNotification(msg, "warning");
+    }
+  };
 
   // Fetch initial data
   useEffect(() => {
@@ -386,20 +416,30 @@ export default function POS() {
         <div className="border-t border-border pt-4 space-y-3">
           
           {/* Customer Selection */}
-          <div className="flex items-center gap-2 bg-secondary/50 border border-border p-2 rounded-xl">
-            <User className="w-4 h-4 text-muted-foreground" />
-            <select
-              value={selectedCustId}
-              onChange={(e) => setSelectedCustId(e.target.value)}
-              className="flex-1 bg-transparent text-xs text-foreground focus:outline-none cursor-pointer"
+          <div className="flex items-center gap-1.5">
+            <div className="flex-1 flex items-center gap-2 bg-secondary/50 border border-border p-2 rounded-xl">
+              <User className="w-4 h-4 text-muted-foreground" />
+              <select
+                value={selectedCustId}
+                onChange={(e) => setSelectedCustId(e.target.value)}
+                className="flex-1 bg-transparent text-xs text-foreground focus:outline-none cursor-pointer"
+              >
+                <option value="">Walk-in Customer</option>
+                {customers.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} ({c.phone}) - Due: Rs. {c.creditBalance}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              type="button"
+              onClick={() => setCustModalOpen(true)}
+              className="p-2.5 bg-primary/10 border border-primary/20 hover:bg-primary/20 text-primary rounded-xl transition flex-shrink-0"
+              title="Add New Customer"
             >
-              <option value="">Walk-in Customer</option>
-              {customers.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name} ({c.phone}) - Due: Rs. {c.creditBalance}
-                </option>
-              ))}
-            </select>
+              <Plus className="w-4 h-4" />
+            </button>
           </div>
 
           {/* Cart Pricing Aggregates */}
@@ -595,6 +635,67 @@ export default function POS() {
                 Dismiss Window
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Customer Modal dialog */}
+      {custModalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 px-4">
+          <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative animate-fade-in">
+            <h3 className="font-bold text-sm text-foreground mb-4">Register New Customer</h3>
+            <form onSubmit={handleCreateCustomer} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase">Customer Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={newCust.name}
+                  onChange={(e) => setNewCust({ ...newCust, name: e.target.value })}
+                  placeholder="e.g. Asif Khan"
+                  className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase">Phone Number *</label>
+                <input
+                  type="text"
+                  required
+                  value={newCust.phone}
+                  onChange={(e) => setNewCust({ ...newCust, phone: e.target.value })}
+                  placeholder="e.g. 0300-1234567"
+                  className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
+                />
+              </div>
+
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase">Credit Account Limit (Rs.)</label>
+                <input
+                  type="number"
+                  value={newCust.creditLimit}
+                  onChange={(e) => setNewCust({ ...newCust, creditLimit: e.target.value })}
+                  className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
+                />
+              </div>
+
+              <div className="flex gap-3 justify-end pt-4">
+                <button
+                  type="button"
+                  onClick={() => setCustModalOpen(false)}
+                  className="px-4 py-2 border border-border text-xs rounded hover:bg-secondary transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-primary text-white text-xs rounded hover:bg-primary/95 transition"
+                >
+                  Add Customer
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
