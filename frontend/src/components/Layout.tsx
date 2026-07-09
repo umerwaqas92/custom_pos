@@ -14,7 +14,8 @@ import {
   Sun,
   Moon,
   ChevronRight,
-  ShieldCheck
+  ShieldCheck,
+  Layers
 } from "lucide-react";
 
 export default function Layout() {
@@ -62,6 +63,7 @@ export default function Layout() {
     { name: "Dashboard", path: "/", icon: LayoutDashboard, roles: ["OWNER", "MANAGER", "CASHIER", "WAREHOUSE", "TECHNICIAN"] },
     { name: "POS Sales", path: "/pos", icon: ShoppingCart, roles: ["OWNER", "MANAGER", "CASHIER"] },
     { name: "Inventory", path: "/inventory", icon: Package, roles: ["OWNER", "MANAGER", "WAREHOUSE"] },
+    { name: "Brands & Categories", path: "/categories-brands", icon: Layers, roles: ["OWNER", "MANAGER"] },
     { name: "Repairs", path: "/repairs", icon: Wrench, roles: ["OWNER", "MANAGER", "CASHIER", "TECHNICIAN"] },
     { name: "Contacts", path: "/contacts", icon: Users, roles: ["OWNER", "MANAGER", "CASHIER"] },
     { name: "Accounting", path: "/accounting", icon: Briefcase, roles: ["OWNER", "MANAGER"] }

@@ -11,6 +11,7 @@ import Inventory from "./pages/Inventory";
 import Repairs from "./pages/Repairs";
 import Contacts from "./pages/Contacts";
 import Accounting from "./pages/Accounting";
+import CategoriesBrands from "./pages/CategoriesBrands";
 
 // Set Axios Base URL
 axios.defaults.baseURL = "http://localhost:5001";
@@ -220,6 +221,16 @@ export default function App() {
             element={
               <RoleGuard allowedRoles={["OWNER", "MANAGER"]}>
                 <Accounting />
+              </RoleGuard>
+            }
+          />
+
+          {/* Categories & Brands (Owner, Manager) */}
+          <Route
+            path="categories-brands"
+            element={
+              <RoleGuard allowedRoles={["OWNER", "MANAGER"]}>
+                <CategoriesBrands />
               </RoleGuard>
             }
           />
