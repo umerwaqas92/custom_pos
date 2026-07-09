@@ -415,6 +415,17 @@ router.put("/:id", protect, restrictTo("OWNER", "MANAGER", "WAREHOUSE"), async (
 router.delete("/:id", protect, restrictTo("OWNER"), async (req, res) => {
   const { id } = req.params;
   try {
+    // Check if referenced in sales history, purchase orders, or warranty claims
+    const hasSales = await prisma.saleItem.findFirst({ where: { productId: id } });
+    const hasPurchases = await prisma.purchaseItem.findFirst({ where: { productId: id } });
+    const hasWarranties = await prisma.warrantyClaim.findFirst({ where: { productId: id } });
+
+    if (hasSales || hasPurchases || hasWarranties) {
+      return res.status(400).json({
+        error: "Cannot delete product because it is referenced in sales history, purchase orders, or warranty claims."
+      });
+    }
+
     // Cascade-deleting stocks is automatically handled or manual
     await prisma.branchStock.deleteMany({ where: { productId: id } });
     await prisma.stockMovement.deleteMany({ where: { productId: id } });
@@ -434,6 +445,17 @@ router.post("/bulk-delete", protect, restrictTo("OWNER"), async (req, res) => {
     return res.status(400).json({ error: "No product IDs provided." });
   }
   try {
+    // Check if any product is referenced in sales history, purchase orders, or warranty claims
+    const hasSales = await prisma.saleItem.findFirst({ where: { productId: { in: ids } } });
+    const hasPurchases = await prisma.purchaseItem.findFirst({ where: { productId: { in: ids } } });
+    const hasWarranties = await prisma.warrantyClaim.findFirst({ where: { productId: { in: ids } } });
+
+    if (hasSales || hasPurchases || hasWarranties) {
+      return res.status(400).json({
+        error: "Cannot delete selected products because one or more are referenced in sales history, purchase orders, or warranty claims."
+      });
+    }
+
     await prisma.branchStock.deleteMany({ where: { productId: { in: ids } } });
     await prisma.stockMovement.deleteMany({ where: { productId: { in: ids } } });
     await prisma.product.deleteMany({ where: { id: { in: ids } } });
