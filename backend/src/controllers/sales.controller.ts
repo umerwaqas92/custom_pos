@@ -20,11 +20,29 @@ router.post("/", protect, async (req: AuthenticatedRequest, res: Response) => {
     return res.status(400).json({ error: "Missing checkout parameters." });
   }
 
-  const branchId = req.body.branchId || req.user?.branchId;
+  let branchId = req.body.branchId || req.user?.branchId;
   const cashierId = req.user?.id;
 
-  if (!branchId || !cashierId) {
+  if (!cashierId) {
+    return res.status(400).json({ error: "Cashier session is required." });
+  }
+
+  // Validate that the branch exists in the database (safeguard against stale localStorage)
+  if (branchId) {
+    const branchExists = await prisma.branch.findUnique({ where: { id: branchId } });
+    if (!branchExists) {
+      branchId = req.user?.branchId || null;
+    }
+  }
+
+  // Double check if we still have a valid branch
+  if (!branchId) {
     return res.status(400).json({ error: "Cashier session lacks a designated branch location." });
+  } else {
+    const branchExists = await prisma.branch.findUnique({ where: { id: branchId } });
+    if (!branchExists) {
+      return res.status(400).json({ error: "Designated branch location does not exist in database." });
+    }
   }
 
   try {

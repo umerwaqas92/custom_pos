@@ -1,7 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 import * as jwt from "jsonwebtoken";
 
+import { PrismaClient } from "@prisma/client";
+
 const JWT_SECRET = process.env.JWT_SECRET || "super-secret-key-change-in-prod";
+const prisma = new PrismaClient();
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -12,7 +15,7 @@ export interface AuthenticatedRequest extends Request {
   };
 }
 
-export const protect = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+export const protect = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   let token: string | undefined;
 
   if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
@@ -30,6 +33,13 @@ export const protect = (req: AuthenticatedRequest, res: Response, next: NextFunc
       role: string;
       branchId: string | null;
     };
+    
+    // Check if user still exists in the database (safeguard against database resets)
+    const dbUser = await prisma.user.findUnique({ where: { id: decoded.id } });
+    if (!dbUser) {
+      return res.status(401).json({ error: "Your session user has been deleted. Please login again." });
+    }
+
     req.user = decoded;
     next();
   } catch (error) {
