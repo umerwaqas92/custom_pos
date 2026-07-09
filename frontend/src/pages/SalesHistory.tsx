@@ -63,20 +63,28 @@ export default function SalesHistory() {
     if (!receiptEl) return;
 
     let iframe = document.getElementById("receipt-print-iframe") as HTMLIFrameElement;
-    if (!iframe) {
-      iframe = document.createElement("iframe");
-      iframe.id = "receipt-print-iframe";
-      iframe.style.position = "fixed";
-      iframe.style.right = "0";
-      iframe.style.bottom = "0";
-      iframe.style.width = "0";
-      iframe.style.height = "0";
-      iframe.style.border = "none";
-      document.body.appendChild(iframe);
+    if (iframe) {
+      iframe.remove();
     }
+
+    iframe = document.createElement("iframe");
+    iframe.id = "receipt-print-iframe";
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "none";
+    document.body.appendChild(iframe);
 
     const doc = iframe.contentDocument || iframe.contentWindow?.document;
     if (!doc) return;
+
+    // Copy stylesheet links and styles to keep identical styles
+    const styles = document.querySelectorAll("link[rel='stylesheet'], style");
+    styles.forEach((s) => {
+      doc.head.appendChild(s.cloneNode(true));
+    });
 
     const content = receiptEl.innerHTML;
 
@@ -85,40 +93,8 @@ export default function SalesHistory() {
       <html>
         <head>
           <title>Receipt</title>
-          <style>
-            body {
-              font-family: 'Courier New', Courier, monospace;
-              padding: 10px;
-              margin: 0;
-              color: #000;
-              font-size: 11px;
-              line-height: 1.4;
-            }
-            .text-center { text-align: center; }
-            .border-b { border-bottom: 1px dashed #000; }
-            .pb-3 { padding-bottom: 8px; }
-            .pt-3 { padding-top: 8px; }
-            .space-y-4 > * + * { margin-top: 12px; }
-            .space-y-2 > * + * { margin-top: 6px; }
-            .flex { display: flex; }
-            .justify-between { justify-content: space-between; }
-            .items-start { align-items: flex-start; }
-            .text-[9px] { font-size: 8px; }
-            .text-[10px] { font-size: 9px; }
-            .text-[11px] { font-size: 10px; }
-            .mt-1 { margin-top: 4px; }
-            .mt-0.5 { margin-top: 2px; }
-            .font-semibold { font-weight: 600; }
-            .font-bold { font-weight: bold; }
-            .font-extrabold { font-weight: 800; }
-            .font-black { font-weight: 900; }
-            .bg-secondary\\/60 { background: #f2f2f2; padding: 4px; border-radius: 4px; margin-top: 6px; }
-            .text-primary\\/80 { color: #000; font-weight: bold; }
-            .text-muted-foreground { color: #333; }
-            .text-foreground { color: #000; }
-          </style>
         </head>
-        <body>
+        <body style="background: white; color: black; font-family: monospace; padding: 10px; margin: 0;">
           <div class="space-y-4">
             ${content}
           </div>
@@ -126,6 +102,9 @@ export default function SalesHistory() {
             window.focus();
             setTimeout(() => {
               window.print();
+              setTimeout(() => {
+                window.parent.document.getElementById("receipt-print-iframe")?.remove();
+              }, 1000);
             }, 250);
           </script>
         </body>
