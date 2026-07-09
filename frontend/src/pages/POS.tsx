@@ -52,7 +52,7 @@ export default function POS() {
   const [custModalOpen, setCustModalOpen] = useState(false);
 
   // New Customer Form State
-  const [newCust, setNewCust] = useState({ name: "", phone: "", email: "", address: "", creditLimit: "5000" });
+  const [newCust, setNewCust] = useState({ name: "", phone: "", email: "", address: "", creditLimit: "1000000" });
 
   const barcodeInputRef = useRef<HTMLInputElement>(null);
 
@@ -75,7 +75,7 @@ export default function POS() {
       setSelectedCustId(response.data.id);
       
       setCustModalOpen(false);
-      setNewCust({ name: "", phone: "", email: "", address: "", creditLimit: "5000" });
+      setNewCust({ name: "", phone: "", email: "", address: "", creditLimit: "1000000" });
     } catch (err: any) {
       const msg = err.response?.data?.error || "Failed to create customer.";
       addNotification(msg, "warning");
@@ -235,10 +235,10 @@ export default function POS() {
   };
 
   return (
-    <div className="flex-1 flex gap-6 h-[calc(100vh-120px)] overflow-hidden">
+    <div className="flex-1 flex gap-6 h-[calc(100vh-165px)] overflow-hidden">
       
       {/* Catalog / Left Panel */}
-      <div className="flex-1 flex flex-col min-w-0 bg-card border border-border rounded-2xl p-4 space-y-4">
+      <div className="flex-1 flex flex-col min-w-0 bg-card border border-border rounded-2xl p-4 space-y-4 h-full">
         
         {/* Search header controls */}
         <div className="flex flex-col sm:flex-row gap-3">
@@ -333,7 +333,7 @@ export default function POS() {
       </div>
 
       {/* POS Cart / Right Panel */}
-      <div className="w-96 bg-card border border-border rounded-2xl flex flex-col justify-between p-4 overflow-hidden">
+      <div className="w-96 bg-card border border-border rounded-2xl flex flex-col justify-between p-4 overflow-hidden h-full">
         
         {/* Cart Header */}
         <div className="flex items-center justify-between border-b border-border pb-3">
@@ -670,15 +670,6 @@ export default function POS() {
               </div>
 
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase">Credit Account Limit (Rs.)</label>
-                <input
-                  type="number"
-                  value={newCust.creditLimit}
-                  onChange={(e) => setNewCust({ ...newCust, creditLimit: e.target.value })}
-                  className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
-                />
-              </div>
 
               <div className="flex gap-3 justify-end pt-4">
                 <button
