@@ -50,6 +50,7 @@ export default function POS() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [receiptResult, setReceiptResult] = useState<any | null>(null);
   const [custModalOpen, setCustModalOpen] = useState(false);
+  const [openSerials, setOpenSerials] = useState<{[key: string]: boolean}>({});
 
   // New Customer Form State
   const [newCust, setNewCust] = useState({ name: "", phone: "", email: "", address: "", creditLimit: "1000000" });
@@ -238,7 +239,7 @@ export default function POS() {
     <div className="flex-1 flex gap-6 h-[calc(100vh-195px)] overflow-hidden">
       
       {/* Catalog / Left Panel */}
-      <div className="flex-1 flex flex-col min-w-0 bg-card border border-border rounded-2xl p-4 space-y-4 h-full">
+      <div className="flex-1 flex flex-col min-w-0 bg-card border border-border rounded-2xl p-4 space-y-4 h-full min-h-0">
         
         {/* Search header controls */}
         <div className="flex flex-col sm:flex-row gap-3">
@@ -367,23 +368,36 @@ export default function POS() {
                   </button>
                 </div>
 
-                {/* Serial / IMEI input tracking details */}
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={item.serialNumber || ""}
-                    onChange={(e) => updateCartItemDetails(item.productId, { serialNumber: e.target.value })}
-                    placeholder="S/N (Required)"
-                    className="flex-1 bg-secondary text-[10px] border border-border px-2 py-1 rounded focus:outline-none"
-                  />
-                  <input
-                    type="text"
-                    value={item.imei || ""}
-                    onChange={(e) => updateCartItemDetails(item.productId, { imei: e.target.value })}
-                    placeholder="IMEI (Mobile)"
-                    className="flex-1 bg-secondary text-[10px] border border-border px-2 py-1 rounded focus:outline-none"
-                  />
+                {/* Expand details link */}
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setOpenSerials(prev => ({ ...prev, [item.productId]: !prev[item.productId] }))}
+                    className="text-[9px] text-primary hover:underline font-bold flex items-center gap-0.5"
+                  >
+                    {openSerials[item.productId] ? "Hide S/N & IMEI" : "+ Add S/N & IMEI"}
+                  </button>
                 </div>
+
+                {/* Serial / IMEI input tracking details */}
+                {openSerials[item.productId] && (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={item.serialNumber || ""}
+                      onChange={(e) => updateCartItemDetails(item.productId, { serialNumber: e.target.value })}
+                      placeholder="S/N (Required)"
+                      className="flex-1 bg-secondary text-[10px] border border-border px-2 py-1 rounded focus:outline-none"
+                    />
+                    <input
+                      type="text"
+                      value={item.imei || ""}
+                      onChange={(e) => updateCartItemDetails(item.productId, { imei: e.target.value })}
+                      placeholder="IMEI (Mobile)"
+                      className="flex-1 bg-secondary text-[10px] border border-border px-2 py-1 rounded focus:outline-none"
+                    />
+                  </div>
+                )}
 
                 {/* Adjuster Panel */}
                 <div className="flex items-center justify-between">

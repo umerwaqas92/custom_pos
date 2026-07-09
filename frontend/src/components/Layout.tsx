@@ -46,8 +46,8 @@ export default function Layout() {
       try {
         const res = await axios.get("/api/auth/branches");
         setBranches(res.data);
-        // Default to first branch if none selected
-        if (!selectedBranchId && res.data.length > 0) {
+        // Default to first branch if none selected, or if selected ID no longer exists
+        if (res.data.length > 0 && (!selectedBranchId || !res.data.find((b: any) => b.id === selectedBranchId))) {
           setSelectedBranchId(res.data[0].id);
         }
       } catch (err) {
