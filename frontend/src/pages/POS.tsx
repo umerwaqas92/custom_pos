@@ -147,6 +147,7 @@ export default function POS() {
 
     try {
       const payload = {
+        branchId: selectedBranchId,
         customerId: selectedCustId || null,
         paymentMethod,
         paidAmount: paid,

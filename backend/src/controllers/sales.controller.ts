@@ -20,7 +20,7 @@ router.post("/", protect, async (req: AuthenticatedRequest, res: Response) => {
     return res.status(400).json({ error: "Missing checkout parameters." });
   }
 
-  const branchId = req.user?.branchId;
+  const branchId = req.body.branchId || req.user?.branchId;
   const cashierId = req.user?.id;
 
   if (!branchId || !cashierId) {
