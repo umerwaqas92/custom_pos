@@ -335,4 +335,21 @@ router.delete("/:id", protect, restrictTo("OWNER"), async (req, res) => {
   }
 });
 
+// Bulk Delete Products
+router.post("/bulk-delete", protect, restrictTo("OWNER"), async (req, res) => {
+  const { ids } = req.body;
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ error: "No product IDs provided." });
+  }
+  try {
+    await prisma.branchStock.deleteMany({ where: { productId: { in: ids } } });
+    await prisma.stockMovement.deleteMany({ where: { productId: { in: ids } } });
+    await prisma.product.deleteMany({ where: { id: { in: ids } } });
+    return res.json({ message: `${ids.length} products deleted successfully.` });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Failed to bulk delete products." });
+  }
+});
+
 export default router;

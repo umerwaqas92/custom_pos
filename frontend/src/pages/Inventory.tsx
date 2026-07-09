@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { useStore } from "../store/useStore";
 import {
@@ -10,8 +10,14 @@ import {
   CheckCircle,
   FileSpreadsheet,
   Edit,
-  Trash2
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  ArrowUp,
+  ArrowDown
 } from "lucide-react";
+
+const PAGE_SIZE = 15;
 
 export default function Inventory() {
   const { selectedBranchId, branches, addNotification } = useStore();
@@ -19,11 +25,20 @@ export default function Inventory() {
   const [categories, setCategories] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
   const [movements, setMovements] = useState<any[]>([]);
-  
+
   // Search / filter states
   const [search, setSearch] = useState("");
   const [selectedCat, setSelectedCat] = useState("");
   const [selectedBrand, setSelectedBrand] = useState("");
+  const [lowStockOnly, setLowStockOnly] = useState(false);
+
+  // Sort state
+  const [sortKey, setSortKey] = useState<string>("name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  // Selection & pagination
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Modals state
   const [addOpen, setAddOpen] = useState(false);
@@ -98,6 +113,50 @@ export default function Inventory() {
       const msg = err.response?.data?.error || "Failed to delete product.";
       addNotification(msg, "warning");
     }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!window.confirm(`Are you sure you want to delete ${selectedIds.size} selected products? This cannot be undone.`)) {
+      return;
+    }
+    try {
+      await axios.post("/api/products/bulk-delete", { ids: Array.from(selectedIds) });
+      addNotification(`${selectedIds.size} products deleted successfully.`, "success");
+      setSelectedIds(new Set());
+      setCurrentPage(1);
+      loadInventory();
+    } catch (err: any) {
+      const msg = err.response?.data?.error || "Failed to delete products.";
+      addNotification(msg, "warning");
+    }
+  };
+
+  const toggleSelectAll = (visibleProducts: any[]) => {
+    const visibleIds = new Set(visibleProducts.map(p => p.id));
+    const allSelected = visibleProducts.every(p => selectedIds.has(p.id));
+    if (allSelected) {
+      setSelectedIds(prev => {
+        const next = new Set(prev);
+        visibleIds.forEach(id => next.delete(id));
+        return next;
+      });
+    } else {
+      setSelectedIds(prev => {
+        const next = new Set(prev);
+        visibleIds.forEach(id => next.add(id));
+        return next;
+      });
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
 
   // Form states
@@ -220,17 +279,77 @@ export default function Inventory() {
   };
 
   // Filter products list
-  const filteredProducts = products.filter((p) => {
-    const matchesSearch =
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.sku.toLowerCase().includes(search.toLowerCase()) ||
-      (p.barcode && p.barcode.includes(search));
-    
-    const matchesCat = !selectedCat || p.categoryId === selectedCat;
-    const matchesBrand = !selectedBrand || p.brandId === selectedBrand;
+  const filteredProducts = useMemo(() => {
+    const result = products.filter((p) => {
+      const matchesSearch =
+        p.name.toLowerCase().includes(search.toLowerCase()) ||
+        p.sku.toLowerCase().includes(search.toLowerCase()) ||
+        (p.barcode && p.barcode.includes(search));
 
-    return matchesSearch && matchesCat && matchesBrand;
-  });
+      const matchesCat = !selectedCat || p.categoryId === selectedCat;
+      const matchesBrand = !selectedBrand || p.brandId === selectedBrand;
+
+      const matchesLowStock = !lowStockOnly || p.stockQuantity <= p.minStock;
+
+      return matchesSearch && matchesCat && matchesBrand && matchesLowStock;
+    });
+
+    result.sort((a, b) => {
+      let aVal: any, bVal: any;
+      switch (sortKey) {
+        case "name": aVal = a.name.toLowerCase(); bVal = b.name.toLowerCase(); break;
+        case "sku": aVal = a.sku.toLowerCase(); bVal = b.sku.toLowerCase(); break;
+        case "brand": aVal = (a.brand?.name || "").toLowerCase(); bVal = (b.brand?.name || "").toLowerCase(); break;
+        case "category": aVal = (a.category?.name || "").toLowerCase(); bVal = (b.category?.name || "").toLowerCase(); break;
+        case "purchasePrice": aVal = a.purchasePrice; bVal = b.purchasePrice; break;
+        case "sellingPrice": aVal = a.sellingPrice; bVal = b.sellingPrice; break;
+        case "stock": aVal = a.stockQuantity; bVal = b.stockQuantity; break;
+        default: aVal = a.name.toLowerCase(); bVal = b.name.toLowerCase();
+      }
+      if (aVal < bVal) return sortDir === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+
+    return result;
+  }, [products, search, selectedCat, selectedBrand, lowStockOnly, sortKey, sortDir]);
+
+  const totalPages = Math.ceil(filteredProducts.length / PAGE_SIZE);
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE
+  );
+
+  // Reset page when filters change
+  useEffect(() => { setCurrentPage(1); }, [search, selectedCat, selectedBrand, lowStockOnly, sortKey, sortDir]);
+
+  const toggleSort = (key: string) => {
+    if (sortKey === key) {
+      setSortDir(d => d === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
+
+  const SortHeader = ({ label, sortField }: { label: string; sortField: string }) => {
+    const active = sortKey === sortField;
+    return (
+      <th
+        className="pb-3 cursor-pointer select-none hover:text-foreground transition"
+        onClick={() => toggleSort(sortField)}
+      >
+        <span className="flex items-center gap-1">
+          {label}
+          {active ? (
+            sortDir === "asc" ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+          ) : (
+            <span className="w-3 h-3" />
+          )}
+        </span>
+      </th>
+    );
+  };
 
   return (
     <div className="space-y-6 flex-1">
@@ -276,7 +395,7 @@ export default function Inventory() {
 
       {/* Filters & Table */}
       <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
-        
+
         {/* Filter controls */}
         <div className="flex flex-col md:flex-row gap-3">
           <input
@@ -304,37 +423,83 @@ export default function Inventory() {
             <option value="">All Brands</option>
             {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
           </select>
+
+          <button
+            onClick={() => setLowStockOnly(!lowStockOnly)}
+            className={`text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition border ${
+              lowStockOnly
+                ? "bg-red-500/10 text-red-400 border-red-500/30"
+                : "bg-secondary text-foreground border-border hover:bg-secondary/80"
+            }`}
+          >
+            <AlertCircle className="w-4 h-4" /> Low Stock
+          </button>
         </div>
+
+        {/* Bulk action bar */}
+        {selectedIds.size > 0 && (
+          <div className="flex items-center gap-3 bg-red-500/5 border border-red-500/20 rounded-xl px-4 py-2.5">
+            <span className="text-xs font-bold text-red-400">{selectedIds.size} selected</span>
+            <button
+              onClick={handleBulkDelete}
+              className="bg-red-500 hover:bg-red-600 text-white text-xs font-bold px-4 py-1.5 rounded-lg flex items-center gap-1 transition"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Delete Selected
+            </button>
+            <button
+              onClick={() => setSelectedIds(new Set())}
+              className="text-xs text-muted-foreground hover:text-foreground transition"
+            >
+              Clear Selection
+            </button>
+          </div>
+        )}
 
         {/* Table view */}
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-border text-muted-foreground font-semibold">
-                <th className="pb-3 pl-2">Product Name</th>
-                <th className="pb-3">SKU</th>
-                <th className="pb-3">Brand</th>
-                <th className="pb-3">Category</th>
-                <th className="pb-3 text-right">Cost Price</th>
-                <th className="pb-3 text-right">Retail Price</th>
-                <th className="pb-3 text-center">Total Stock</th>
+                <th className="pb-3 pl-2 w-10">
+                  <input
+                    type="checkbox"
+                    checked={paginatedProducts.length > 0 && paginatedProducts.every(p => selectedIds.has(p.id))}
+                    onChange={() => toggleSelectAll(paginatedProducts)}
+                    className="accent-primary cursor-pointer"
+                  />
+                </th>
+                <SortHeader label="Product Name" sortField="name" />
+                <SortHeader label="SKU" sortField="sku" />
+                <SortHeader label="Brand" sortField="brand" />
+                <SortHeader label="Category" sortField="category" />
+                <SortHeader label="Cost Price" sortField="purchasePrice" />
+                <SortHeader label="Retail Price" sortField="sellingPrice" />
+                <SortHeader label="Total Stock" sortField="stock" />
                 <th className="pb-3 text-center">Location Levels</th>
                 <th className="pb-3 text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/50">
-              {filteredProducts.length === 0 ? (
+              {paginatedProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={10} className="py-8 text-center text-muted-foreground">
                     No products matching search parameters.
                   </td>
                 </tr>
               ) : (
-                filteredProducts.map((p) => {
+                paginatedProducts.map((p) => {
                   const isLow = p.stockQuantity <= p.minStock;
                   return (
-                    <tr key={p.id} className="hover:bg-secondary/20 transition">
-                      <td className="py-4 pl-2 font-bold text-foreground max-w-xs truncate">{p.name}</td>
+                    <tr key={p.id} className={`hover:bg-secondary/20 transition ${selectedIds.has(p.id) ? "bg-primary/5" : ""}`}>
+                      <td className="py-4 pl-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(p.id)}
+                          onChange={() => toggleSelect(p.id)}
+                          className="accent-primary cursor-pointer"
+                        />
+                      </td>
+                      <td className="py-4 font-bold text-foreground max-w-xs truncate">{p.name}</td>
                       <td className="py-4 text-muted-foreground">{p.sku}</td>
                       <td className="py-4 text-foreground">{p.brand?.name || "-"}</td>
                       <td className="py-4 text-foreground">{p.category?.name || "-"}</td>
@@ -381,6 +546,55 @@ export default function Inventory() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between pt-3 border-t border-border">
+            <span className="text-xs text-muted-foreground">
+              Showing {((currentPage - 1) * PAGE_SIZE) + 1}-{Math.min(currentPage * PAGE_SIZE, filteredProducts.length)} of {filteredProducts.length}
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-1.5 rounded-lg border border-border bg-secondary hover:bg-secondary/80 disabled:opacity-40 disabled:cursor-not-allowed transition"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(page => page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1)
+                .reduce<(number | string)[]>((acc, page, i, arr) => {
+                  if (i > 0 && page - (arr[i - 1] as number) > 1) acc.push("...");
+                  acc.push(page);
+                  return acc;
+                }, [])
+                .map((page, i) =>
+                  typeof page === "string" ? (
+                    <span key={`dots-${i}`} className="text-xs text-muted-foreground px-1">...</span>
+                  ) : (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`px-3 py-1 text-xs rounded-lg font-bold transition ${
+                        currentPage === page
+                          ? "bg-primary text-white"
+                          : "bg-secondary text-foreground hover:bg-secondary/80"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  )
+                )}
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="p-1.5 rounded-lg border border-border bg-secondary hover:bg-secondary/80 disabled:opacity-40 disabled:cursor-not-allowed transition"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Add Product Dialog Modal */}
