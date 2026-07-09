@@ -13,7 +13,7 @@ import Contacts from "./pages/Contacts";
 import Accounting from "./pages/Accounting";
 
 // Set Axios Base URL
-axios.defaults.baseURL = "http://localhost:5000";
+axios.defaults.baseURL = "http://localhost:5001";
 
 // Login Page Component
 function Login() {
