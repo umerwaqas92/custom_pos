@@ -31,7 +31,9 @@ export default function POS() {
     updateCartQty,
     updateCartItemDetails,
     clearCart,
-    addNotification
+    addNotification,
+    gstEnabled,
+    gstRate
   } = useStore();
 
   const [products, setProducts] = useState<any[]>([]);
@@ -768,7 +770,7 @@ export default function POS() {
                   <span>-Rs. {receiptResult.discountAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
-                  <span>Sales Tax ({receiptResult.items[0]?.tax || 0}%):</span>
+                  <span>Sales Tax ({gstEnabled ? `${gstRate}%` : receiptResult.items[0]?.tax || 0}%):</span>
                   <span>+Rs. {receiptResult.taxAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between font-black text-foreground text-xs pt-1 border-t border-border/40">

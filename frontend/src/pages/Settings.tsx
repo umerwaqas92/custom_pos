@@ -7,128 +7,187 @@ import {
   MapPin,
   Phone,
   Plus,
-  Edit,
+  Edit2,
   Trash2,
   X,
-  CheckCircle,
   Info,
   ShieldAlert,
-  Download
+  Download,
+  Percent,
+  Building2,
+  Database,
+  ToggleLeft,
+  ToggleRight,
+  RotateCcw,
+  Upload,
+  CheckCircle2,
+  Clock,
+  HardDrive,
+  ChevronRight,
+  AlertTriangle,
 } from "lucide-react";
 
+type TabId = "shops" | "tax" | "backup" | "danger";
+
+const TABS: { id: TabId; label: string; icon: React.ReactNode; accent: string }[] = [
+  { id: "shops",  label: "Shop Branches", icon: <Building2 className="w-4 h-4" />, accent: "text-primary" },
+  { id: "tax",    label: "GST / Tax",     icon: <Percent className="w-4 h-4" />,   accent: "text-emerald-500" },
+  { id: "backup", label: "Backup & Restore", icon: <Database className="w-4 h-4" />, accent: "text-blue-500" },
+  { id: "danger", label: "Danger Zone",   icon: <ShieldAlert className="w-4 h-4" />, accent: "text-red-400" },
+];
+
 export default function Settings() {
-  const { addNotification } = useStore();
+  const { addNotification, gstEnabled, gstRate, setGstSettings } = useStore();
+  const [activeTab, setActiveTab] = useState<TabId>("shops");
+
+  // ─── GST State ────────────────────────────────────────────────────────────
+  const [gstEnabledLocal, setGstEnabledLocal] = useState(gstEnabled);
+  const [gstRateLocal, setGstRateLocal] = useState(gstRate > 0 ? gstRate.toString() : "");
+  const [savingGst, setSavingGst] = useState(false);
+
+  // ─── Branches State ───────────────────────────────────────────────────────
   const [branches, setBranches] = useState<any[]>([]);
   const [addOpen, setAddOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-
-  // Form states
   const [newBranch, setNewBranch] = useState({ name: "", address: "", phone: "" });
   const [selectedBranchId, setSelectedBranchId] = useState("");
   const [editBranch, setEditBranch] = useState({ name: "", address: "", phone: "" });
+
+  // ─── Backup State ─────────────────────────────────────────────────────────
+  const [backups, setBackups] = useState<any[]>([]);
+  const [importing, setImporting] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  // ─── Danger Zone State ────────────────────────────────────────────────────
+  const [resetting, setResetting] = useState(false);
+
+  // ─── Load ─────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    loadBranches();
+    loadBackups();
+  }, []);
 
   const loadBranches = async () => {
     try {
       const res = await axios.get("/api/auth/branches");
       setBranches(res.data);
-    } catch (err) {
+    } catch {
       addNotification("Failed to load branches.", "warning");
     }
   };
 
-  const [resetting, setResetting] = useState(false);
+  const loadBackups = async () => {
+    try {
+      const res = await axios.get("/api/auth/backup/list");
+      setBackups(res.data);
+    } catch { /* silent */ }
+  };
 
-  const handleResetTransactions = async () => {
-    const doubleCheck = window.confirm(
-      "WARNING: This will permanently delete all sales, transactions, invoices, installments, expenses, and log history. This action CANNOT be undone.\n\nAre you sure you want to proceed?"
-    );
-    if (!doubleCheck) return;
-
-    const securityConfirm = window.prompt(
-      "To confirm this action, please type the word 'RESET' below:"
-    );
-    if (securityConfirm !== "RESET") {
-      addNotification("Reset cancelled. Confirmation keyword did not match.", "warning");
+  // ─── GST ──────────────────────────────────────────────────────────────────
+  const handleSaveGst = async () => {
+    const rate = parseFloat(gstRateLocal);
+    if (gstEnabledLocal && (isNaN(rate) || rate < 0 || rate > 100)) {
+      addNotification("Enter a valid tax rate between 0 and 100.", "warning");
       return;
     }
-
-    setResetting(true);
+    setSavingGst(true);
     try {
-      const res = await axios.post("/api/auth/reset-transactions");
-      addNotification(res.data.message || "Transactions cleared successfully.", "success");
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
+      const res = await axios.put("/api/settings", {
+        settings: {
+          gstEnabled: String(gstEnabledLocal),
+          gstRate: String(gstEnabledLocal ? rate : 0),
+        },
+      });
+      console.log("GST settings saved:", res.data);
+      setGstSettings(gstEnabledLocal, gstEnabledLocal ? rate : 0);
+      addNotification("Tax settings saved successfully.", "success");
     } catch (err: any) {
-      addNotification(
-        err.response?.data?.error || "Failed to clear transaction records.",
-        "warning"
-      );
+      console.error("GST settings error:", err.response?.data || err.message);
+      addNotification(err.response?.data?.error || "Failed to save settings.", "warning");
     } finally {
-      setResetting(false);
+      setSavingGst(false);
     }
   };
 
-  const [importing, setImporting] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  // ─── Branches ─────────────────────────────────────────────────────────────
+  const handleAddBranch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newBranch.name) return addNotification("Shop name is required.", "warning");
+    try {
+      await axios.post("/api/auth/branches", newBranch);
+      addNotification("New shop branch created.", "success");
+      setAddOpen(false);
+      setNewBranch({ name: "", address: "", phone: "" });
+      loadBranches();
+    } catch (err: any) {
+      addNotification(err.response?.data?.error || "Failed to create branch.", "warning");
+    }
+  };
 
+  const handleOpenEdit = (b: any) => {
+    setSelectedBranchId(b.id);
+    setEditBranch({ name: b.name || "", address: b.address || "", phone: b.phone || "" });
+    setEditOpen(true);
+  };
+
+  const handleEditBranch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editBranch.name) return addNotification("Shop name is required.", "warning");
+    try {
+      await axios.put(`/api/auth/branches/${selectedBranchId}`, editBranch);
+      addNotification("Shop details updated.", "success");
+      setEditOpen(false);
+      loadBranches();
+    } catch (err: any) {
+      addNotification(err.response?.data?.error || "Failed to update branch.", "warning");
+    }
+  };
+
+  const handleDeleteBranch = async (id: string, name: string) => {
+    if (!window.confirm(`Delete "${name}"? All stock records for this branch will be removed.`)) return;
+    try {
+      await axios.delete(`/api/auth/branches/${id}`);
+      addNotification("Shop deleted.", "success");
+      loadBranches();
+    } catch (err: any) {
+      addNotification(err.response?.data?.error || "Failed to delete branch.", "warning");
+    }
+  };
+
+  // ─── Backup ───────────────────────────────────────────────────────────────
   const handleExportBackup = async () => {
     try {
-      addNotification("Preparing backup package...", "info");
+      addNotification("Preparing backup package…", "info");
       const res = await axios.get("/api/auth/backup/export", { responseType: "blob" });
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", `pos-backup-${new Date().toISOString().split('T')[0]}.zip`);
+      link.setAttribute("download", `pos-backup-${new Date().toISOString().split("T")[0]}.zip`);
       document.body.appendChild(link);
       link.click();
       link.parentNode?.removeChild(link);
-      addNotification("Backup file downloaded successfully.", "success");
-    } catch (err) {
+      addNotification("Backup downloaded successfully.", "success");
+    } catch {
       addNotification("Failed to export backup.", "warning");
     }
   };
 
   const handleImportBackup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedFile) return addNotification("Please select a backup file first.", "warning");
-
-    const doubleCheck = window.confirm(
-      "WARNING: Restoring from backup will overwrite all current sales, products, and configurations. This cannot be undone. Are you sure you want to proceed?"
-    );
-    if (!doubleCheck) return;
-
+    if (!selectedFile) return addNotification("Select a backup file first.", "warning");
+    if (!window.confirm("WARNING: Restoring from backup will overwrite all current data. This cannot be undone. Continue?")) return;
     const formData = new FormData();
     formData.append("backup", selectedFile);
-
     setImporting(true);
     try {
-      const res = await axios.post("/api/auth/backup/import", formData, {
-        headers: { "Content-Type": "multipart/form-data" }
-      });
-      addNotification(res.data.message || "Data restored successfully from backup.", "success");
+      const res = await axios.post("/api/auth/backup/import", formData, { headers: { "Content-Type": "multipart/form-data" } });
+      addNotification(res.data.message || "Data restored from backup.", "success");
       setSelectedFile(null);
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
+      setTimeout(() => window.location.reload(), 1500);
     } catch (err: any) {
-      addNotification(
-        err.response?.data?.error || "Failed to restore backup data.",
-        "warning"
-      );
+      addNotification(err.response?.data?.error || "Failed to restore backup.", "warning");
     } finally {
       setImporting(false);
-    }
-  };
-
-  const [backups, setBackups] = useState<any[]>([]);
-
-  const loadBackups = async () => {
-    try {
-      const res = await axios.get("/api/auth/backup/list");
-      setBackups(res.data);
-    } catch (err) {
-      console.error("Failed to load backups list.");
     }
   };
 
@@ -142,445 +201,494 @@ export default function Settings() {
       document.body.appendChild(link);
       link.click();
       link.parentNode?.removeChild(link);
-      addNotification("Backup downloaded successfully.", "success");
-    } catch (err) {
-      addNotification("Failed to download backup.", "warning");
-    }
+      addNotification("Backup downloaded.", "success");
+    } catch { addNotification("Failed to download backup.", "warning"); }
   };
 
   const handleRestoreBackup = async (filename: string) => {
-    const confirmRestore = window.confirm(
-      `WARNING: Are you sure you want to restore the system to the backup: "${filename}"?\n\nThis will overwrite all current data. This action cannot be undone.`
-    );
-    if (!confirmRestore) return;
-
-    addNotification("Restoring system data...", "info");
+    if (!window.confirm(`Restore system to backup "${filename}"?\n\nThis will overwrite all current data.`)) return;
+    addNotification("Restoring system data…", "info");
     try {
       const res = await axios.post(`/api/auth/backup/restore/${filename}`);
-      addNotification(res.data.message || "System data restored successfully.", "success");
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
+      addNotification(res.data.message || "System data restored.", "success");
+      setTimeout(() => window.location.reload(), 1500);
     } catch (err: any) {
-      addNotification(err.response?.data?.error || "Failed to restore data.", "warning");
+      addNotification(err.response?.data?.error || "Failed to restore.", "warning");
     }
   };
 
   const handleDeleteBackup = async (filename: string) => {
-    const confirmDelete = window.confirm(
-      `Are you sure you want to delete the backup file: "${filename}"?`
-    );
-    if (!confirmDelete) return;
-
+    if (!window.confirm(`Delete backup file "${filename}"?`)) return;
     try {
-      const res = await axios.delete(`/api/auth/backup/delete/${filename}`);
-      addNotification(res.data.message || "Backup file deleted.", "success");
+      await axios.delete(`/api/auth/backup/delete/${filename}`);
+      addNotification("Backup file deleted.", "success");
       loadBackups();
     } catch (err: any) {
-      addNotification(err.response?.data?.error || "Failed to delete backup file.", "warning");
+      addNotification(err.response?.data?.error || "Failed to delete backup.", "warning");
     }
   };
 
-  useEffect(() => {
-    loadBranches();
-    loadBackups();
-  }, []);
-
-  const handleAddBranch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newBranch.name) return addNotification("Shop name is required.", "warning");
+  // ─── Danger ───────────────────────────────────────────────────────────────
+  const handleResetTransactions = async () => {
+    if (!window.confirm("WARNING: This will permanently delete all sales, transactions, invoices, installments, expenses, and log history.\n\nMaster records (products, customers, staff, etc.) will be preserved.\n\nThis CANNOT be undone. Proceed?")) return;
+    const keyword = window.prompt("Type the word RESET to confirm:");
+    if (keyword !== "RESET") { addNotification("Reset cancelled.", "warning"); return; }
+    setResetting(true);
     try {
-      await axios.post("/api/auth/branches", newBranch);
-      addNotification("New shop branch created successfully.", "success");
-      setAddOpen(false);
-      setNewBranch({ name: "", address: "", phone: "" });
-      loadBranches();
+      const res = await axios.post("/api/auth/reset-transactions");
+      addNotification(res.data.message || "Transactions cleared.", "success");
+      setTimeout(() => window.location.reload(), 1500);
     } catch (err: any) {
-      addNotification(err.response?.data?.error || "Failed to create branch.", "warning");
+      addNotification(err.response?.data?.error || "Failed to clear data.", "warning");
+    } finally {
+      setResetting(false);
     }
   };
 
-  const handleOpenEdit = (b: any) => {
-    setSelectedBranchId(b.id);
-    setEditBranch({
-      name: b.name || "",
-      address: b.address || "",
-      phone: b.phone || ""
-    });
-    setEditOpen(true);
-  };
+  // ─── Helper: field ────────────────────────────────────────────────────────
+  const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
+    <div className="space-y-1.5">
+      <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{label}</label>
+      {children}
+    </div>
+  );
 
-  const handleEditBranch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editBranch.name) return addNotification("Shop name is required.", "warning");
-    try {
-      await axios.put(`/api/auth/branches/${selectedBranchId}`, editBranch);
-      addNotification("Shop details updated successfully.", "success");
-      setEditOpen(false);
-      loadBranches();
-    } catch (err: any) {
-      addNotification(err.response?.data?.error || "Failed to update branch.", "warning");
-    }
-  };
+  const inputCls = "w-full bg-secondary border border-border px-3 py-2.5 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 transition";
 
-  const handleDeleteBranch = async (id: string, name: string) => {
-    if (!window.confirm(`Are you sure you want to delete "${name}"? All stocks associated with this branch will be removed.`)) {
-      return;
-    }
-    try {
-      await axios.delete(`/api/auth/branches/${id}`);
-      addNotification("Shop deleted successfully.", "success");
-      loadBranches();
-    } catch (err: any) {
-      addNotification(err.response?.data?.error || "Failed to delete branch.", "warning");
-    }
-  };
-
-  return (
-    <div className="space-y-6 flex-1">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card border border-border p-5 rounded-2xl">
-        <div className="space-y-1">
-          <h2 className="text-lg font-black text-foreground tracking-tight flex items-center gap-2">
-            <SettingsIcon className="w-5 h-5 text-primary" /> Shop & POS Configurations
-          </h2>
-          <p className="text-xs text-muted-foreground">Manage your shop name, contact number, and street addresses printed on invoices.</p>
+  // ─── Modal ────────────────────────────────────────────────────────────────
+  const Modal = ({ title, onClose, onSubmit, children, submitLabel = "Save" }: {
+    title: string; onClose: () => void; onSubmit: (e: React.FormEvent) => void;
+    children: React.ReactNode; submitLabel?: string;
+  }) => (
+    <div className="fixed inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-50 px-4">
+      <div className="bg-card border border-border w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <h3 className="font-extrabold text-sm text-foreground">{title}</h3>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition">
+            <X className="w-4 h-4" />
+          </button>
         </div>
-        <button
-          onClick={() => setAddOpen(true)}
-          className="bg-primary hover:bg-primary/95 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition"
-        >
-          <Plus className="w-4 h-4" /> Add New Shop
-        </button>
-      </div>
-
-      {/* Info notice about receipts */}
-      <div className="bg-primary/5 border border-primary/20 p-4 rounded-2xl flex gap-3 text-xs text-muted-foreground">
-        <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-        <div className="space-y-1">
-          <h4 className="font-extrabold text-foreground">POS Receipt Header Auto-Sync</h4>
-          <p>
-            Whenever a transaction is completed, the system automatically reads the cashier's active branch location. 
-            The printed slip pulls its **Shop Name**, **Address**, and **Phone Number** from these settings dynamically.
-          </p>
-        </div>
-      </div>
-
-      {/* Shops Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {branches.length === 0 ? (
-          <div className="col-span-full bg-card border border-border rounded-2xl p-8 text-center text-muted-foreground text-xs">
-            No active shop branches found. Click "Add New Shop" to get started.
+        <form onSubmit={onSubmit} className="p-6 space-y-4">
+          {children}
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose}
+              className="flex-1 px-4 py-2.5 border border-border text-xs font-semibold rounded-xl hover:bg-secondary transition">
+              Cancel
+            </button>
+            <button type="submit"
+              className="flex-1 px-4 py-2.5 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/95 transition">
+              {submitLabel}
+            </button>
           </div>
-        ) : (
-          branches.map((b) => (
-            <div key={b.id} className="bg-card border border-border rounded-2xl p-5 space-y-4 hover:border-primary/45 transition">
-              <div className="flex justify-between items-start">
-                <div className="flex items-center gap-2">
-                  <Store className="w-5 h-5 text-primary" />
-                  <h3 className="font-extrabold text-sm text-foreground">{b.name}</h3>
+        </form>
+      </div>
+    </div>
+  );
+
+  // ─── Tab content renderers ────────────────────────────────────────────────
+  const renderShops = () => (
+    <div className="space-y-5">
+      {/* info banner */}
+      <div className="flex gap-3 bg-primary/5 border border-primary/20 rounded-2xl p-4 text-xs text-muted-foreground">
+        <Info className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+        <div>
+          <span className="font-bold text-foreground">Receipt Auto-Sync: </span>
+          The printed slip automatically pulls its Shop Name, Address, and Phone from the cashier's active branch.
+        </div>
+      </div>
+
+      {branches.length === 0 ? (
+        <div className="bg-card border border-dashed border-border rounded-2xl p-10 text-center space-y-3">
+          <Building2 className="w-10 h-10 text-muted-foreground/40 mx-auto" />
+          <p className="text-xs text-muted-foreground">No shop branches yet. Add your first one to get started.</p>
+          <button onClick={() => setAddOpen(true)}
+            className="bg-primary text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 mx-auto transition hover:bg-primary/95">
+            <Plus className="w-3.5 h-3.5" /> Add First Shop
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {branches.map((b) => (
+            <div key={b.id} className="group bg-card border border-border rounded-2xl p-5 space-y-4 hover:border-primary/40 hover:shadow-md transition-all">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Store className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-sm text-foreground leading-tight">{b.name}</h3>
+                    <p className="text-[10px] text-muted-foreground">Branch</p>
+                  </div>
                 </div>
-                <div className="flex gap-1.5">
-                  <button
-                    onClick={() => handleOpenEdit(b)}
-                    className="p-1 text-muted-foreground hover:text-primary transition"
-                    title="Edit Shop Details"
-                  >
-                    <Edit className="w-4 h-4" />
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => handleOpenEdit(b)}
+                    className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-primary transition" title="Edit">
+                    <Edit2 className="w-3.5 h-3.5" />
                   </button>
-                  <button
-                    onClick={() => handleDeleteBranch(b.id, b.name)}
-                    className="p-1 text-muted-foreground hover:text-destructive transition"
-                    title="Delete Shop"
-                  >
-                    <Trash2 className="w-4 h-4" />
+                  <button onClick={() => handleDeleteBranch(b.id, b.name)}
+                    className="p-1.5 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-400 transition" title="Delete">
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
-
               <div className="space-y-2 text-xs border-t border-border/50 pt-3">
                 <div className="flex items-start gap-2 text-muted-foreground">
-                  <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-                  <span>{b.address || <span className="italic">No address set</span>}</span>
+                  <MapPin className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-primary/60" />
+                  <span className="leading-snug">{b.address || <span className="italic opacity-50">No address set</span>}</span>
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <Phone className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                  <span>{b.phone || <span className="italic">No phone set</span>}</span>
+                  <Phone className="w-3.5 h-3.5 flex-shrink-0 text-primary/60" />
+                  <span>{b.phone || <span className="italic opacity-50">No phone set</span>}</span>
                 </div>
               </div>
             </div>
-          ))
+          ))}
+
+          {/* Add new card */}
+          <button onClick={() => setAddOpen(true)}
+            className="group border-2 border-dashed border-border hover:border-primary/40 rounded-2xl p-5 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:text-primary transition-all min-h-[140px]">
+            <div className="w-9 h-9 rounded-xl bg-secondary group-hover:bg-primary/10 flex items-center justify-center transition-colors">
+              <Plus className="w-4 h-4" />
+            </div>
+            <span className="text-xs font-bold">Add New Shop</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderTax = () => (
+    <div className="max-w-xl space-y-6">
+      {/* Toggle row */}
+      <div className="bg-card border border-border rounded-2xl overflow-hidden">
+        <div className="flex items-center justify-between p-5">
+          <div className="space-y-0.5">
+            <h3 className="font-extrabold text-sm text-foreground">Global GST / Tax</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              When enabled, this rate is applied to all products that don't have a product-specific tax set.
+            </p>
+          </div>
+          {/* Toggle */}
+          <button
+            type="button"
+            onClick={() => setGstEnabledLocal(!gstEnabledLocal)}
+            className="flex-shrink-0 ml-4"
+            title={gstEnabledLocal ? "Disable Tax" : "Enable Tax"}
+          >
+            {gstEnabledLocal
+              ? <ToggleRight className="w-10 h-10 text-emerald-500 transition-all" />
+              : <ToggleLeft className="w-10 h-10 text-muted-foreground/40 transition-all" />}
+          </button>
+        </div>
+
+        {/* Status badge */}
+        <div className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 transition-colors ${
+          gstEnabledLocal
+            ? "bg-emerald-500/10 text-emerald-500 border-t border-emerald-500/20"
+            : "bg-secondary/60 text-muted-foreground border-t border-border/50"
+        }`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${gstEnabledLocal ? "bg-emerald-500" : "bg-muted-foreground/40"}`} />
+          {gstEnabledLocal ? "Tax collection active" : "Tax collection disabled"}
+        </div>
+
+        {/* Rate input — only when enabled */}
+        {gstEnabledLocal && (
+          <div className="p-5 border-t border-border/50 space-y-4">
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                Tax Rate (%)
+              </label>
+              <div className="flex items-center gap-3">
+                <div className="relative flex-1 max-w-[160px]">
+                  <input
+                    type="number"
+                    value={gstRateLocal}
+                    onChange={(e) => setGstRateLocal(e.target.value)}
+                    min="0"
+                    max="100"
+                    step="0.5"
+                    placeholder="e.g. 5"
+                    className="w-full bg-secondary border border-border px-3 py-2.5 pr-8 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-bold">%</span>
+                </div>
+                {gstRateLocal && (
+                  <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-extrabold px-3 py-2.5 rounded-xl">
+                    Rs. 100 → Rs. {(100 * (1 + parseFloat(gstRateLocal || "0") / 100)).toFixed(2)}
+                  </div>
+                )}
+              </div>
+              <p className="text-[10px] text-muted-foreground">Enter a value between 0 and 100.</p>
+            </div>
+          </div>
         )}
       </div>
 
-      {/* Backup & Restore */}
-      <div className="bg-card border border-border p-6 rounded-2xl space-y-5 shadow-sm relative overflow-hidden">
-        <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-blue-500 to-indigo-500" />
-        
-        <div className="space-y-1">
-          <h3 className="font-extrabold text-sm text-foreground flex items-center gap-2">
-            <Download className="w-5 h-5 text-primary" /> Database Backup & Restore
-          </h3>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            Backup your database and uploaded documents to a single ZIP file, or upload a previously generated ZIP backup to restore all data.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 border-t border-border/50">
-          {/* Export Section */}
-          <div className="space-y-3">
-            <h4 className="font-bold text-xs text-foreground uppercase tracking-wider">Export POS Data</h4>
-            <p className="text-xs text-muted-foreground">
-              Downloads a full system archive containing the SQLite database (`dev.db`) and all uploaded customer documents, receipt attachments, and warranty records.
-            </p>
-            <button
-              type="button"
-              onClick={handleExportBackup}
-              className="bg-primary hover:bg-primary/95 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer"
-            >
-              <Download className="w-4 h-4" /> Download Backup Zip
-            </button>
-          </div>
-
-          {/* Import Section */}
-          <div className="space-y-3 border-t md:border-t-0 md:border-l border-border/50 pt-4 md:pt-0 md:pl-6">
-            <h4 className="font-bold text-xs text-foreground uppercase tracking-wider text-red-400">Restore POS Data</h4>
-            <p className="text-xs text-muted-foreground">
-              Select and upload a previously exported `.zip` file. Overwrites all current database records and public folder files.
-            </p>
-            <form onSubmit={handleImportBackup} className="space-y-3">
-              <div className="flex items-center gap-2">
-                <input
-                  type="file"
-                  accept=".zip"
-                  onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                  className="block w-full text-xs text-muted-foreground
-                    file:mr-4 file:py-2 file:px-4
-                    file:rounded-xl file:border-0
-                    file:text-xs file:font-semibold
-                    file:bg-primary/10 file:text-primary
-                    hover:file:bg-primary/20
-                    cursor-pointer"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={importing || !selectedFile}
-                className="bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 hover:border-red-500/50 text-red-400 text-xs font-bold px-4 py-2.5 rounded-xl transition flex-shrink-0 cursor-pointer disabled:opacity-40"
-              >
-                {importing ? "Restoring..." : "Upload & Restore"}
-              </button>
-            </form>
-          </div>
-        </div>
-
-        {/* Automatic Backups List */}
-        <div className="pt-5 border-t border-border/50 space-y-3">
-          <div className="flex justify-between items-center">
-            <h4 className="font-bold text-xs text-foreground uppercase tracking-wider">Automatic Backups (Every 7 Days)</h4>
-            <span className="text-[10px] bg-secondary border border-border px-2.5 py-1 rounded-lg text-muted-foreground font-semibold">
-              Retention: Last 5 Backups
-            </span>
-          </div>
-
-          {backups.length === 0 ? (
-            <div className="bg-secondary/20 border border-border/50 rounded-xl p-6 text-center text-muted-foreground text-xs">
-              No automatic backups generated yet. (They are created every 7 days, or when the server restarts).
-            </div>
-          ) : (
-            <div className="border border-border/60 rounded-xl overflow-hidden bg-secondary/10">
-              <table className="w-full text-xs text-left border-collapse">
-                <thead>
-                  <tr className="bg-secondary/40 border-b border-border text-muted-foreground text-[10px] uppercase font-bold">
-                    <th className="py-2.5 px-4">Backup Name</th>
-                    <th className="py-2.5 px-4">Size</th>
-                    <th className="py-2.5 px-4">Created Date</th>
-                    <th className="py-2.5 px-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/40">
-                  {backups.map((bk) => {
-                    const sizeMB = (bk.size / (1024 * 1024)).toFixed(2);
-                    const dateStr = new Date(bk.createdAt).toLocaleString();
-                    return (
-                      <tr key={bk.filename} className="hover:bg-secondary/20 transition">
-                        <td className="py-2.5 px-4 font-mono text-[11px] text-foreground">{bk.filename}</td>
-                        <td className="py-2.5 px-4 text-muted-foreground">{sizeMB} MB</td>
-                        <td className="py-2.5 px-4 text-muted-foreground">{dateStr}</td>
-                        <td className="py-2.5 px-4 text-right space-x-3">
-                          <button
-                            type="button"
-                            onClick={() => handleDownloadBackup(bk.filename)}
-                            className="text-primary hover:underline font-bold transition cursor-pointer"
-                          >
-                            Download
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleRestoreBackup(bk.filename)}
-                            className="text-amber-400 hover:underline font-bold transition cursor-pointer"
-                          >
-                            Restore
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteBackup(bk.filename)}
-                            className="text-red-400 hover:underline font-bold transition cursor-pointer"
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+      {/* How it works */}
+      <div className="bg-card border border-border/60 rounded-2xl p-5 space-y-3">
+        <h4 className="text-xs font-extrabold text-foreground flex items-center gap-2">
+          <Info className="w-3.5 h-3.5 text-primary" /> How Tax Works in This System
+        </h4>
+        <ul className="text-xs text-muted-foreground space-y-2">
+          {[
+            "Each product can have its own tax rate set in the Inventory page.",
+            "If a product has taxRate = 0 and global GST is enabled, this global rate is used instead.",
+            "If a product has a specific tax rate (e.g. 10%), it always takes priority over the global rate.",
+            "The final tax amount is shown on the POS cart and printed on every receipt.",
+          ].map((t, i) => (
+            <li key={i} className="flex items-start gap-2">
+              <ChevronRight className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-primary/60" />
+              {t}
+            </li>
+          ))}
+        </ul>
       </div>
 
-      {/* Danger Zone / Factory Reset */}
-      <div className="bg-card border border-red-500/20 p-6 rounded-2xl space-y-4 shadow-sm relative overflow-hidden">
-        {/* Glow indicator */}
-        <div className="absolute top-0 inset-x-0 h-0.5 bg-red-500/30" />
-        
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="space-y-1">
-            <h3 className="font-extrabold text-sm text-foreground flex items-center gap-2">
-              <ShieldAlert className="w-5 h-5 text-red-400" /> Danger Zone: Clear Sales & Transaction Data
-            </h3>
-            <p className="text-xs text-muted-foreground max-w-2xl leading-relaxed">
-              This action will permanently delete all sales histories, transactions, EMIs/installments, expenses, warranty claims, and purchase orders. 
-              <strong> Master records (like products, categories, brands, customers, suppliers, staff users, and store locations) will be preserved.</strong>
-            </p>
+      <button
+        onClick={handleSaveGst}
+        disabled={savingGst}
+        className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-600/90 text-white text-xs font-bold px-6 py-3 rounded-xl flex items-center justify-center gap-2 transition disabled:opacity-50"
+      >
+        <CheckCircle2 className="w-4 h-4" />
+        {savingGst ? "Saving…" : "Save Tax Settings"}
+      </button>
+    </div>
+  );
+
+  const renderBackup = () => (
+    <div className="space-y-6">
+      {/* Export + Import grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {/* Export */}
+        <div className="bg-card border border-border rounded-2xl p-6 space-y-4 relative overflow-hidden">
+          <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-blue-500 to-indigo-500" />
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+              <Download className="w-4 h-4 text-blue-500" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-sm text-foreground">Export Backup</h3>
+              <p className="text-[10px] text-muted-foreground">Download full system archive</p>
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={handleResetTransactions}
-            disabled={resetting}
-            className="w-full sm:w-auto bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 hover:border-red-500/50 text-red-400 text-xs font-bold px-5 py-3 rounded-xl transition flex-shrink-0 cursor-pointer disabled:opacity-50"
-          >
-            {resetting ? "Clearing Data..." : "Clear Transactions Data"}
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Downloads a ZIP containing the SQLite database and all uploaded files (documents, receipts, warranty records).
+          </p>
+          <button onClick={handleExportBackup}
+            className="w-full bg-blue-600 hover:bg-blue-600/90 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition">
+            <Download className="w-3.5 h-3.5" /> Download Backup ZIP
           </button>
         </div>
+
+        {/* Import */}
+        <div className="bg-card border border-border rounded-2xl p-6 space-y-4 relative overflow-hidden">
+          <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-amber-500 to-orange-500" />
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+              <Upload className="w-4 h-4 text-amber-500" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-sm text-foreground">Restore Backup</h3>
+              <p className="text-[10px] text-muted-foreground">Upload & restore from ZIP</p>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Select a previously exported <code className="font-mono bg-secondary px-1 rounded">.zip</code> file. This <strong>overwrites</strong> all current data.
+          </p>
+          <form onSubmit={handleImportBackup} className="space-y-3">
+            <div className="border-2 border-dashed border-border hover:border-amber-500/40 rounded-xl p-3 text-center transition-colors cursor-pointer">
+              <input
+                type="file"
+                accept=".zip"
+                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                className="hidden"
+                id="backup-file-input"
+              />
+              <label htmlFor="backup-file-input" className="cursor-pointer block">
+                {selectedFile ? (
+                  <span className="text-xs font-bold text-amber-500">{selectedFile.name}</span>
+                ) : (
+                  <span className="text-xs text-muted-foreground">Click to select .zip file</span>
+                )}
+              </label>
+            </div>
+            <button type="submit" disabled={importing || !selectedFile}
+              className="w-full bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-500 text-xs font-bold px-4 py-2.5 rounded-xl transition disabled:opacity-40">
+              {importing ? "Restoring…" : "Upload & Restore"}
+            </button>
+          </form>
+        </div>
       </div>
+
+      {/* Automatic Backups list */}
+      <div className="bg-card border border-border rounded-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-primary" />
+            <h3 className="font-extrabold text-sm text-foreground">Automatic Backups</h3>
+            <span className="text-[10px] bg-secondary border border-border px-2 py-0.5 rounded-lg text-muted-foreground font-semibold">Every 7 Days</span>
+          </div>
+          <span className="text-[10px] text-muted-foreground">Keeps last 5</span>
+        </div>
+
+        {backups.length === 0 ? (
+          <div className="p-10 text-center space-y-2">
+            <HardDrive className="w-8 h-8 text-muted-foreground/30 mx-auto" />
+            <p className="text-xs text-muted-foreground">No automatic backups generated yet.</p>
+            <p className="text-[10px] text-muted-foreground opacity-60">They are created every 7 days automatically.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-border/50">
+            {backups.map((bk) => (
+              <div key={bk.filename} className="flex items-center justify-between px-5 py-3.5 hover:bg-secondary/30 transition">
+                <div className="flex items-center gap-3 min-w-0">
+                  <HardDrive className="w-4 h-4 text-primary/60 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-xs font-mono font-bold text-foreground truncate">{bk.filename}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {new Date(bk.createdAt).toLocaleString()} · {(bk.size / (1024 * 1024)).toFixed(2)} MB
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 text-[11px] font-bold flex-shrink-0 ml-4">
+                  <button onClick={() => handleDownloadBackup(bk.filename)}
+                    className="text-primary hover:underline transition">Download</button>
+                  <button onClick={() => handleRestoreBackup(bk.filename)}
+                    className="text-amber-400 hover:underline transition">Restore</button>
+                  <button onClick={() => handleDeleteBackup(bk.filename)}
+                    className="text-red-400 hover:underline transition">Delete</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const renderDanger = () => (
+    <div className="max-w-2xl space-y-5">
+      <div className="flex gap-3 bg-red-500/5 border border-red-500/20 rounded-2xl p-4 text-xs text-muted-foreground">
+        <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+        <div>
+          <span className="font-bold text-red-400">Irreversible actions ahead. </span>
+          These operations permanently delete data and cannot be undone. Proceed with extreme caution.
+        </div>
+      </div>
+
+      <div className="bg-card border border-red-500/20 rounded-2xl overflow-hidden relative">
+        <div className="absolute top-0 inset-x-0 h-[2px] bg-red-500/40" />
+        <div className="p-6 space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-xl bg-red-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <RotateCcw className="w-4 h-4 text-red-400" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="font-extrabold text-sm text-foreground">Clear Sales & Transaction Data</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Permanently deletes all sales histories, transactions, EMIs/installments, expenses, warranty claims, and purchase orders.
+              </p>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {["Sales Records", "Invoices", "Installments", "Expenses", "Warranty Claims", "Purchase Orders"].map((item) => (
+                  <span key={item} className="text-[10px] bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded-lg font-semibold">{item}</span>
+                ))}
+              </div>
+              <p className="text-[10px] text-muted-foreground pt-1">
+                <strong className="text-foreground">Preserved:</strong> Products, Categories, Brands, Customers, Suppliers, Staff, and Shop Branches.
+              </p>
+            </div>
+          </div>
+          <div className="border-t border-red-500/10 pt-4">
+            <button
+              onClick={handleResetTransactions}
+              disabled={resetting}
+              className="bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 hover:border-red-500/50 text-red-400 text-xs font-bold px-5 py-3 rounded-xl transition flex items-center gap-2 disabled:opacity-50"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              {resetting ? "Clearing Data…" : "Clear All Transaction Data"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="flex-1 space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="space-y-1">
+          <h1 className="text-xl font-black text-foreground tracking-tight flex items-center gap-2">
+            <SettingsIcon className="w-5 h-5 text-primary" /> Settings
+          </h1>
+          <p className="text-xs text-muted-foreground">Manage your shop, tax rules, backups, and system configuration.</p>
+        </div>
+      </div>
+
+      {/* Tab Bar */}
+      <div className="flex gap-1 bg-card border border-border p-1.5 rounded-2xl w-fit">
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+              activeTab === tab.id
+                ? "bg-primary text-white shadow-sm"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+            }`}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === "shops"  && renderShops()}
+      {activeTab === "tax"    && renderTax()}
+      {activeTab === "backup" && renderBackup()}
+      {activeTab === "danger" && renderDanger()}
 
       {/* Add Shop Modal */}
       {addOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 px-4">
-          <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
-            <h3 className="font-bold text-sm text-foreground mb-4">Add New Shop Branch</h3>
-            <form onSubmit={handleAddBranch} className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase">Shop Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={newBranch.name}
-                  onChange={(e) => setNewBranch({ ...newBranch, name: e.target.value })}
-                  placeholder="e.g. Central City Electronics"
-                  className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase">Street Address</label>
-                <input
-                  type="text"
-                  value={newBranch.address}
-                  onChange={(e) => setNewBranch({ ...newBranch, address: e.target.value })}
-                  placeholder="e.g. Shop 45, Hall Road, Lahore"
-                  className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase">Phone Number</label>
-                <input
-                  type="text"
-                  value={newBranch.phone}
-                  onChange={(e) => setNewBranch({ ...newBranch, phone: e.target.value })}
-                  placeholder="e.g. 0300-1234567"
-                  className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
-                />
-              </div>
-
-              <div className="flex gap-3 justify-end pt-4">
-                <button
-                  type="button"
-                  onClick={() => setAddOpen(false)}
-                  className="px-4 py-2 border border-border text-xs rounded hover:bg-secondary transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-primary text-white text-xs rounded hover:bg-primary/95 transition"
-                >
-                  Create Shop
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <Modal title="Add New Shop Branch" onClose={() => setAddOpen(false)} onSubmit={handleAddBranch} submitLabel="Create Shop">
+          <Field label="Shop Name *">
+            <input required type="text" value={newBranch.name}
+              onChange={(e) => setNewBranch({ ...newBranch, name: e.target.value })}
+              placeholder="e.g. Central City Electronics" className={inputCls} />
+          </Field>
+          <Field label="Street Address">
+            <input type="text" value={newBranch.address}
+              onChange={(e) => setNewBranch({ ...newBranch, address: e.target.value })}
+              placeholder="e.g. Shop 45, Hall Road, Lahore" className={inputCls} />
+          </Field>
+          <Field label="Phone Number">
+            <input type="text" value={newBranch.phone}
+              onChange={(e) => setNewBranch({ ...newBranch, phone: e.target.value })}
+              placeholder="e.g. 0300-1234567" className={inputCls} />
+          </Field>
+        </Modal>
       )}
 
       {/* Edit Shop Modal */}
       {editOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 px-4">
-          <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
-            <h3 className="font-bold text-sm text-foreground mb-4">Edit Shop Details</h3>
-            <form onSubmit={handleEditBranch} className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase">Shop Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={editBranch.name}
-                  onChange={(e) => setEditBranch({ ...editBranch, name: e.target.value })}
-                  className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase">Street Address</label>
-                <input
-                  type="text"
-                  value={editBranch.address}
-                  onChange={(e) => setEditBranch({ ...editBranch, address: e.target.value })}
-                  className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase">Phone Number</label>
-                <input
-                  type="text"
-                  value={editBranch.phone}
-                  onChange={(e) => setEditBranch({ ...editBranch, phone: e.target.value })}
-                  className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
-                />
-              </div>
-
-              <div className="flex gap-3 justify-end pt-4">
-                <button
-                  type="button"
-                  onClick={() => setEditOpen(false)}
-                  className="px-4 py-2 border border-border text-xs rounded hover:bg-secondary transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-primary text-white text-xs rounded hover:bg-primary/95 transition"
-                >
-                  Save Changes
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <Modal title="Edit Shop Details" onClose={() => setEditOpen(false)} onSubmit={handleEditBranch} submitLabel="Save Changes">
+          <Field label="Shop Name *">
+            <input required type="text" value={editBranch.name}
+              onChange={(e) => setEditBranch({ ...editBranch, name: e.target.value })}
+              className={inputCls} />
+          </Field>
+          <Field label="Street Address">
+            <input type="text" value={editBranch.address}
+              onChange={(e) => setEditBranch({ ...editBranch, address: e.target.value })}
+              className={inputCls} />
+          </Field>
+          <Field label="Phone Number">
+            <input type="text" value={editBranch.phone}
+              onChange={(e) => setEditBranch({ ...editBranch, phone: e.target.value })}
+              className={inputCls} />
+          </Field>
+        </Modal>
       )}
     </div>
   );

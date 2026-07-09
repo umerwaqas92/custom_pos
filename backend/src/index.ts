@@ -10,6 +10,7 @@ import salesRouter from "./controllers/sales.controller";
 import repairsRouter from "./controllers/repairs.controller";
 import accountingRouter from "./controllers/accounting.controller";
 import reportsRouter from "./controllers/reports.controller";
+import settingsRouter from "./controllers/settings.controller";
 
 import path from "path";
 import fs from "fs";
@@ -40,6 +41,7 @@ app.use("/api/sales", salesRouter);
 app.use("/api/repairs", repairsRouter);
 app.use("/api/accounting", accountingRouter);
 app.use("/api/reports", reportsRouter);
+app.use("/api/settings", settingsRouter);
 
 // Health check endpoint
 app.get("/health", (req, res) => {

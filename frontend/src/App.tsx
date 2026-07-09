@@ -149,7 +149,7 @@ function RoleGuard({ children, allowedRoles }: GuardProps) {
 }
 
 export default function App() {
-  const { token, theme } = useStore();
+  const { token, theme, loadSettings } = useStore();
   const [trialExpired, setTrialExpired] = useState(false);
   const [activated, setActivated] = useState(localStorage.getItem("pos_activated") === "true");
 
@@ -204,6 +204,8 @@ export default function App() {
   useEffect(() => {
     if (token) {
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      // Load settings from backend when token is available
+      loadSettings();
     } else {
       delete axios.defaults.headers.common["Authorization"];
     }
