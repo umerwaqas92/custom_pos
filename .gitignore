@@ -1,6 +1,11 @@
 # Dependencies
 node_modules/
 
+# Database
+*.db
+*.db-journal
+*.sql
+
 # Build output
 dist/
 build/
