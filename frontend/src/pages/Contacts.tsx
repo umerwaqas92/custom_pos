@@ -13,7 +13,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  RefreshCw
 } from "lucide-react";
 
 const PAGE_SIZE = 15;
@@ -314,21 +315,29 @@ export default function Contacts() {
           </button>
         </div>
 
-        {activeTab === "CUSTOMERS" ? (
+        <div className="flex gap-2">
+          {activeTab === "CUSTOMERS" ? (
+            <button
+              onClick={() => setCustOpen(true)}
+              className="bg-primary hover:bg-primary/95 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition"
+            >
+              <Plus className="w-4 h-4" /> Add Customer
+            </button>
+          ) : (
+            <button
+              onClick={() => setSuppOpen(true)}
+              className="bg-primary hover:bg-primary/95 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition"
+            >
+              <Plus className="w-4 h-4" /> Add Supplier
+            </button>
+          )}
           <button
-            onClick={() => setCustOpen(true)}
-            className="bg-primary hover:bg-primary/95 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition"
+            onClick={loadContacts}
+            className="border border-border bg-secondary hover:bg-secondary/80 text-foreground text-xs font-bold px-3 py-2.5 rounded-xl flex items-center gap-1.5 transition"
           >
-            <Plus className="w-4 h-4" /> Add Customer
+            <RefreshCw className="w-4 h-4" />
           </button>
-        ) : (
-          <button
-            onClick={() => setSuppOpen(true)}
-            className="bg-primary hover:bg-primary/95 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition"
-          >
-            <Plus className="w-4 h-4" /> Add Supplier
-          </button>
-        )}
+        </div>
       </div>
 
       {/* Main Panel */}

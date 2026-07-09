@@ -25,7 +25,8 @@ import {
   Sparkles,
   ShoppingBag,
   Package2,
-  Users
+  Users,
+  RefreshCw
 } from "lucide-react";
 
 const LOW_STOCK_THRESHOLD = 3;
@@ -58,29 +59,29 @@ export default function Dashboard() {
   const [lowStockList, setLowStockList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    try {
+      const [statsRes, chartsRes, topRes, alertRes] = await Promise.all([
+        axios.get("/api/reports/dashboard-stats"),
+        axios.get("/api/reports/charts"),
+        axios.get("/api/reports/top-selling"),
+        axios.get("/api/inventory/alerts")
+      ]);
+
+      setStats(statsRes.data);
+      setCharts(chartsRes.data);
+      setTopProducts(topRes.data);
+      setLowStockList(alertRes.data);
+    } catch (err) {
+      console.error(err);
+      addNotification("Failed to fetch dashboard metrics.", "warning");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      setLoading(true);
-      try {
-        const [statsRes, chartsRes, topRes, alertRes] = await Promise.all([
-          axios.get("/api/reports/dashboard-stats"),
-          axios.get("/api/reports/charts"),
-          axios.get("/api/reports/top-selling"),
-          axios.get("/api/inventory/alerts")
-        ]);
-
-        setStats(statsRes.data);
-        setCharts(chartsRes.data);
-        setTopProducts(topRes.data);
-        setLowStockList(alertRes.data);
-      } catch (err) {
-        console.error(err);
-        addNotification("Failed to fetch dashboard metrics.", "warning");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchDashboardData();
   }, [addNotification]);
 
@@ -140,6 +141,13 @@ export default function Dashboard() {
           <h1 className="text-2xl font-black tracking-tight text-foreground">Welcome to the Dashboard</h1>
           <p className="text-sm text-muted-foreground">Monitor inventory levels, track cashier checkouts, and view technical operations.</p>
         </div>
+        <button
+          onClick={fetchDashboardData}
+          disabled={loading}
+          className="bg-secondary border border-border hover:bg-secondary/80 text-foreground text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-1.5 transition disabled:opacity-50"
+        >
+          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Refresh
+        </button>
       </div>
 
       {/* Stats Grid */}

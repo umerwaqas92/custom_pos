@@ -14,7 +14,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  RefreshCw
 } from "lucide-react";
 
 const PAGE_SIZE = 15;
@@ -407,6 +408,13 @@ export default function Inventory() {
             className="border border-border bg-secondary hover:bg-secondary/80 text-foreground text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition"
           >
             <History className="w-4 h-4" /> Movements Logs
+          </button>
+
+          <button
+            onClick={loadInventory}
+            className="border border-border bg-secondary hover:bg-secondary/80 text-foreground text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition"
+          >
+            <RefreshCw className="w-4 h-4" /> Refresh
           </button>
         </div>
       </div>

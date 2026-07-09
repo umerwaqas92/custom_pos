@@ -25,6 +25,7 @@ import {
   HardDrive,
   ChevronRight,
   AlertTriangle,
+  RefreshCw,
 } from "lucide-react";
 
 type TabId = "shops" | "tax" | "backup" | "danger";
@@ -623,6 +624,12 @@ export default function Settings() {
           </h1>
           <p className="text-xs text-muted-foreground">Manage your shop, tax rules, backups, and system configuration.</p>
         </div>
+        <button
+          onClick={() => { loadBranches(); loadBackups(); }}
+          className="border border-border bg-secondary hover:bg-secondary/80 text-foreground text-xs font-bold px-3 py-2.5 rounded-xl flex items-center gap-1.5 transition"
+        >
+          <RefreshCw className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Tab Bar */}

@@ -16,7 +16,8 @@ import {
   X,
   DollarSign,
   TrendingUp,
-  Receipt
+  Receipt,
+  RefreshCw
 } from "lucide-react";
 
 export default function Installments() {
@@ -264,6 +265,13 @@ export default function Installments() {
             Underwrite active credit agreements, process CNIC identity records, and collect installment payments.
           </p>
         </div>
+        <button
+          onClick={fetchSales}
+          disabled={loading}
+          className="bg-secondary border border-border hover:bg-secondary/80 text-foreground text-xs font-bold px-3 py-2.5 rounded-xl flex items-center gap-1.5 transition disabled:opacity-50"
+        >
+          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Refresh
+        </button>
       </div>
 
       {/* Pending Contracts Section (Only visible if there are pending drafts) */}

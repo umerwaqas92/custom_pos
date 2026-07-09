@@ -10,7 +10,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  RefreshCw
 } from "lucide-react";
 
 const PAGE_SIZE = 15;
@@ -261,21 +262,29 @@ export default function CategoriesBrands() {
           </button>
         </div>
 
-        {activeTab === "CATEGORIES" ? (
+        <div className="flex gap-2">
+          {activeTab === "CATEGORIES" ? (
+            <button
+              onClick={() => setCatOpen(true)}
+              className="bg-primary hover:bg-primary/95 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition"
+            >
+              <Plus className="w-4 h-4" /> Add Category
+            </button>
+          ) : (
+            <button
+              onClick={() => setBrandOpen(true)}
+              className="bg-primary hover:bg-primary/95 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition"
+            >
+              <Plus className="w-4 h-4" /> Add Brand
+            </button>
+          )}
           <button
-            onClick={() => setCatOpen(true)}
-            className="bg-primary hover:bg-primary/95 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition"
+            onClick={loadData}
+            className="border border-border bg-secondary hover:bg-secondary/80 text-foreground text-xs font-bold px-3 py-2.5 rounded-xl flex items-center gap-1.5 transition"
           >
-            <Plus className="w-4 h-4" /> Add Category
+            <RefreshCw className="w-4 h-4" />
           </button>
-        ) : (
-          <button
-            onClick={() => setBrandOpen(true)}
-            className="bg-primary hover:bg-primary/95 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition"
-          >
-            <Plus className="w-4 h-4" /> Add Brand
-          </button>
-        )}
+        </div>
       </div>
 
       {/* Grid Content */}

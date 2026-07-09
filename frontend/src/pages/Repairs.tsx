@@ -8,7 +8,8 @@ import {
   Clock,
   CheckCircle,
   AlertTriangle,
-  FolderOpen
+  FolderOpen,
+  RefreshCw
 } from "lucide-react";
 
 const COLUMNS = [
@@ -152,12 +153,20 @@ export default function Repairs() {
           <p className="text-xs text-muted-foreground">Track repair status columns and technician jobs assignment.</p>
         </div>
 
-        <button
-          onClick={() => setCreateOpen(true)}
-          className="bg-primary hover:bg-primary/95 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition"
-        >
-          <Plus className="w-4 h-4" /> Create Ticket
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="bg-primary hover:bg-primary/95 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition"
+          >
+            <Plus className="w-4 h-4" /> Create Ticket
+          </button>
+          <button
+            onClick={loadData}
+            className="border border-border bg-secondary hover:bg-secondary/80 text-foreground text-xs font-bold px-3 py-2.5 rounded-xl flex items-center gap-1.5 transition"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* Kanban Board Container */}

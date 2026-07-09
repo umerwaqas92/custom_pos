@@ -18,7 +18,8 @@ import {
   X,
   ChevronDown,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  RefreshCw
 } from "lucide-react";
 
 type Tab = "EXPENSES" | "PURCHASES" | "BANKS" | "CASHBOOK" | "PNL" | "DAILY_CLOSING";
@@ -137,10 +138,10 @@ export default function Accounting() {
       const params: any = {};
       const targetDate = date !== undefined ? date : closingForm.closingDate;
       const targetBranch = branchId !== undefined ? branchId : closingForm.branchId;
-      
+
       if (targetDate) params.date = targetDate;
       if (targetBranch) params.branchId = targetBranch;
-      
+
       const res = await axios.get("/api/accounting/daily-closings/preview", { params });
       setClosingPreview(res.data);
       setClosingForm(f => ({
@@ -152,6 +153,14 @@ export default function Accounting() {
     } catch (err) {
       // silently fail on preview
     }
+  };
+
+  const handleRefresh = () => {
+    loadData();
+    if (activeTab === "BANKS" || activeTab === "CASHBOOK") loadBankAccounts();
+    if (activeTab === "CASHBOOK") loadTransactions();
+    if (activeTab === "PNL") loadPnL();
+    if (activeTab === "DAILY_CLOSING") loadDailyClosings();
   };
 
   useEffect(() => {
@@ -338,16 +347,38 @@ export default function Accounting() {
             <button onClick={() => setTxModalOpen(true)} className="bg-primary hover:bg-primary/95 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition">
               <Plus className="w-4 h-4" /> Record Transaction
             </button>
+            <button
+              onClick={handleRefresh}
+              className="border border-border bg-secondary hover:bg-secondary/80 text-foreground text-xs font-bold px-3 py-2.5 rounded-xl flex items-center gap-1.5 transition"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
           </div>
         )}
         {activeTab === "DAILY_CLOSING" && (
-          <button onClick={() => {
-            const today = new Date().toISOString().split("T")[0];
-            setClosingForm(f => ({ ...f, closingDate: today, branchId: "" }));
-            setClosingModalOpen(true);
-            loadClosingPreview(today, "");
-          }} className="bg-primary hover:bg-primary/95 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition">
-            <Plus className="w-4 h-4" /> Close Today
+          <div className="flex gap-2">
+            <button onClick={() => {
+              const today = new Date().toISOString().split("T")[0];
+              setClosingForm(f => ({ ...f, closingDate: today, branchId: "" }));
+              setClosingModalOpen(true);
+              loadClosingPreview(today, "");
+            }} className="bg-primary hover:bg-primary/95 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition">
+              <Plus className="w-4 h-4" /> Close Today
+            </button>
+            <button
+              onClick={handleRefresh}
+              className="border border-border bg-secondary hover:bg-secondary/80 text-foreground text-xs font-bold px-3 py-2.5 rounded-xl flex items-center gap-1.5 transition"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+        {activeTab !== "DAILY_CLOSING" && activeTab !== "CASHBOOK" && (
+          <button
+            onClick={handleRefresh}
+            className="border border-border bg-secondary hover:bg-secondary/80 text-foreground text-xs font-bold px-3 py-2.5 rounded-xl flex items-center gap-1.5 transition"
+          >
+            <RefreshCw className="w-4 h-4" />
           </button>
         )}
       </div>

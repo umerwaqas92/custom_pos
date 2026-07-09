@@ -18,7 +18,8 @@ import {
   BookOpen,
   Landmark,
   Wallet,
-  FileText
+  FileText,
+  RefreshCw
 } from "lucide-react";
 
 export default function POS() {
@@ -63,6 +64,7 @@ export default function POS() {
   const [newCust, setNewCust] = useState({ name: "", phone: "", email: "", address: "", creditLimit: "1000000" });
 
   const barcodeInputRef = useRef<HTMLInputElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const handleCreateCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,44 +93,89 @@ export default function POS() {
   };
 
   // Fetch initial data
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [prodRes, catRes, custRes] = await Promise.all([
+        axios.get("/api/products", {
+          params: {
+            lite: 1,
+            branchId: selectedBranchId || undefined
+          }
+        }),
+        axios.get("/api/products/categories"),
+        axios.get("/api/accounting/customers")
+      ]);
+      setProducts(prodRes.data);
+      setCategories(catRes.data);
+      setCustomers(custRes.data);
+    } catch (err) {
+      addNotification("Failed to load POS catalog.", "warning");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        const [prodRes, catRes, custRes] = await Promise.all([
-          axios.get("/api/products", {
-            params: {
-              lite: 1,
-              branchId: selectedBranchId || undefined
-            }
-          }),
-          axios.get("/api/products/categories"),
-          axios.get("/api/accounting/customers")
-        ]);
-        setProducts(prodRes.data);
-        setCategories(catRes.data);
-        setCustomers(custRes.data);
-      } catch (err) {
-        addNotification("Failed to load POS catalog.", "warning");
-      } finally {
-        setLoading(false);
-      }
-    };
     loadData();
   }, [selectedBranchId, addNotification]);
 
   // Handle barcode scanner input focusing
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      // Focus barcode input if Ctrl+B or F2 is pressed
-      if (e.key === "F2") {
+      const isCommandKey = e.metaKey || e.ctrlKey;
+
+      if (e.key === "Escape") {
+        if (receiptResult) {
+          setReceiptResult(null);
+          return;
+        }
+        if (custModalOpen) {
+          setCustModalOpen(false);
+          return;
+        }
+      }
+
+      // Focus barcode input if Cmd/Ctrl+B or F2 is pressed
+      if (e.key === "F2" || (isCommandKey && e.key.toLowerCase() === "b")) {
         e.preventDefault();
         barcodeInputRef.current?.focus();
+        barcodeInputRef.current?.select();
+        return;
+      }
+
+      // Focus search input if Cmd/Ctrl+K is pressed
+      if (isCommandKey && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+        return;
+      }
+
+      // Refresh catalog if Cmd/Ctrl+Shift+R is pressed
+      if (isCommandKey && e.shiftKey && e.key.toLowerCase() === "r") {
+        e.preventDefault();
+        loadData();
+        return;
+      }
+
+      // Clear cart if Cmd/Ctrl+Shift+C is pressed
+      if (isCommandKey && e.shiftKey && e.key.toLowerCase() === "c" && cart.length > 0) {
+        e.preventDefault();
+        clearCart();
+        addNotification("Cart cleared.", "info");
+        return;
+      }
+
+      // Complete checkout if Cmd/Ctrl+Enter is pressed
+      if (isCommandKey && e.key === "Enter" && cart.length > 0 && !receiptResult && !custModalOpen) {
+        e.preventDefault();
+        handleInstantCheckout();
       }
     };
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
-  }, []);
+  }, [addNotification, cart.length, clearCart, custModalOpen, receiptResult, selectedBranchId, paymentMethod, amountPaid, cartDiscount, products, selectedCustId]);
 
   // Filtered Products List
   const filteredProducts = products.filter((p) => {
@@ -378,19 +425,38 @@ export default function POS() {
             <input
               ref={barcodeInputRef}
               type="text"
-              placeholder="Scan Barcode or Type SKU (F2 to focus)..."
+              placeholder="Scan Barcode or Type SKU (F2 or Ctrl/Cmd+B)..."
               className="w-full bg-secondary text-foreground border border-border pl-10 pr-4 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary placeholder-muted-foreground"
             />
             <Search className="w-5 h-5 text-muted-foreground absolute left-3 top-3" />
           </form>
 
           <input
+            ref={searchInputRef}
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search items by name..."
+            placeholder="Search items by name (Ctrl/Cmd+K)..."
             className="w-48 bg-secondary border border-border px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary"
           />
+
+          <button
+            onClick={loadData}
+            disabled={loading}
+            className="bg-secondary border border-border hover:bg-secondary/80 text-foreground text-xs font-bold px-3 py-2.5 rounded-xl flex items-center gap-1.5 transition disabled:opacity-50"
+            title="Refresh Catalog"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+          </button>
+        </div>
+
+        <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
+          <span>F2 / Ctrl/Cmd+B: Barcode</span>
+          <span>Ctrl/Cmd+K: Search</span>
+          <span>Ctrl/Cmd+Enter: Checkout</span>
+          <span>Ctrl/Cmd+Shift+C: Clear Cart</span>
+          <span>Ctrl/Cmd+Shift+R: Refresh</span>
+          <span>Esc: Close Modal</span>
         </div>
 
         {/* Categories Bar */}
