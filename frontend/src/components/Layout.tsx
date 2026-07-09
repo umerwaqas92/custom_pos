@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useStore, Branch } from "../store/useStore";
+import { ToastContainer } from "./Toast";
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -73,6 +74,7 @@ export default function Layout() {
 
   return (
     <div className="flex min-h-screen bg-background text-foreground transition-all duration-300">
+      <ToastContainer />
       
       {/* Sidebar */}
       <aside
