@@ -3,6 +3,7 @@ import * as bcrypt from "bcryptjs";
 import * as jwt from "jsonwebtoken";
 import prisma from "../utils/db";
 import { protect, restrictTo, AuthenticatedRequest } from "../middleware/auth";
+import { invalidateCache } from "../utils/cache";
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || "super-secret-key-change-in-prod";
@@ -228,6 +229,56 @@ router.delete("/branches/:id", protect, restrictTo("OWNER"), async (req, res) =>
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: "Failed to delete branch." });
+  }
+});
+
+// Clear all transactions data but keep products, categories, brands, customers, suppliers, branches, users (OWNER only)
+router.post("/reset-transactions", protect, restrictTo("OWNER"), async (req, res) => {
+  try {
+    await prisma.$transaction([
+      // 1. Delete dependent transactional records
+      prisma.activityLog.deleteMany({}),
+      prisma.emiInstallment.deleteMany({}),
+      prisma.saleEmi.deleteMany({}),
+      prisma.saleItem.deleteMany({}),
+      prisma.sale.deleteMany({}),
+      
+      prisma.warrantyClaim.deleteMany({}),
+      prisma.repairJob.deleteMany({}),
+      
+      prisma.purchaseItem.deleteMany({}),
+      prisma.purchaseOrder.deleteMany({}),
+      
+      prisma.supplierPayment.deleteMany({}),
+      prisma.customerCreditPayment.deleteMany({}),
+      prisma.expense.deleteMany({}),
+      prisma.stockMovement.deleteMany({}),
+      
+      prisma.dailyClosing.deleteMany({}),
+      prisma.transaction.deleteMany({}),
+      
+      // 2. Reset customer credit balances and reward points to 0
+      prisma.customer.updateMany({
+        data: {
+          creditBalance: 0.0,
+          rewardPoints: 0
+        }
+      }),
+
+      // 3. Reset BankAccount balances to 0
+      prisma.bankAccount.updateMany({
+        data: {
+          balance: 0.0
+        }
+      })
+    ]);
+
+    invalidateCache("reports:");
+
+    return res.json({ message: "All transactions and sales history have been cleared successfully. Products, categories, and contacts have been preserved." });
+  } catch (error) {
+    console.error("Failed to reset transactions:", error);
+    return res.status(500).json({ error: "Failed to clear transaction records." });
   }
 });
 

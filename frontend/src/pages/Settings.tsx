@@ -11,7 +11,8 @@ import {
   Trash2,
   X,
   CheckCircle,
-  Info
+  Info,
+  ShieldAlert
 } from "lucide-react";
 
 export default function Settings() {
@@ -31,6 +32,39 @@ export default function Settings() {
       setBranches(res.data);
     } catch (err) {
       addNotification("Failed to load branches.", "warning");
+    }
+  };
+
+  const [resetting, setResetting] = useState(false);
+
+  const handleResetTransactions = async () => {
+    const doubleCheck = window.confirm(
+      "WARNING: This will permanently delete all sales, transactions, invoices, installments, expenses, and log history. This action CANNOT be undone.\n\nAre you sure you want to proceed?"
+    );
+    if (!doubleCheck) return;
+
+    const securityConfirm = window.prompt(
+      "To confirm this action, please type the word 'RESET' below:"
+    );
+    if (securityConfirm !== "RESET") {
+      addNotification("Reset cancelled. Confirmation keyword did not match.", "warning");
+      return;
+    }
+
+    setResetting(true);
+    try {
+      const res = await axios.post("/api/auth/reset-transactions");
+      addNotification(res.data.message || "Transactions cleared successfully.", "success");
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (err: any) {
+      addNotification(
+        err.response?.data?.error || "Failed to clear transaction records.",
+        "warning"
+      );
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -163,6 +197,32 @@ export default function Settings() {
             </div>
           ))
         )}
+      </div>
+
+      {/* Danger Zone / Factory Reset */}
+      <div className="bg-card border border-red-500/20 p-6 rounded-2xl space-y-4 shadow-sm relative overflow-hidden">
+        {/* Glow indicator */}
+        <div className="absolute top-0 inset-x-0 h-0.5 bg-red-500/30" />
+        
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="space-y-1">
+            <h3 className="font-extrabold text-sm text-foreground flex items-center gap-2">
+              <ShieldAlert className="w-5 h-5 text-red-400" /> Danger Zone: Clear Sales & Transaction Data
+            </h3>
+            <p className="text-xs text-muted-foreground max-w-2xl leading-relaxed">
+              This action will permanently delete all sales histories, transactions, EMIs/installments, expenses, warranty claims, and purchase orders. 
+              <strong> Master records (like products, categories, brands, customers, suppliers, staff users, and store locations) will be preserved.</strong>
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleResetTransactions}
+            disabled={resetting}
+            className="w-full sm:w-auto bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 hover:border-red-500/50 text-red-400 text-xs font-bold px-5 py-3 rounded-xl transition flex-shrink-0 cursor-pointer disabled:opacity-50"
+          >
+            {resetting ? "Clearing Data..." : "Clear Transactions Data"}
+          </button>
+        </div>
       </div>
 
       {/* Add Shop Modal */}
