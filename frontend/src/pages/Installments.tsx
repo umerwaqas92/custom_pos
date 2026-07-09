@@ -15,12 +15,12 @@ import {
   AlertCircle,
   X,
   DollarSign,
-  TrendingUp
+  TrendingUp,
+  Receipt
 } from "lucide-react";
 
 export default function Installments() {
   const { addNotification } = useStore();
-  const [activeTab, setActiveTab] = useState<"active" | "pending">("active");
   const [loading, setLoading] = useState(false);
   const [sales, setSales] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -174,6 +174,53 @@ export default function Installments() {
   const parsedDown = parseFloat(downPayment || "0");
   const remainingBal = Math.max(0, totalPrincipal - (isNaN(parsedDown) ? 0 : parsedDown));
   const monthlyPayment = remainingBal / emiMonths;
+
+  const downloadPdf = () => {
+    if (!activeContract) return;
+    const element = document.getElementById("printable-receipt");
+    if (!element) return;
+
+    addNotification("Generating PDF Statement, please wait...", "info");
+
+    const opt = {
+      margin: 0.4,
+      filename: `EMI_Plan_Statement_${activeContract.id.substring(0, 8)}.pdf`,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+      jsPDF: { unit: "in", format: "letter", orientation: "portrait" }
+    };
+
+    const execute = () => {
+      // @ts-ignore
+      const html2pdf = window.html2pdf;
+      if (html2pdf) {
+        element.style.display = "block";
+        html2pdf()
+          .set(opt)
+          .from(element)
+          .save()
+          .then(() => {
+            element.style.display = "none";
+            addNotification("PDF downloaded successfully!", "success");
+          })
+          .catch((err: any) => {
+            console.error(err);
+            element.style.display = "none";
+            addNotification("Failed to generate PDF.", "error");
+          });
+      }
+    };
+
+    // @ts-ignore
+    if (!window.html2pdf) {
+      const script = document.createElement("script");
+      script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+      script.onload = execute;
+      document.body.appendChild(script);
+    } else {
+      execute();
+    }
+  };
 
   return (
     <div className="space-y-6 flex-1 flex flex-col h-full min-h-0 overflow-hidden">
@@ -586,8 +633,18 @@ export default function Installments() {
                 <span className="px-2 py-0.5 rounded text-[9px] font-black tracking-widest uppercase bg-primary/20 text-primary">
                   EMI Contract Info
                 </span>
-                <h3 className="text-base font-black text-foreground mt-1">Invoice #{activeContract.id.substring(0, 8)}</h3>
-                <p className="text-[10px] text-muted-foreground">Dated: {new Date(activeContract.saleDate).toLocaleDateString()}</p>
+                <div className="flex justify-between items-start mt-1">
+                  <div>
+                    <h3 className="text-base font-black text-foreground">Invoice #{activeContract.id.substring(0, 8)}</h3>
+                    <p className="text-[10px] text-muted-foreground">Dated: {new Date(activeContract.saleDate).toLocaleDateString()}</p>
+                  </div>
+                  <button
+                    onClick={downloadPdf}
+                    className="bg-primary hover:bg-primary/95 text-white font-bold px-2.5 py-1.5 rounded-lg text-[10px] flex items-center gap-1 shadow-md shadow-primary/10 cursor-pointer"
+                  >
+                    <Receipt className="w-3.5 h-3.5" /> Download PDF
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-2 text-xs border border-border p-3 rounded-xl bg-secondary/20">
@@ -599,6 +656,30 @@ export default function Installments() {
                   <p className="flex items-center gap-1.5 text-[10px]">
                     <Phone className="w-3.5 h-3.5 text-muted-foreground" /> {activeContract.customer?.phone || "N/A"}
                   </p>
+                </div>
+              </div>
+
+              <div className="space-y-2 text-xs border border-border p-3 rounded-xl bg-secondary/20">
+                <p className="font-bold text-foreground">Purchased Items</p>
+                <div className="space-y-2 max-h-32 overflow-y-auto pr-1">
+                  {activeContract.items?.map((item: any) => (
+                    <div key={item.id} className="border-b border-border/40 pb-1.5 last:border-b-0 text-[10px]">
+                      <div className="flex justify-between font-semibold text-foreground">
+                        <span className="truncate max-w-[150px]">{item.product?.name}</span>
+                        <span>Rs. {item.totalPrice.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-muted-foreground text-[9px]">
+                        <span>Qty: {item.quantity} @ Rs. {item.unitPrice}</span>
+                      </div>
+                      {(item.serialNumber || item.imei) && (
+                        <p className="text-[9px] text-primary/80 font-bold mt-0.5 leading-none">
+                          {item.serialNumber && `S/N: ${item.serialNumber}`}
+                          {item.serialNumber && item.imei && " | "}
+                          {item.imei && `IMEI: ${item.imei}`}
+                        </p>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -713,6 +794,133 @@ export default function Installments() {
               alt="Document Scan Preview"
               className="max-w-full max-h-[80vh] rounded-2xl border border-white/10 shadow-2xl object-contain"
             />
+          </div>
+        </div>
+      )}
+
+      {/* Hidden print slip for EMI Installments plan status */}
+      {activeContract && (
+        <div
+          id="printable-receipt"
+          style={{ display: "none", backgroundColor: "#ffffff", color: "#0f172a", padding: "24px" }}
+          className="text-xs space-y-6 font-medium"
+        >
+          <div className="text-center border-b border-border pb-4 space-y-1">
+            <h4 className="font-extrabold text-foreground tracking-widest uppercase text-sm">
+              INSTALLMENT PLAN AGREEMENT STATEMENT
+            </h4>
+            <p className="text-[10px] text-muted-foreground">Invoice Ref: #{activeContract.id}</p>
+            <p className="text-[10px] text-muted-foreground">Date of Purchase: {new Date(activeContract.saleDate).toLocaleString()}</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 border-b border-border pb-4">
+            <div className="space-y-1">
+              <p className="font-bold text-[10px] text-muted-foreground uppercase">Customer Profile</p>
+              <p className="font-bold text-foreground">{activeContract.customer?.name || "Walk-in"}</p>
+              <p className="text-muted-foreground">{activeContract.customer?.phone || "N/A"}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="font-bold text-[10px] text-muted-foreground uppercase">Guarantor / Reference</p>
+              <p className="font-bold text-foreground">{activeContract.emiDetails.guarantorName}</p>
+              <p className="text-muted-foreground">{activeContract.emiDetails.guarantorPhone}</p>
+              <p className="text-[10px] text-muted-foreground">{activeContract.emiDetails.guarantorAddress}</p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <p className="font-bold text-[10px] text-muted-foreground uppercase">Purchased Items Details</p>
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-border text-muted-foreground font-semibold">
+                  <th className="pb-2">Item Name</th>
+                  <th className="pb-2 text-center">Qty</th>
+                  <th className="pb-2 text-right">Unit Price</th>
+                  <th className="pb-2 text-right">Total Price</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/40">
+                {activeContract.items?.map((item: any) => (
+                  <tr key={item.id} className="py-2">
+                    <td className="py-2">
+                      <p className="font-semibold text-foreground">{item.product?.name}</p>
+                      {(item.serialNumber || item.imei) && (
+                        <p className="text-[9px] text-muted-foreground">
+                          {item.serialNumber && `S/N: ${item.serialNumber}`}
+                          {item.serialNumber && item.imei && " | "}
+                          {item.imei && `IMEI: ${item.imei}`}
+                        </p>
+                      )}
+                    </td>
+                    <td className="py-2 text-center">{item.quantity}</td>
+                    <td className="py-2 text-right">Rs. {item.unitPrice.toFixed(2)}</td>
+                    <td className="py-2 text-right font-bold">Rs. {item.totalPrice.toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="border-t border-border pt-4 space-y-2">
+            <p className="font-bold text-[10px] text-muted-foreground uppercase">Financing Summary</p>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Original Purchase Total:</span>
+                <span>Rs. {activeContract.payableAmount.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Down Payment Collected:</span>
+                <span>Rs. {activeContract.emiDetails.downPayment.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Markup Rate Added:</span>
+                <span>+{activeContract.emiDetails.interestRate}%</span>
+              </div>
+              <div className="flex justify-between font-bold text-foreground">
+                <span>Remaining Financed Amount:</span>
+                <span>Rs. {(activeContract.emiDetails.totalPrincipal - activeContract.emiDetails.downPayment).toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-border pt-4 space-y-3">
+            <p className="font-bold text-[10px] text-muted-foreground uppercase">Installment Repayments Breakdown</p>
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-border text-muted-foreground font-semibold">
+                  <th className="pb-2">Month</th>
+                  <th className="pb-2">Due Date</th>
+                  <th className="pb-2 text-right">Amount</th>
+                  <th className="pb-2 text-center">Status</th>
+                  <th className="pb-2 text-right">Payment Date</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/40">
+                {activeContract.emiDetails.installments.map((inst: any) => (
+                  <tr key={inst.id} className="py-2">
+                    <td className="py-2 font-bold">Installment #{inst.installmentNumber}</td>
+                    <td className="py-2">{new Date(inst.dueDate).toLocaleDateString()}</td>
+                    <td className="py-2 text-right font-semibold">Rs. {inst.amount.toFixed(2)}</td>
+                    <td className="py-2 text-center">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${inst.status === "PAID" ? "text-green-500 bg-green-500/10" : "text-amber-500 bg-amber-500/10"}`}>
+                        {inst.status}
+                      </span>
+                    </td>
+                    <td className="py-2 text-right text-muted-foreground">
+                      {inst.paidDate ? new Date(inst.paidDate).toLocaleDateString() : "-"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex justify-between pt-16 text-center text-[10px] text-muted-foreground">
+            <div className="w-40 border-t border-dashed border-border pt-2">
+              <p>Customer Signature</p>
+            </div>
+            <div className="w-40 border-t border-dashed border-border pt-2">
+              <p>Manager Authorized Signature</p>
+            </div>
           </div>
         </div>
       )}
