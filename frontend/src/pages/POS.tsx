@@ -114,15 +114,16 @@ export default function POS() {
 
   const payableAmount = Math.max(0, subtotal - cartDiscount);
 
-  // Auto fill payment amount on checkout open
+  // Automatically adjust amountPaid when payableAmount or paymentMethod changes
   useEffect(() => {
-    if (checkoutOpen) {
+    if (paymentMethod === "CREDIT") {
+      setAmountPaid("0");
+    } else {
       setAmountPaid(payableAmount.toFixed(2));
     }
-  }, [checkoutOpen, payableAmount]);
+  }, [payableAmount, paymentMethod]);
 
-  const handleCheckoutSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleInstantCheckout = async () => {
     const paid = Number(amountPaid);
 
     if (isNaN(paid) || paid < 0) {
@@ -168,7 +169,6 @@ export default function POS() {
       setReceiptResult(response.data);
       addNotification("Checkout completed successfully!", "success");
       clearCart();
-      setCheckoutOpen(false);
       setCartDiscount(0);
       setSelectedCustId("");
       
@@ -385,7 +385,7 @@ export default function POS() {
         </div>
 
         {/* Customer & Totals Summary Panel */}
-        <div className="border-t border-border pt-4 space-y-4">
+        <div className="border-t border-border pt-4 space-y-3">
           
           {/* Customer Selection */}
           <div className="flex items-center gap-2 bg-secondary/50 border border-border p-2 rounded-xl">
@@ -405,7 +405,7 @@ export default function POS() {
           </div>
 
           {/* Cart Pricing Aggregates */}
-          <div className="space-y-1.5 text-xs">
+          <div className="space-y-1 text-xs">
             <div className="flex justify-between text-muted-foreground">
               <span>Subtotal:</span>
               <span>Rs. {subtotal.toFixed(2)}</span>
@@ -434,130 +434,97 @@ export default function POS() {
             </div>
           </div>
 
+          {/* Payment Method Selector Grid */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-muted-foreground uppercase">Payment Method</label>
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("CASH")}
+                className={`flex items-center gap-1.5 p-2 rounded-lg border text-left transition-all ${
+                  paymentMethod === "CASH"
+                    ? "bg-primary/10 border-primary text-primary font-bold shadow"
+                    : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+                }`}
+              >
+                <Banknote className="w-3.5 h-3.5 flex-shrink-0" />
+                <span className="text-[10px] font-extrabold">Cash</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("CARD")}
+                className={`flex items-center gap-1.5 p-2 rounded-lg border text-left transition-all ${
+                  paymentMethod === "CARD"
+                    ? "bg-primary/10 border-primary text-primary font-bold shadow"
+                    : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+                }`}
+              >
+                <CreditCard className="w-3.5 h-3.5 flex-shrink-0" />
+                <span className="text-[10px] font-extrabold">Card</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("MOBILE")}
+                className={`flex items-center gap-1.5 p-2 rounded-lg border text-left transition-all ${
+                  paymentMethod === "MOBILE"
+                    ? "bg-primary/10 border-primary text-primary font-bold shadow"
+                    : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+                }`}
+              >
+                <Smartphone className="w-3.5 h-3.5 flex-shrink-0" />
+                <span className="text-[10px] font-extrabold">Mobile</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("CREDIT")}
+                className={`flex items-center gap-1.5 p-2 rounded-lg border text-left transition-all ${
+                  paymentMethod === "CREDIT"
+                    ? "bg-primary/10 border-primary text-primary font-bold shadow"
+                    : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+                }`}
+              >
+                <BookOpen className="w-3.5 h-3.5 flex-shrink-0" />
+                <span className="text-[10px] font-extrabold">Credit</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Amount Paid input */}
+          {paymentMethod !== "CREDIT" && (
+            <div className="space-y-1">
+              <div className="flex justify-between items-center text-[10px] font-bold text-muted-foreground uppercase">
+                <span>Amount Paid (Rs.)</span>
+                {Number(amountPaid) > payableAmount && (
+                  <span className="text-emerald-400 font-extrabold normal-case">
+                    Change: Rs. {(Number(amountPaid) - payableAmount).toFixed(2)}
+                  </span>
+                )}
+              </div>
+              <input
+                type="number"
+                value={amountPaid}
+                onChange={(e) => setAmountPaid(e.target.value)}
+                step="0.01"
+                className="w-full bg-secondary border border-border px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+          )}
+
           <button
-            onClick={() => setCheckoutOpen(true)}
+            onClick={handleInstantCheckout}
             disabled={cart.length === 0}
-            className="w-full bg-primary hover:bg-primary/95 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition disabled:opacity-50"
+            className="w-full bg-primary hover:bg-primary/95 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition disabled:opacity-50 text-xs shadow-md shadow-primary/10"
           >
-            <CreditCard className="w-5 h-5" />
-            Pay & Checkout
+            <CheckCircle className="w-4 h-4" />
+            Complete Sale & Invoice
           </button>
         </div>
       </div>
 
-      {/* Checkout Dialog Modal */}
-      {checkoutOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 px-4">
-          <div className="bg-card border border-border w-full max-w-md p-6 rounded-2xl shadow-2xl relative overflow-hidden">
-            <button onClick={() => setCheckoutOpen(false)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
-              <X className="w-5 h-5" />
-            </button>
 
-            <h3 className="text-lg font-bold text-foreground mb-4">Select Payment & Finalize</h3>
-
-            <form onSubmit={handleCheckoutSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-muted-foreground uppercase">Payment Method</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => { setPaymentMethod("CASH"); setAmountPaid(payableAmount.toFixed(2)); }}
-                    className={`flex items-center gap-2.5 p-3 rounded-xl border text-left transition-all ${
-                      paymentMethod === "CASH"
-                        ? "bg-primary/10 border-primary text-primary font-bold shadow"
-                        : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                    }`}
-                  >
-                    <Banknote className="w-4 h-4 flex-shrink-0" />
-                    <div className="text-[11px] leading-tight">
-                      <p className="font-extrabold">Cash Drawer</p>
-                      <p className="opacity-70 text-[9px]">Physical notes</p>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => { setPaymentMethod("CARD"); setAmountPaid(payableAmount.toFixed(2)); }}
-                    className={`flex items-center gap-2.5 p-3 rounded-xl border text-left transition-all ${
-                      paymentMethod === "CARD"
-                        ? "bg-primary/10 border-primary text-primary font-bold shadow"
-                        : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                    }`}
-                  >
-                    <CreditCard className="w-4 h-4 flex-shrink-0" />
-                    <div className="text-[11px] leading-tight">
-                      <p className="font-extrabold">Card Swipe</p>
-                      <p className="opacity-70 text-[9px]">POS terminal</p>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => { setPaymentMethod("MOBILE"); setAmountPaid(payableAmount.toFixed(2)); }}
-                    className={`flex items-center gap-2.5 p-3 rounded-xl border text-left transition-all ${
-                      paymentMethod === "MOBILE"
-                        ? "bg-primary/10 border-primary text-primary font-bold shadow"
-                        : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                    }`}
-                  >
-                    <Smartphone className="w-4 h-4 flex-shrink-0" />
-                    <div className="text-[11px] leading-tight">
-                      <p className="font-extrabold">Mobile Pay</p>
-                      <p className="opacity-70 text-[9px]">EasyPaisa/Bank</p>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => { setPaymentMethod("CREDIT"); setAmountPaid("0"); }}
-                    className={`flex items-center gap-2.5 p-3 rounded-xl border text-left transition-all ${
-                      paymentMethod === "CREDIT"
-                        ? "bg-primary/10 border-primary text-primary font-bold shadow"
-                        : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                    }`}
-                  >
-                    <BookOpen className="w-4 h-4 flex-shrink-0" />
-                    <div className="text-[11px] leading-tight">
-                      <p className="font-extrabold">Store Credit</p>
-                      <p className="opacity-70 text-[9px]">Add to ledger</p>
-                    </div>
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase">Amount Paid (Rs.)</label>
-                <input
-                  type="number"
-                  value={amountPaid}
-                  onChange={(e) => setAmountPaid(e.target.value)}
-                  step="0.01"
-                  className="w-full bg-secondary border border-border px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                />
-              </div>
-
-              <div className="bg-secondary/50 p-4 rounded-xl border border-border text-xs space-y-1 text-muted-foreground">
-                <div className="flex justify-between font-bold text-foreground">
-                  <span>Grand Total Payable:</span>
-                  <span>Rs. {payableAmount.toFixed(2)}</span>
-                </div>
-                {paymentMethod === "CREDIT" && (
-                  <p className="text-amber-400 mt-2">
-                    * The full amount will be added to the customer's outstanding credit ledger balance.
-                  </p>
-                )}
-              </div>
-
-              <button
-                type="submit"
-                className="w-full bg-primary hover:bg-primary/95 text-white font-bold py-3 rounded-xl transition"
-              >
-                Confirm Payment
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* Invoice Receipt Modal */}
       {receiptResult && (
