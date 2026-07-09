@@ -139,7 +139,6 @@ export const useStore = create<StateStore>((set, get) => ({
           ),
         };
       }
-      // Use global GST rate as fallback if product has no tax rate
       const taxRate = state.gstEnabled ? state.gstRate : 0;
       const newItem: CartItem = {
         productId: product.id,

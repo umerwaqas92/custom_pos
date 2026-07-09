@@ -114,7 +114,7 @@ export default function POS() {
       }
     };
     loadData();
-  }, [addNotification]);
+  }, [selectedBranchId, addNotification]);
 
   // Handle barcode scanner input focusing
   useEffect(() => {
@@ -145,8 +145,7 @@ export default function POS() {
   const subtotal = cart.reduce((acc, item) => {
     const base = item.sellingPrice * item.quantity;
     const disc = base * (item.discount / 100);
-    const tax = (base - disc) * (item.tax / 100);
-    return acc + (base - disc + tax);
+    return acc + (base - disc);
   }, 0);
 
   const finalTax = cart.reduce((acc, item) => {
@@ -155,7 +154,7 @@ export default function POS() {
     return acc + (base - disc) * (item.tax / 100);
   }, 0);
 
-  const payableAmount = Math.max(0, subtotal - cartDiscount);
+  const payableAmount = Math.max(0, subtotal - cartDiscount + finalTax);
 
   // Automatically adjust amountPaid when payableAmount or paymentMethod changes
   useEffect(() => {
@@ -774,7 +773,7 @@ export default function POS() {
                   <span>-Rs. {receiptResult.discountAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
-                  <span>Sales Tax ({gstEnabled ? `${gstRate}%` : receiptResult.items[0]?.tax || 0}%):</span>
+                  <span>Sales Tax ({receiptResult.items[0]?.tax || 0}%):</span>
                   <span>+Rs. {receiptResult.taxAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between font-black text-foreground text-xs pt-1 border-t border-border/40">

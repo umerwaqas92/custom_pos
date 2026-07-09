@@ -432,7 +432,7 @@ export default function Settings() {
         <ul className="text-xs text-muted-foreground space-y-2">
           {[
             "Each product can have its own tax rate set in the Inventory page.",
-            "If a product has taxRate = 0 and global GST is enabled, this global rate is used instead.",
+            "This GST rate is the only tax rate used in POS sales and receipts.",
             "If a product has a specific tax rate (e.g. 10%), it always takes priority over the global rate.",
             "The final tax amount is shown on the POS cart and printed on every receipt.",
           ].map((t, i) => (

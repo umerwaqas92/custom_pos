@@ -77,6 +77,14 @@ router.post("/", protect, async (req: AuthenticatedRequest, res: Response) => {
     return res.status(400).json({ error: "Designated branch location does not exist in database." });
   }
 
+  const taxSettings = await prisma.systemSetting.findMany({
+    where: { key: { in: ["gstEnabled", "gstRate"] } },
+    select: { key: true, value: true }
+  });
+  const settingsMap = new Map(taxSettings.map((setting) => [setting.key, setting.value]));
+  const gstEnabled = settingsMap.get("gstEnabled") === "true";
+  const gstRate = gstEnabled ? parseFloat(settingsMap.get("gstRate") || "0") || 0 : 0;
+
   try {
     const saleResult = await prisma.$transaction(async (tx) => {
       let subtotal = 0;
@@ -120,8 +128,8 @@ router.post("/", protect, async (req: AuthenticatedRequest, res: Response) => {
         }
 
         const itemUnitPrice = prod.sellingPrice;
-        const itemDiscount = item.discount || 0; // percentage or fixed
-        const itemTax = item.tax || 0;
+        const itemDiscount = item.discount || 0;
+        const itemTax = gstRate;
         
         // Calculate item total
         const baseTotal = itemUnitPrice * item.quantity;
@@ -168,7 +176,8 @@ router.post("/", protect, async (req: AuthenticatedRequest, res: Response) => {
       );
 
       // Calculate final payable amount
-      const payableAmount = Math.max(0, subtotal - (discountAmount || 0) + (taxAmount || 0));
+      const computedTaxAmount = gstRate > 0 ? itemsToCreate.reduce((sum, item) => sum + item.totalPrice, 0) - subtotal : 0;
+      const payableAmount = Math.max(0, subtotal - (discountAmount || 0) + computedTaxAmount);
       
       // Determine payment status
       let paymentStatus = "PAID";
@@ -217,7 +226,7 @@ router.post("/", protect, async (req: AuthenticatedRequest, res: Response) => {
           branchId,
           totalAmount: subtotal,
           discountAmount: discountAmount || 0.0,
-          taxAmount: taxAmount || 0.0,
+          taxAmount: computedTaxAmount,
           payableAmount,
           paidAmount,
           paymentMethod,
