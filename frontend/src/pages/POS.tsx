@@ -301,18 +301,18 @@ export default function POS() {
                   key={p.id}
                   disabled={branchQty <= 0}
                   onClick={() => addToCart(p, branchQty)}
-                  className={`bg-secondary/40 border text-left p-4 rounded-xl flex flex-col justify-between hover:border-primary/50 transition cursor-pointer relative ${
+                  className={`bg-secondary/40 border text-left p-2.5 rounded-xl flex flex-col justify-between hover:border-primary/50 transition cursor-pointer relative ${
                     branchQty <= 0 ? "opacity-50 cursor-not-allowed" : ""
                   }`}
                 >
-                  <div className="space-y-1">
-                    <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">{p.brand?.name}</span>
-                    <h4 className="font-semibold text-xs text-foreground line-clamp-2">{p.name}</h4>
-                    <p className="text-[10px] text-muted-foreground">SKU: {p.sku}</p>
+                  <div className="space-y-0.5">
+                    <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider">{p.brand?.name}</span>
+                    <h4 className="font-semibold text-[11px] leading-tight text-foreground line-clamp-2">{p.name}</h4>
+                    <p className="text-[9px] text-muted-foreground">SKU: {p.sku}</p>
                   </div>
 
-                  <div className="flex items-center justify-between mt-4">
-                    <span className="font-bold text-sm text-foreground">Rs. {p.sellingPrice}</span>
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="font-bold text-xs text-foreground">Rs. {p.sellingPrice}</span>
                     <span
                       className={`text-[10px] px-2 py-0.5 rounded font-bold ${
                         branchQty <= 0
