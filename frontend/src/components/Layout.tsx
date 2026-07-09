@@ -95,7 +95,7 @@ export default function Layout() {
               </div>
               {sidebarOpen && (
                 <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
-                  Antigravity
+                  Quicko Electronics
                 </span>
               )}
             </div>

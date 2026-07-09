@@ -271,7 +271,7 @@ export default function SalesHistory() {
             <div id="printable-receipt" className="bg-secondary/30 p-4 border border-dashed border-border rounded-xl text-xs space-y-4">
               <div className="text-center border-b border-border pb-3">
                 <h4 className="font-extrabold text-foreground tracking-widest uppercase">
-                  {activeSale.branch?.name || "ANTIGRAVITY POS"}
+                  {activeSale.branch?.name || "QUICKO ELECTRONICS"}
                 </h4>
                 {activeSale.branch?.address && (
                   <p className="text-[9px] text-muted-foreground mt-0.5">{activeSale.branch.address}</p>
