@@ -64,21 +64,50 @@ export default function Installments() {
     (s) => s.paymentMethod === "EMI" && !s.emiDetails
   );
 
+  const getCurrentMonthStatus = (emi: any) => {
+    if (!emi) return "PAID";
+    if (emi.status === "COMPLETED") return "PAID";
+
+    const sorted = [...emi.installments].sort((a: any, b: any) => a.installmentNumber - b.installmentNumber);
+    const firstUnpaid = sorted.find((inst: any) => inst.status === "PENDING");
+    if (!firstUnpaid) return "PAID";
+
+    const dueDate = new Date(firstUnpaid.dueDate);
+    const now = new Date();
+    const diffTime = dueDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays <= 30) {
+      return "PENDING";
+    }
+    return "PAID";
+  };
+
   const activeEmiContracts = sales.filter((s) => s.emiDetails);
 
-  const filteredActiveContracts = activeEmiContracts.filter((s) => {
-    const custName = s.customer?.name || "Walk-in";
-    const guarantor = s.emiDetails?.guarantorName || "";
-    const matchesSearch =
-      custName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      guarantor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.id.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredActiveContracts = activeEmiContracts
+    .filter((s) => {
+      const custName = s.customer?.name || "Walk-in";
+      const guarantor = s.emiDetails?.guarantorName || "";
+      const matchesSearch =
+        custName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        guarantor.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.id.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesStatus =
-      statusFilter === "ALL" || s.emiDetails?.status === statusFilter;
+      const matchesStatus =
+        statusFilter === "ALL" || s.emiDetails?.status === statusFilter;
 
-    return matchesSearch && matchesStatus;
-  });
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      const statusA = getCurrentMonthStatus(a.emiDetails);
+      const statusB = getCurrentMonthStatus(b.emiDetails);
+
+      if (statusA === "PENDING" && statusB === "PAID") return -1;
+      if (statusA === "PAID" && statusB === "PENDING") return 1;
+
+      return new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime();
+    });
 
   const getMarkupRate = (months: number) => {
     if (months === 3) return 5; // 5%
@@ -338,6 +367,7 @@ export default function Installments() {
                   <th className="pb-3 text-center">Tenure</th>
                   <th className="pb-3 text-right">Monthly Payment</th>
                   <th className="pb-3 text-right">Remaining Principal</th>
+                  <th className="pb-3 text-center">Month Status</th>
                   <th className="pb-3 text-center">Status</th>
                   <th className="pb-3 text-right pr-2">Action</th>
                 </tr>
@@ -349,6 +379,8 @@ export default function Installments() {
                   const totalRemaining = emi.totalPrincipal - emi.downPayment - emi.installments
                     .filter((i: any) => i.status === "PAID")
                     .reduce((sum: number, i: any) => sum + i.amount, 0);
+
+                  const monthStatus = getCurrentMonthStatus(emi);
 
                   return (
                     <tr key={sale.id} className="hover:bg-secondary/20 transition">
@@ -367,6 +399,17 @@ export default function Installments() {
                       </td>
                       <td className="py-3 text-right font-extrabold text-foreground">
                         Rs. {totalRemaining.toFixed(2)}
+                      </td>
+                      <td className="py-3 text-center">
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            monthStatus === "PAID"
+                              ? "bg-green-500/10 text-green-400"
+                              : "bg-amber-500/10 text-amber-400 animate-pulse"
+                          }`}
+                        >
+                          {monthStatus}
+                        </span>
                       </td>
                       <td className="py-3 text-center">
                         <span
