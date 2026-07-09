@@ -31,6 +31,8 @@ const upload = multer({
   }
 });
 
+const roundMoney = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
+
 // Process checkout sale
 router.post("/", protect, async (req: AuthenticatedRequest, res: Response) => {
   const {
@@ -86,6 +88,9 @@ router.post("/", protect, async (req: AuthenticatedRequest, res: Response) => {
   const gstRate = gstEnabled ? parseFloat(settingsMap.get("gstRate") || "0") || 0 : 0;
 
   try {
+    const normalizedPaidAmount = roundMoney(Number(paidAmount) || 0);
+    const normalizedDiscountAmount = roundMoney(Number(discountAmount) || 0);
+
     const saleResult = await prisma.$transaction(async (tx) => {
       let subtotal = 0;
       let computedTaxAmount = 0;
@@ -135,9 +140,9 @@ router.post("/", protect, async (req: AuthenticatedRequest, res: Response) => {
         // Calculate item total
         const baseTotal = itemUnitPrice * item.quantity;
         const discValue = baseTotal * (itemDiscount / 100);
-        const taxValue = (baseTotal - discValue) * (itemTax / 100);
-        const lineSubtotal = baseTotal - discValue;
-        const itemTotal = lineSubtotal + taxValue;
+        const taxValue = roundMoney((baseTotal - discValue) * (itemTax / 100));
+        const lineSubtotal = roundMoney(baseTotal - discValue);
+        const itemTotal = roundMoney(lineSubtotal + taxValue);
 
         subtotal += lineSubtotal;
         computedTaxAmount += taxValue;
@@ -179,11 +184,14 @@ router.post("/", protect, async (req: AuthenticatedRequest, res: Response) => {
       );
 
       // Calculate final payable amount
-      const payableAmount = Math.max(0, subtotal - (discountAmount || 0) + computedTaxAmount);
+      subtotal = roundMoney(subtotal);
+      computedTaxAmount = roundMoney(computedTaxAmount);
+      const payableAmount = roundMoney(Math.max(0, subtotal - normalizedDiscountAmount + computedTaxAmount));
       
       // Determine payment status
       let paymentStatus = "PAID";
       let debt = 0;
+      const remainingAfterPayment = roundMoney(Math.max(0, payableAmount - normalizedPaidAmount));
 
       if (paymentMethod === "CREDIT") {
         if (!customerId) throw new Error("Customer profile is required for credit transactions.");
@@ -191,10 +199,10 @@ router.post("/", protect, async (req: AuthenticatedRequest, res: Response) => {
         paymentStatus = "UNPAID";
       } else if (paymentMethod === "EMI") {
         if (!customerId) throw new Error("Customer profile is required for EMI transactions.");
-        debt = Math.max(0, payableAmount - paidAmount);
-        paymentStatus = paidAmount > 0 ? "PARTIAL" : "UNPAID";
-      } else if (paidAmount < payableAmount) {
-        debt = payableAmount - paidAmount;
+        debt = remainingAfterPayment;
+        paymentStatus = normalizedPaidAmount > 0 ? (remainingAfterPayment === 0 ? "PAID" : "PARTIAL") : "UNPAID";
+      } else if (remainingAfterPayment > 0) {
+        debt = remainingAfterPayment;
         paymentStatus = "PARTIAL";
       }
 
@@ -203,7 +211,7 @@ router.post("/", protect, async (req: AuthenticatedRequest, res: Response) => {
         const customer = await tx.customer.findUnique({ where: { id: customerId } });
         if (!customer) throw new Error("Customer profile not found.");
 
-        const projectedBalance = customer.creditBalance + debt;
+        const projectedBalance = roundMoney(customer.creditBalance + debt);
         if (projectedBalance > customer.creditLimit) {
           throw new Error(`Transaction exceeds customer's credit limit of Rs. ${customer.creditLimit}.`);
         }
@@ -231,10 +239,10 @@ router.post("/", protect, async (req: AuthenticatedRequest, res: Response) => {
           cashierId,
           branchId,
           totalAmount: subtotal,
-          discountAmount: discountAmount || 0.0,
+          discountAmount: normalizedDiscountAmount,
           taxAmount: computedTaxAmount,
           payableAmount,
-          paidAmount,
+          paidAmount: normalizedPaidAmount,
           paymentMethod,
           paymentStatus,
           notes,
@@ -435,32 +443,56 @@ router.post(
     try {
       const parsedMonths = parseInt(months);
       const parsedInterest = parseFloat(interestRate || "0");
-      const parsedDown = parseFloat(downPayment);
+      const parsedDown = roundMoney(parseFloat(downPayment));
+
+      if (![3, 6, 12].includes(parsedMonths)) {
+        return res.status(400).json({ error: "EMI tenure must be 3, 6, or 12 months." });
+      }
+      if (Number.isNaN(parsedInterest) || parsedInterest < 0) {
+        return res.status(400).json({ error: "Markup rate must be a valid non-negative number." });
+      }
+      if (Number.isNaN(parsedDown) || parsedDown < 0) {
+        return res.status(400).json({ error: "Down payment must be a valid non-negative amount." });
+      }
 
       const sale = await prisma.sale.findUnique({
-        where: { id }
+        where: { id },
+        include: {
+          emiDetails: true,
+          customer: true
+        }
       });
 
       if (!sale) {
         return res.status(404).json({ error: "Sale transaction not found." });
       }
+      if (sale.paymentMethod !== "EMI") {
+        return res.status(400).json({ error: "This sale is not marked for EMI processing." });
+      }
+      if (sale.emiDetails) {
+        return res.status(400).json({ error: "An EMI contract already exists for this sale." });
+      }
 
-      const markupAmount = sale.payableAmount * (parsedInterest / 100);
-      const totalPrincipal = sale.payableAmount + markupAmount;
-      const remainingBalance = totalPrincipal - parsedDown;
-      const monthlyPayment = remainingBalance / parsedMonths;
+      const markupAmount = roundMoney(sale.payableAmount * (parsedInterest / 100));
+      const totalPrincipal = roundMoney(sale.payableAmount + markupAmount);
+      if (parsedDown > totalPrincipal) {
+        return res.status(400).json({ error: "Down payment cannot exceed the financed principal." });
+      }
+      const remainingBalance = roundMoney(totalPrincipal - parsedDown);
+      const monthlyPayment = roundMoney(remainingBalance / parsedMonths);
+      const updatedPaidAmount = roundMoney(sale.paidAmount + parsedDown);
+      const updatedPaymentStatus =
+        updatedPaidAmount >= totalPrincipal ? "PAID" : updatedPaidAmount > 0 ? "PARTIAL" : "UNPAID";
+      const previousOutstanding = roundMoney(Math.max(0, sale.payableAmount - sale.paidAmount));
+      const updatedOutstanding = roundMoney(Math.max(0, totalPrincipal - updatedPaidAmount));
+      const creditBalanceDelta = roundMoney(updatedOutstanding - previousOutstanding);
 
-      // Update total sale price with interest rate markup
-      await prisma.sale.update({
-        where: { id },
-        data: {
-          payableAmount: totalPrincipal,
-          notes: `${sale.notes || ""}\n[EMI Plan Activated: ${parsedMonths} months at ${parsedInterest}% markup]`
-        }
-      });
-
-      // Generate schedule
-      const installmentsToCreate = [];
+      const installmentsToCreate: Array<{
+        installmentNumber: number;
+        dueDate: Date;
+        amount: number;
+        status: string;
+      }> = [];
       const now = new Date();
 
       for (let i = 1; i <= parsedMonths; i++) {
@@ -475,54 +507,76 @@ router.post(
         });
       }
 
-      const emiContract = await prisma.saleEmi.create({
-        data: {
-          saleId: id,
-          guarantorName,
-          guarantorPhone,
-          guarantorAddress,
-          cnicFrontPath,
-          cnicBackPath,
-          chequePath,
-          months: parsedMonths,
-          interestRate: parsedInterest,
-          downPayment: parsedDown,
-          totalPrincipal,
-          monthlyPayment,
-          status: "ACTIVE",
-          installments: {
-            create: installmentsToCreate
+      const emiContract = await prisma.$transaction(async (tx) => {
+        await tx.sale.update({
+          where: { id },
+          data: {
+            payableAmount: totalPrincipal,
+            paidAmount: updatedPaidAmount,
+            paymentStatus: updatedPaymentStatus,
+            notes: `${sale.notes || ""}\n[EMI Plan Activated: ${parsedMonths} months at ${parsedInterest}% markup]`
           }
-        },
-        include: {
-          installments: true
-        }
-      });
-
-      // Log Down Payment in bank transactions
-      if (parsedDown > 0) {
-        const bankAccount = await prisma.bankAccount.findFirst({
-          where: { type: "CASH", isActive: true }
         });
-        if (bankAccount) {
-          await prisma.transaction.create({
+
+        if (sale.customerId && creditBalanceDelta !== 0) {
+          await tx.customer.update({
+            where: { id: sale.customerId },
             data: {
-              bankAccountId: bankAccount.id,
-              type: "INCOME",
-              category: "CREDIT_PAYMENT",
-              amount: parsedDown,
-              referenceType: "SALE",
-              referenceId: id,
-              description: `EMI Down Payment collected for Invoice #${id.substring(0,8)}`,
-              branchId: sale.branchId
+              creditBalance: { increment: creditBalanceDelta }
             }
           });
-          await prisma.bankAccount.update({
-            where: { id: bankAccount.id },
-            data: { balance: { increment: parsedDown } }
-          });
         }
-      }
+
+        const createdContract = await tx.saleEmi.create({
+          data: {
+            saleId: id,
+            guarantorName,
+            guarantorPhone,
+            guarantorAddress,
+            cnicFrontPath,
+            cnicBackPath,
+            chequePath,
+            months: parsedMonths,
+            interestRate: parsedInterest,
+            downPayment: parsedDown,
+            totalPrincipal,
+            monthlyPayment,
+            status: updatedOutstanding === 0 ? "COMPLETED" : "ACTIVE",
+            installments: {
+              create: installmentsToCreate
+            }
+          },
+          include: {
+            installments: true
+          }
+        });
+
+        if (parsedDown > 0) {
+          const bankAccount = await tx.bankAccount.findFirst({
+            where: { type: "CASH", isActive: true }
+          });
+          if (bankAccount) {
+            await tx.transaction.create({
+              data: {
+                bankAccountId: bankAccount.id,
+                type: "INCOME",
+                category: "CREDIT_PAYMENT",
+                amount: parsedDown,
+                referenceType: "SALE",
+                referenceId: id,
+                description: `EMI Down Payment collected for Invoice #${id.substring(0,8)}`,
+                branchId: sale.branchId
+              }
+            });
+            await tx.bankAccount.update({
+              where: { id: bankAccount.id },
+              data: { balance: { increment: parsedDown } }
+            });
+          }
+        }
+
+        return createdContract;
+      });
 
       invalidateCache("reports:");
       return res.status(201).json(emiContract);
@@ -554,62 +608,81 @@ router.post(
         return res.status(400).json({ error: "Installment is already fully paid." });
       }
 
-      const updatedInstallment = await prisma.emiInstallment.update({
-        where: { id: installmentId },
-        data: {
-          status: "PAID",
-          amountPaid: installment.amount,
-          paidDate: new Date()
+      const sale = await prisma.sale.findUnique({
+        where: { id },
+        include: {
+          customer: true,
+          emiDetails: true
         }
       });
-
-      const allInstallments = await prisma.emiInstallment.findMany({
-        where: { saleEmiId: installment.saleEmiId }
-      });
-
-      const allPaid = allInstallments.every((inst) => inst.status === "PAID");
-
-      if (allPaid) {
-        await prisma.saleEmi.update({
-          where: { id: installment.saleEmiId },
-          data: { status: "COMPLETED" }
-        });
-
-        await prisma.sale.update({
-          where: { id },
-          data: { paymentStatus: "PAID" }
-        });
-      } else {
-        await prisma.sale.update({
-          where: { id },
-          data: { paymentStatus: "PARTIAL" }
-        });
+      if (!sale || !sale.emiDetails) {
+        return res.status(404).json({ error: "Parent EMI sale record not found." });
       }
+      const branchId = sale.branchId || null;
 
-      const sale = await prisma.sale.findUnique({ where: { id } });
-      const branchId = sale?.branchId || null;
-
-      const bankAccount = await prisma.bankAccount.findFirst({
-        where: { type: "CASH", isActive: true }
-      });
-      if (bankAccount) {
-        await prisma.transaction.create({
+      const updatedInstallment = await prisma.$transaction(async (tx) => {
+        const paidInstallment = await tx.emiInstallment.update({
+          where: { id: installmentId },
           data: {
-            bankAccountId: bankAccount.id,
-            type: "INCOME",
-            category: "CREDIT_PAYMENT",
-            amount: installment.amount,
-            referenceType: "SALE",
-            referenceId: id,
-            description: `EMI Installment #${installment.installmentNumber} payment collected for Invoice #${id.substring(0,8)}`,
-            branchId
+            status: "PAID",
+            amountPaid: installment.amount,
+            paidDate: new Date()
           }
         });
-        await prisma.bankAccount.update({
-          where: { id: bankAccount.id },
-          data: { balance: { increment: installment.amount } }
+
+        const allInstallments = await tx.emiInstallment.findMany({
+          where: { saleEmiId: installment.saleEmiId }
         });
-      }
+        const allPaid = allInstallments.every((inst) => inst.status === "PAID");
+        const updatedPaidAmount = roundMoney(sale.paidAmount + installment.amount);
+        const updatedPaymentStatus = updatedPaidAmount >= sale.payableAmount ? "PAID" : "PARTIAL";
+
+        await tx.sale.update({
+          where: { id },
+          data: {
+            paidAmount: updatedPaidAmount,
+            paymentStatus: updatedPaymentStatus
+          }
+        });
+
+        if (sale.customerId) {
+          await tx.customer.update({
+            where: { id: sale.customerId },
+            data: {
+              creditBalance: { decrement: installment.amount }
+            }
+          });
+        }
+
+        await tx.saleEmi.update({
+          where: { id: installment.saleEmiId },
+          data: { status: allPaid ? "COMPLETED" : "ACTIVE" }
+        });
+
+        const bankAccount = await tx.bankAccount.findFirst({
+          where: { type: "CASH", isActive: true }
+        });
+        if (bankAccount) {
+          await tx.transaction.create({
+            data: {
+              bankAccountId: bankAccount.id,
+              type: "INCOME",
+              category: "CREDIT_PAYMENT",
+              amount: installment.amount,
+              referenceType: "SALE",
+              referenceId: id,
+              description: `EMI Installment #${installment.installmentNumber} payment collected for Invoice #${id.substring(0,8)}`,
+              branchId
+            }
+          });
+          await tx.bankAccount.update({
+            where: { id: bankAccount.id },
+            data: { balance: { increment: installment.amount } }
+          });
+        }
+
+        return paidInstallment;
+      });
 
       invalidateCache("reports:");
       return res.json(updatedInstallment);
