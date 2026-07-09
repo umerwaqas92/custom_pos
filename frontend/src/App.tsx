@@ -12,6 +12,7 @@ import Repairs from "./pages/Repairs";
 import Contacts from "./pages/Contacts";
 import Accounting from "./pages/Accounting";
 import CategoriesBrands from "./pages/CategoriesBrands";
+import SalesHistory from "./pages/SalesHistory";
 
 // Set Axios Base URL
 axios.defaults.baseURL = "http://localhost:5001";
@@ -231,6 +232,16 @@ export default function App() {
             element={
               <RoleGuard allowedRoles={["OWNER", "MANAGER"]}>
                 <CategoriesBrands />
+              </RoleGuard>
+            }
+          />
+
+          {/* Sales History (Owner, Manager, Cashier) */}
+          <Route
+            path="sales-history"
+            element={
+              <RoleGuard allowedRoles={["OWNER", "MANAGER", "CASHIER"]}>
+                <SalesHistory />
               </RoleGuard>
             }
           />

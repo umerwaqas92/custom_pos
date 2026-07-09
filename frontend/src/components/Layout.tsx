@@ -16,7 +16,8 @@ import {
   Moon,
   ChevronRight,
   ShieldCheck,
-  Layers
+  Layers,
+  FileText
 } from "lucide-react";
 
 export default function Layout() {
@@ -63,6 +64,7 @@ export default function Layout() {
   const navItems = [
     { name: "Dashboard", path: "/", icon: LayoutDashboard, roles: ["OWNER", "MANAGER", "CASHIER", "WAREHOUSE", "TECHNICIAN"] },
     { name: "POS Sales", path: "/pos", icon: ShoppingCart, roles: ["OWNER", "MANAGER", "CASHIER"] },
+    { name: "Sales History", path: "/sales-history", icon: FileText, roles: ["OWNER", "MANAGER", "CASHIER"] },
     { name: "Inventory", path: "/inventory", icon: Package, roles: ["OWNER", "MANAGER", "WAREHOUSE"] },
     { name: "Brands & Categories", path: "/categories-brands", icon: Layers, roles: ["OWNER", "MANAGER"] },
     { name: "Repairs", path: "/repairs", icon: Wrench, roles: ["OWNER", "MANAGER", "CASHIER", "TECHNICIAN"] },
