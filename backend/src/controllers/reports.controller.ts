@@ -50,14 +50,8 @@ router.get("/dashboard-stats", protect, restrictTo("OWNER", "MANAGER"), async (r
       }
     });
 
-    // Active repair tickets
-    const activeRepairs = await prisma.repairJob.count({
-      where: {
-        status: {
-          notIn: ["DELIVERED", "READY"]
-        }
-      }
-    });
+    // Total customers count
+    const totalCustomers = await prisma.customer.count();
 
     // Pending purchase orders
     const pendingPurchases = await prisma.purchaseOrder.count({
@@ -84,7 +78,7 @@ router.get("/dashboard-stats", protect, restrictTo("OWNER", "MANAGER"), async (r
       totalRevenue: revenue,
       totalExpenses: expenses,
       netProfit: profit,
-      activeRepairs,
+      totalCustomers,
       pendingPurchases,
       pendingWarranties
     });

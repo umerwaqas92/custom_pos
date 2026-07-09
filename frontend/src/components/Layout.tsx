@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   ShoppingCart,
   Package,
-  Wrench,
   Users,
   Briefcase,
   LogOut,
@@ -68,7 +67,6 @@ export default function Layout() {
     { name: "Sales History", path: "/sales-history", icon: FileText, roles: ["OWNER", "MANAGER", "CASHIER"] },
     { name: "Inventory", path: "/inventory", icon: Package, roles: ["OWNER", "MANAGER", "WAREHOUSE"] },
     { name: "Brands & Categories", path: "/categories-brands", icon: Layers, roles: ["OWNER", "MANAGER"] },
-    { name: "Repairs", path: "/repairs", icon: Wrench, roles: ["OWNER", "MANAGER", "CASHIER", "TECHNICIAN"] },
     { name: "Contacts", path: "/contacts", icon: Users, roles: ["OWNER", "MANAGER", "CASHIER"] },
     { name: "Accounting", path: "/accounting", icon: Briefcase, roles: ["OWNER", "MANAGER"] },
     { name: "Settings", path: "/settings", icon: Settings, roles: ["OWNER", "MANAGER"] }
