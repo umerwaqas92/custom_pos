@@ -14,8 +14,9 @@ import {
   CheckCircle,
   X,
   Banknote,
-  Smartphone,
-  BookOpen
+  BookOpen,
+  Landmark,
+  Wallet
 } from "lucide-react";
 
 export default function POS() {
@@ -460,8 +461,8 @@ export default function POS() {
                     : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                 }`}
               >
-                <CreditCard className="w-3.5 h-3.5 flex-shrink-0" />
-                <span className="text-[10px] font-extrabold">Card</span>
+                <Landmark className="w-3.5 h-3.5 flex-shrink-0" />
+                <span className="text-[10px] font-extrabold font-extrabold">Bank</span>
               </button>
 
               <button
@@ -473,8 +474,8 @@ export default function POS() {
                     : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                 }`}
               >
-                <Smartphone className="w-3.5 h-3.5 flex-shrink-0" />
-                <span className="text-[10px] font-extrabold">Mobile</span>
+                <Wallet className="w-3.5 h-3.5 flex-shrink-0" />
+                <span className="text-[10px] font-extrabold font-extrabold">Wallet</span>
               </button>
 
               <button
@@ -572,7 +573,11 @@ export default function POS() {
                   <span>+Rs. {receiptResult.taxAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between font-black text-foreground text-xs pt-1 border-t border-border/40">
-                  <span>Total Paid ({receiptResult.paymentMethod}):</span>
+                  <span>Total Paid ({
+                    receiptResult.paymentMethod === "CASH" ? "Cash" :
+                    receiptResult.paymentMethod === "CARD" ? "Bank" :
+                    receiptResult.paymentMethod === "MOBILE" ? "Wallet" : "Credit"
+                  }):</span>
                   <span>Rs. {receiptResult.paidAmount.toFixed(2)}</span>
                 </div>
               </div>

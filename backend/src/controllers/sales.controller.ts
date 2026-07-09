@@ -110,14 +110,13 @@ router.post("/", protect, async (req: AuthenticatedRequest, res: Response) => {
       }
 
       // Check customer credit limits
-      if (debt > 0) {
-        if (!customerId) throw new Error("A customer account is required for credit or deferred payments.");
+      if (debt > 0 && customerId) {
         const customer = await tx.customer.findUnique({ where: { id: customerId } });
         if (!customer) throw new Error("Customer profile not found.");
 
         const projectedBalance = customer.creditBalance + debt;
         if (projectedBalance > customer.creditLimit) {
-          throw new Error(`Transaction exceeds customer's credit limit of $${customer.creditLimit}.`);
+          throw new Error(`Transaction exceeds customer's credit limit of Rs. ${customer.creditLimit}.`);
         }
 
         // Increase customer credit debt
