@@ -202,7 +202,8 @@ export default function SalesHistory() {
     CASH: "Cash",
     CARD: "Bank",
     MOBILE: "Wallet",
-    CREDIT: "Credit"
+    CREDIT: "Credit",
+    EMI: "EMI Installment"
   };
 
   return (
@@ -435,7 +436,11 @@ export default function SalesHistory() {
               {activeSale.customer && (
                 <div className="bg-secondary/60 p-2 rounded text-[10px] text-muted-foreground">
                   <p>Customer: <strong>{activeSale.customer.name}</strong></p>
-                  <p>Repayment Balance: <strong>Rs. {activeSale.customer.creditBalance}</strong></p>
+                  {activeSale.paymentMethod === "EMI" ? (
+                    <p>Financed Balance: <strong>Rs. {Math.max(0, activeSale.payableAmount - activeSale.paidAmount).toFixed(2)}</strong></p>
+                  ) : activeSale.paymentMethod === "CREDIT" ? (
+                    <p>Outstanding on Invoice: <strong>Rs. {Math.max(0, activeSale.payableAmount - activeSale.paidAmount).toFixed(2)}</strong></p>
+                  ) : null}
                 </div>
               )}
             </div>
