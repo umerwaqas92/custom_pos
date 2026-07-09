@@ -8,7 +8,6 @@ import {
   DollarSign,
   Phone,
   Mail,
-  Coins,
   Edit,
   Trash2,
   ChevronLeft,
@@ -257,7 +256,6 @@ export default function Contacts() {
         case "name": aVal = a.name.toLowerCase(); bVal = b.name.toLowerCase(); break;
         case "phone": aVal = a.phone; bVal = b.phone; break;
         case "email": aVal = (a.email || "").toLowerCase(); bVal = (b.email || "").toLowerCase(); break;
-        case "rewardPoints": aVal = a.rewardPoints; bVal = b.rewardPoints; break;
         case "creditBalance": aVal = a.creditBalance; bVal = b.creditBalance; break;
         default: aVal = a.name.toLowerCase(); bVal = b.name.toLowerCase();
       }
@@ -380,8 +378,6 @@ export default function Contacts() {
                   </th>
                   <SortHeader label="Customer Name" sortField="name" />
                   <SortHeader label="Phone" sortField="phone" />
-                  <SortHeader label="Email" sortField="email" />
-                  <SortHeader label="Reward Points" sortField="rewardPoints" />
                   <SortHeader label="Credit Balance" sortField="creditBalance" />
                   <th className="pb-3 text-center">Actions</th>
                 </tr>
@@ -389,7 +385,7 @@ export default function Contacts() {
               <tbody className="divide-y divide-border/50">
                 {paginatedData.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-muted-foreground">
+                    <td colSpan={5} className="py-8 text-center text-muted-foreground">
                       No customers matching search parameters.
                     </td>
                   </tr>
@@ -406,13 +402,7 @@ export default function Contacts() {
                       </td>
                       <td className="py-4 font-bold text-foreground">{c.name}</td>
                       <td className="py-4 text-muted-foreground">{c.phone}</td>
-                      <td className="py-4 text-muted-foreground">{c.email || "-"}</td>
-                      <td className="py-4 text-center font-bold text-indigo-400">
-                        <span className="flex items-center justify-center gap-1">
-                          <Coins className="w-3.5 h-3.5" /> {c.rewardPoints}
-                        </span>
-                      </td>
-                      <td className="py-4 text-right font-black text-foreground">
+                      <td className="py-4 text-left font-black text-foreground">
                         <span className={c.creditBalance > 0 ? "text-amber-400" : "text-green-400"}>
                           Rs. {c.creditBalance}
                         </span>
