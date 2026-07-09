@@ -170,7 +170,7 @@ export default function App() {
       }
 
       const startDate = new Date(trialStart!);
-      const thirtyDays = 0; // Set to 0 so it expires immediately for testing
+      const thirtyDays = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
       const expiryTime = startDate.getTime() + thirtyDays;
       
       if (Date.now() > expiryTime) {
