@@ -12,7 +12,8 @@ import {
   X,
   CheckCircle,
   Info,
-  ShieldAlert
+  ShieldAlert,
+  Download
 } from "lucide-react";
 
 export default function Settings() {
@@ -65,6 +66,58 @@ export default function Settings() {
       );
     } finally {
       setResetting(false);
+    }
+  };
+
+  const [importing, setImporting] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  const handleExportBackup = async () => {
+    try {
+      addNotification("Preparing backup package...", "info");
+      const res = await axios.get("/api/auth/backup/export", { responseType: "blob" });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `pos-backup-${new Date().toISOString().split('T')[0]}.zip`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      addNotification("Backup file downloaded successfully.", "success");
+    } catch (err) {
+      addNotification("Failed to export backup.", "warning");
+    }
+  };
+
+  const handleImportBackup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFile) return addNotification("Please select a backup file first.", "warning");
+
+    const doubleCheck = window.confirm(
+      "WARNING: Restoring from backup will overwrite all current sales, products, and configurations. This cannot be undone. Are you sure you want to proceed?"
+    );
+    if (!doubleCheck) return;
+
+    const formData = new FormData();
+    formData.append("backup", selectedFile);
+
+    setImporting(true);
+    try {
+      const res = await axios.post("/api/auth/backup/import", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      addNotification(res.data.message || "Data restored successfully from backup.", "success");
+      setSelectedFile(null);
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (err: any) {
+      addNotification(
+        err.response?.data?.error || "Failed to restore backup data.",
+        "warning"
+      );
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -197,6 +250,68 @@ export default function Settings() {
             </div>
           ))
         )}
+      </div>
+
+      {/* Backup & Restore */}
+      <div className="bg-card border border-border p-6 rounded-2xl space-y-5 shadow-sm relative overflow-hidden">
+        <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-blue-500 to-indigo-500" />
+        
+        <div className="space-y-1">
+          <h3 className="font-extrabold text-sm text-foreground flex items-center gap-2">
+            <Download className="w-5 h-5 text-primary" /> Database Backup & Restore
+          </h3>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Backup your database and uploaded documents to a single ZIP file, or upload a previously generated ZIP backup to restore all data.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 border-t border-border/50">
+          {/* Export Section */}
+          <div className="space-y-3">
+            <h4 className="font-bold text-xs text-foreground uppercase tracking-wider">Export POS Data</h4>
+            <p className="text-xs text-muted-foreground">
+              Downloads a full system archive containing the SQLite database (`dev.db`) and all uploaded customer documents, receipt attachments, and warranty records.
+            </p>
+            <button
+              type="button"
+              onClick={handleExportBackup}
+              className="bg-primary hover:bg-primary/95 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer"
+            >
+              <Download className="w-4 h-4" /> Download Backup Zip
+            </button>
+          </div>
+
+          {/* Import Section */}
+          <div className="space-y-3 border-t md:border-t-0 md:border-l border-border/50 pt-4 md:pt-0 md:pl-6">
+            <h4 className="font-bold text-xs text-foreground uppercase tracking-wider text-red-400">Restore POS Data</h4>
+            <p className="text-xs text-muted-foreground">
+              Select and upload a previously exported `.zip` file. Overwrites all current database records and public folder files.
+            </p>
+            <form onSubmit={handleImportBackup} className="space-y-3">
+              <div className="flex items-center gap-2">
+                <input
+                  type="file"
+                  accept=".zip"
+                  onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                  className="block w-full text-xs text-muted-foreground
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-xl file:border-0
+                    file:text-xs file:font-semibold
+                    file:bg-primary/10 file:text-primary
+                    hover:file:bg-primary/20
+                    cursor-pointer"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={importing || !selectedFile}
+                className="bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 hover:border-red-500/50 text-red-400 text-xs font-bold px-4 py-2.5 rounded-xl transition flex-shrink-0 cursor-pointer disabled:opacity-40"
+              >
+                {importing ? "Restoring..." : "Upload & Restore"}
+              </button>
+            </form>
+          </div>
+        </div>
       </div>
 
       {/* Danger Zone / Factory Reset */}

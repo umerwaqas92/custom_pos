@@ -4,9 +4,40 @@ import * as jwt from "jsonwebtoken";
 import prisma from "../utils/db";
 import { protect, restrictTo, AuthenticatedRequest } from "../middleware/auth";
 import { invalidateCache } from "../utils/cache";
+import path from "path";
+import fs from "fs";
+import multer from "multer";
+const AdmZip = require("adm-zip");
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || "super-secret-key-change-in-prod";
+
+// Configure Multer for backup zip uploads
+const uploadDir = path.resolve(__dirname, "../../public/uploads");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const backupStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    cb(null, `backup-import-${Date.now()}.zip`);
+  }
+});
+
+const backupUpload = multer({
+  storage: backupStorage,
+  fileFilter: (req, file, cb) => {
+    const isZip = path.extname(file.originalname).toLowerCase() === ".zip";
+    if (isZip) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only ZIP archive files are allowed.") as any, false);
+    }
+  }
+});
 
 // Login
 router.post("/login", async (req, res) => {
@@ -279,6 +310,80 @@ router.post("/reset-transactions", protect, restrictTo("OWNER"), async (req, res
   } catch (error) {
     console.error("Failed to reset transactions:", error);
     return res.status(500).json({ error: "Failed to clear transaction records." });
+  }
+});
+
+// Export Database and Uploads Backup (OWNER & MANAGER)
+router.get("/backup/export", protect, restrictTo("OWNER", "MANAGER"), (req, res) => {
+  try {
+    const zip = new AdmZip();
+    const dbPath = path.resolve(__dirname, "../../prisma/dev.db");
+    const uploadsPath = path.resolve(__dirname, "../../public/uploads");
+
+    if (fs.existsSync(dbPath)) {
+      zip.addLocalFile(dbPath, "prisma");
+    }
+
+    if (fs.existsSync(uploadsPath)) {
+      const files = fs.readdirSync(uploadsPath);
+      if (files.length > 0) {
+        zip.addLocalFolder(uploadsPath, "public/uploads");
+      }
+    }
+
+    const buffer = zip.toBuffer();
+    
+    res.set({
+      "Content-Type": "application/zip",
+      "Content-Disposition": 'attachment; filename="pos-backup.zip"',
+      "Content-Length": buffer.length
+    });
+    
+    return res.send(buffer);
+  } catch (error) {
+    console.error("Backup export failed:", error);
+    return res.status(500).json({ error: "Failed to generate backup archive." });
+  }
+});
+
+// Import Database and Uploads Backup (OWNER only)
+router.post("/backup/import", protect, restrictTo("OWNER"), backupUpload.single("backup"), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: "Please upload a valid backup zip file." });
+  }
+
+  const tempFilePath = req.file.path;
+
+  try {
+    const zip = new AdmZip(tempFilePath);
+    const entries = zip.getEntries();
+    const hasDb = entries.some((entry: any) => entry.entryName === "prisma/dev.db");
+
+    if (!hasDb) {
+      fs.unlinkSync(tempFilePath);
+      return res.status(400).json({ error: "Invalid backup archive. The zip file must contain the database (prisma/dev.db)." });
+    }
+
+    // 1. Disconnect database connections
+    await prisma.$disconnect();
+
+    // 2. Extract files
+    const targetDir = path.resolve(__dirname, "../../");
+    zip.extractAllTo(targetDir, true);
+
+    // Clean up temp file
+    fs.unlinkSync(tempFilePath);
+
+    // 3. Reconnect database
+    await prisma.$connect();
+
+    return res.json({ message: "Data restored successfully from backup." });
+  } catch (error) {
+    console.error("Backup import failed:", error);
+    if (fs.existsSync(tempFilePath)) {
+      fs.unlinkSync(tempFilePath);
+    }
+    return res.status(500).json({ error: "Failed to restore data from the uploaded backup." });
   }
 });
 
