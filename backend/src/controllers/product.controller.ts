@@ -1,6 +1,7 @@
 import { Router } from "express";
 import prisma from "../utils/db";
 import { protect, restrictTo } from "../middleware/auth";
+import { invalidateCache } from "../utils/cache";
 
 const router = Router();
 
@@ -24,6 +25,7 @@ router.post("/categories", protect, restrictTo("OWNER", "MANAGER"), async (req, 
   if (!name) return res.status(400).json({ error: "Name is required." });
   try {
     const category = await prisma.category.create({ data: { name } });
+    invalidateCache("reports:");
     return res.status(201).json(category);
   } catch (error) {
     return res.status(400).json({ error: "Category already exists." });
@@ -40,6 +42,7 @@ router.put("/categories/:id", protect, restrictTo("OWNER", "MANAGER"), async (re
       where: { id },
       data: { name }
     });
+    invalidateCache("reports:");
     return res.json(updated);
   } catch (error) {
     return res.status(400).json({ error: "Failed to update category." });
@@ -57,6 +60,7 @@ router.delete("/categories/:id", protect, restrictTo("OWNER", "MANAGER"), async 
       });
       await tx.category.delete({ where: { id } });
     });
+    invalidateCache("reports:");
     return res.json({ message: "Category deleted successfully." });
   } catch (error) {
     return res.status(500).json({ error: "Failed to delete category." });
@@ -83,6 +87,7 @@ router.post("/brands", protect, restrictTo("OWNER", "MANAGER"), async (req, res)
   if (!name) return res.status(400).json({ error: "Name is required." });
   try {
     const brand = await prisma.brand.create({ data: { name } });
+    invalidateCache("reports:");
     return res.status(201).json(brand);
   } catch (error) {
     return res.status(400).json({ error: "Brand already exists." });
@@ -99,6 +104,7 @@ router.put("/brands/:id", protect, restrictTo("OWNER", "MANAGER"), async (req, r
       where: { id },
       data: { name }
     });
+    invalidateCache("reports:");
     return res.json(updated);
   } catch (error) {
     return res.status(400).json({ error: "Failed to update brand." });
@@ -116,6 +122,7 @@ router.delete("/brands/:id", protect, restrictTo("OWNER", "MANAGER"), async (req
       });
       await tx.brand.delete({ where: { id } });
     });
+    invalidateCache("reports:");
     return res.json({ message: "Brand deleted successfully." });
   } catch (error) {
     return res.status(500).json({ error: "Failed to delete brand." });
@@ -133,6 +140,7 @@ router.post("/categories/bulk-delete", protect, restrictTo("OWNER", "MANAGER"), 
       await tx.product.updateMany({ where: { categoryId: { in: ids } }, data: { categoryId: null } });
       await tx.category.deleteMany({ where: { id: { in: ids } } });
     });
+    invalidateCache("reports:");
     return res.json({ message: `${ids.length} categories deleted successfully.` });
   } catch (error) {
     return res.status(500).json({ error: "Failed to bulk delete categories." });
@@ -150,6 +158,7 @@ router.post("/brands/bulk-delete", protect, restrictTo("OWNER", "MANAGER"), asyn
       await tx.product.updateMany({ where: { brandId: { in: ids } }, data: { brandId: null } });
       await tx.brand.deleteMany({ where: { id: { in: ids } } });
     });
+    invalidateCache("reports:");
     return res.json({ message: `${ids.length} brands deleted successfully.` });
   } catch (error) {
     return res.status(500).json({ error: "Failed to bulk delete brands." });
@@ -160,7 +169,9 @@ router.post("/brands/bulk-delete", protect, restrictTo("OWNER", "MANAGER"), asyn
 
 // List and Search Products
 router.get("/", protect, async (req, res) => {
-  const { search, category, brand, sku, barcode } = req.query;
+  const { search, category, brand, sku, barcode, lite, branchId } = req.query;
+  const isLite = lite === "1" || lite === "true";
+  const branchFilter = branchId ? String(branchId) : undefined;
 
   try {
     const whereClause: any = {};
@@ -182,18 +193,60 @@ router.get("/", protect, async (req, res) => {
       ];
     }
 
-    const products = await prisma.product.findMany({
-      where: whereClause,
-      include: {
-        category: true,
-        brand: true,
-        supplier: true,
-        branchStocks: {
-          include: { branch: true }
-        }
-      },
-      orderBy: { name: "asc" }
-    });
+    const products = isLite
+      ? await prisma.product.findMany({
+          where: whereClause,
+          select: {
+            id: true,
+            name: true,
+            sku: true,
+            barcode: true,
+            categoryId: true,
+            brandId: true,
+            model: true,
+            serialNumber: true,
+            imei: true,
+            sellingPrice: true,
+            purchasePrice: true,
+            taxRate: true,
+            discountRate: true,
+            stockQuantity: true,
+            minStock: true,
+            type: true,
+            category: {
+              select: { id: true, name: true }
+            },
+            brand: {
+              select: { id: true, name: true }
+            },
+            ...(branchFilter
+              ? {
+                  branchStocks: {
+                    where: { branchId: branchFilter },
+                    select: { branchId: true, quantity: true }
+                  }
+                }
+              : {})
+          },
+          orderBy: { name: "asc" }
+        })
+      : await prisma.product.findMany({
+          where: whereClause,
+          include: {
+            category: true,
+            brand: true,
+            supplier: true,
+            branchStocks: branchFilter
+              ? {
+                  where: { branchId: branchFilter },
+                  include: { branch: true }
+                }
+              : {
+                  include: { branch: true }
+                }
+          },
+          orderBy: { name: "asc" }
+        });
 
     return res.json(products);
   } catch (error) {
@@ -280,17 +333,20 @@ router.post("/", protect, restrictTo("OWNER", "MANAGER", "WAREHOUSE"), async (re
     });
 
     // Automatically initialize branch stocks with 0 quantity
-    const branches = await prisma.branch.findMany();
-    for (const b of branches) {
-      await prisma.branchStock.create({
-        data: {
+    const branches = await prisma.branch.findMany({
+      select: { id: true }
+    });
+    if (branches.length > 0) {
+      await prisma.branchStock.createMany({
+        data: branches.map((b) => ({
           branchId: b.id,
           productId: product.id,
           quantity: 0
-        }
+        }))
       });
     }
 
+    invalidateCache("reports:");
     return res.status(201).json(product);
   } catch (error) {
     console.error(error);
@@ -347,6 +403,7 @@ router.put("/:id", protect, restrictTo("OWNER", "MANAGER", "WAREHOUSE"), async (
       }
     });
 
+    invalidateCache("reports:");
     return res.json(updated);
   } catch (error) {
     console.error(error);
@@ -362,6 +419,7 @@ router.delete("/:id", protect, restrictTo("OWNER"), async (req, res) => {
     await prisma.branchStock.deleteMany({ where: { productId: id } });
     await prisma.stockMovement.deleteMany({ where: { productId: id } });
     await prisma.product.delete({ where: { id } });
+    invalidateCache("reports:");
     return res.json({ message: "Product deleted successfully." });
   } catch (error) {
     console.error(error);
@@ -379,6 +437,7 @@ router.post("/bulk-delete", protect, restrictTo("OWNER"), async (req, res) => {
     await prisma.branchStock.deleteMany({ where: { productId: { in: ids } } });
     await prisma.stockMovement.deleteMany({ where: { productId: { in: ids } } });
     await prisma.product.deleteMany({ where: { id: { in: ids } } });
+    invalidateCache("reports:");
     return res.json({ message: `${ids.length} products deleted successfully.` });
   } catch (error) {
     console.error(error);

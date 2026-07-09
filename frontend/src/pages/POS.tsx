@@ -89,7 +89,12 @@ export default function POS() {
       setLoading(true);
       try {
         const [prodRes, catRes, custRes] = await Promise.all([
-          axios.get("/api/products"),
+          axios.get("/api/products", {
+            params: {
+              lite: 1,
+              branchId: selectedBranchId || undefined
+            }
+          }),
           axios.get("/api/products/categories"),
           axios.get("/api/accounting/customers")
         ]);
@@ -202,7 +207,12 @@ export default function POS() {
       setSelectedCustId("");
       
       // Reload products to update stock numbers
-      const prodRes = await axios.get("/api/products");
+      const prodRes = await axios.get("/api/products", {
+        params: {
+          lite: 1,
+          branchId: selectedBranchId || undefined
+        }
+      });
       setProducts(prodRes.data);
     } catch (err: any) {
       const msg = err.response?.data?.error || "Transaction failed.";

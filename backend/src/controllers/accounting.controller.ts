@@ -1,6 +1,7 @@
 import { Router } from "express";
 import prisma from "../utils/db";
-import { protect, restrictTo } from "../middleware/auth";
+import { protect, restrictTo, AuthenticatedRequest } from "../middleware/auth";
+import { invalidateCache } from "../utils/cache";
 
 const router = Router();
 
@@ -35,6 +36,7 @@ router.post("/customers", protect, async (req, res) => {
         notes: notes || null
       }
     });
+    invalidateCache("reports:");
     return res.status(201).json(customer);
   } catch (error) {
     return res.status(500).json({ error: "Failed to create customer profile." });
@@ -140,6 +142,62 @@ router.put("/suppliers/:id", protect, restrictTo("OWNER", "MANAGER"), async (req
   }
 });
 
+// Delete Customer
+router.delete("/customers/:id", protect, restrictTo("OWNER"), async (req, res) => {
+  const { id } = req.params;
+  try {
+    await prisma.customerCreditPayment.deleteMany({ where: { customerId: id } });
+    await prisma.customer.delete({ where: { id } });
+    invalidateCache("reports:");
+    return res.json({ message: "Customer deleted successfully." });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to delete customer." });
+  }
+});
+
+// Bulk Delete Customers
+router.post("/customers/bulk-delete", protect, restrictTo("OWNER"), async (req, res) => {
+  const { ids } = req.body;
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ error: "No customer IDs provided." });
+  }
+  try {
+    await prisma.customerCreditPayment.deleteMany({ where: { customerId: { in: ids } } });
+    await prisma.customer.deleteMany({ where: { id: { in: ids } } });
+    invalidateCache("reports:");
+    return res.json({ message: `${ids.length} customers deleted successfully.` });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to bulk delete customers." });
+  }
+});
+
+// Delete Supplier
+router.delete("/suppliers/:id", protect, restrictTo("OWNER"), async (req, res) => {
+  const { id } = req.params;
+  try {
+    await prisma.supplierPayment.deleteMany({ where: { supplierId: id } });
+    await prisma.supplier.delete({ where: { id } });
+    return res.json({ message: "Supplier deleted successfully." });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to delete supplier." });
+  }
+});
+
+// Bulk Delete Suppliers
+router.post("/suppliers/bulk-delete", protect, restrictTo("OWNER"), async (req, res) => {
+  const { ids } = req.body;
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ error: "No supplier IDs provided." });
+  }
+  try {
+    await prisma.supplierPayment.deleteMany({ where: { supplierId: { in: ids } } });
+    await prisma.supplier.deleteMany({ where: { id: { in: ids } } });
+    return res.json({ message: `${ids.length} suppliers deleted successfully.` });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to bulk delete suppliers." });
+  }
+});
+
 // ==================== PURCHASE MANAGEMENT (RESTOCKING) ====================
 
 // List Purchase Orders
@@ -194,6 +252,7 @@ router.post("/purchases", protect, restrictTo("OWNER", "MANAGER", "WAREHOUSE"), 
       }
     });
 
+    invalidateCache("reports:");
     return res.status(201).json(order);
   } catch (error) {
     console.error(error);
@@ -261,6 +320,7 @@ router.put("/purchases/:id/status", protect, restrictTo("OWNER", "MANAGER", "WAR
       return order;
     });
 
+    invalidateCache("reports:");
     return res.json(updatedOrder);
   } catch (error: any) {
     console.error(error);
@@ -296,6 +356,7 @@ router.post("/expenses", protect, restrictTo("OWNER", "MANAGER"), async (req, re
         paymentMethod
       }
     });
+    invalidateCache("reports:");
     return res.status(201).json(expense);
   } catch (error) {
     return res.status(500).json({ error: "Failed to log expense." });
@@ -457,6 +518,7 @@ router.post("/transactions/transfer", protect, restrictTo("OWNER", "MANAGER"), a
 
 router.get("/profit-loss", protect, restrictTo("OWNER", "MANAGER"), async (req, res) => {
   const { startDate, endDate } = req.query;
+  const branchFilter = req.query.branchId ? String(req.query.branchId) : undefined;
 
   try {
     const start = startDate ? new Date(String(startDate)) : new Date(new Date().setDate(1)); // First of current month
@@ -464,7 +526,10 @@ router.get("/profit-loss", protect, restrictTo("OWNER", "MANAGER"), async (req, 
 
     // Sales Revenue
     const salesAgg = await prisma.sale.aggregate({
-      where: { saleDate: { gte: start, lte: end } },
+      where: {
+        saleDate: { gte: start, lte: end },
+        ...(branchFilter ? { branchId: branchFilter } : {})
+      },
       _sum: { payableAmount: true, taxAmount: true, discountAmount: true },
       _count: { id: true }
     });
@@ -480,8 +545,9 @@ router.get("/profit-loss", protect, restrictTo("OWNER", "MANAGER"), async (req, 
       cogs += item.product.purchasePrice * item.quantity;
     });
 
-    const grossProfit = (salesAgg._sum.payableAmount || 0) - cogs;
-    const grossMargin = salesAgg._sum.payableAmount ? ((grossProfit / salesAgg._sum.payableAmount) * 100) : 0;
+    const totalRevenue = salesAgg._sum?.payableAmount || 0;
+    const grossProfit = totalRevenue - cogs;
+    const grossMargin = totalRevenue ? ((grossProfit / totalRevenue) * 100) : 0;
 
     // Expenses
     const expenses = await prisma.expense.findMany({
@@ -497,15 +563,15 @@ router.get("/profit-loss", protect, restrictTo("OWNER", "MANAGER"), async (req, 
 
     // Net Profit
     const netProfit = grossProfit - totalExpenses;
-    const netMargin = salesAgg._sum.payableAmount ? ((netProfit / salesAgg._sum.payableAmount) * 100) : 0;
+    const netMargin = totalRevenue ? ((netProfit / totalRevenue) * 100) : 0;
 
     return res.json({
       period: { startDate: start, endDate: end },
       revenue: {
-        totalSales: salesAgg._count.id || 0,
-        grossRevenue: salesAgg._sum.payableAmount || 0,
-        taxCollected: salesAgg._sum.taxAmount || 0,
-        discountsGiven: salesAgg._sum.discountAmount || 0
+        totalSales: salesAgg._count?.id || 0,
+        grossRevenue: totalRevenue,
+        taxCollected: salesAgg._sum?.taxAmount || 0,
+        discountsGiven: salesAgg._sum?.discountAmount || 0
       },
       cogs: {
         totalCOGS: cogs,
@@ -615,7 +681,8 @@ router.post("/daily-closings", protect, restrictTo("OWNER", "MANAGER"), async (r
 
 // Get Daily Closing Summary (preview before closing)
 router.get("/daily-closings/preview", protect, restrictTo("OWNER", "MANAGER"), async (req, res) => {
-  const { date, branchId } = req.query;
+  const { date } = req.query;
+  const branchFilter = req.query.branchId ? String(req.query.branchId) : undefined;
 
   try {
     const targetDate = date ? new Date(String(date)) : new Date();
@@ -628,7 +695,7 @@ router.get("/daily-closings/preview", protect, restrictTo("OWNER", "MANAGER"), a
       where: {
         saleDate: { gte: startOfDay, lte: endOfDay },
         paymentStatus: { not: "UNPAID" },
-        ...(branchId ? { branchId } : {})
+        ...(branchFilter ? { branchId: branchFilter } : {})
       },
       _sum: { paidAmount: true },
       _count: { id: true }

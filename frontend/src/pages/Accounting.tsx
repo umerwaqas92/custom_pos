@@ -73,7 +73,11 @@ export default function Accounting() {
         axios.get("/api/accounting/expenses"),
         axios.get("/api/accounting/purchases"),
         axios.get("/api/accounting/suppliers"),
-        axios.get("/api/products")
+        axios.get("/api/products", {
+          params: {
+            lite: 1
+          }
+        })
       ]);
       setExpenses(expRes.data);
       setPurchases(purRes.data);

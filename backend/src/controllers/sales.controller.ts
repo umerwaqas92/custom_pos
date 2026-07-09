@@ -1,6 +1,7 @@
 import { Router, Response } from "express";
 import prisma from "../utils/db";
 import { protect, AuthenticatedRequest } from "../middleware/auth";
+import { invalidateCache } from "../utils/cache";
 
 const router = Router();
 
@@ -27,42 +28,68 @@ router.post("/", protect, async (req: AuthenticatedRequest, res: Response) => {
     return res.status(400).json({ error: "Cashier session is required." });
   }
 
-  // Validate that the branch exists in the database (safeguard against stale localStorage)
+  // Validate the branch once and fall back to the authenticated branch if needed.
   if (branchId) {
-    const branchExists = await prisma.branch.findUnique({ where: { id: branchId } });
+    const branchExists = await prisma.branch.findUnique({
+      where: { id: branchId },
+      select: { id: true }
+    });
     if (!branchExists) {
       branchId = req.user?.branchId || null;
     }
   }
 
-  // Double check if we still have a valid branch
   if (!branchId) {
     return res.status(400).json({ error: "Cashier session lacks a designated branch location." });
-  } else {
-    const branchExists = await prisma.branch.findUnique({ where: { id: branchId } });
-    if (!branchExists) {
-      return res.status(400).json({ error: "Designated branch location does not exist in database." });
-    }
+  }
+
+  const activeBranch = await prisma.branch.findUnique({
+    where: { id: branchId },
+    select: { id: true }
+  });
+  if (!activeBranch) {
+    return res.status(400).json({ error: "Designated branch location does not exist in database." });
   }
 
   try {
     const saleResult = await prisma.$transaction(async (tx) => {
       let subtotal = 0;
+      const productIds: string[] = Array.from(new Set(items.map((item: any) => String(item.productId))));
+      const [products, branchStocks] = await Promise.all([
+        tx.product.findMany({
+          where: { id: { in: productIds } },
+          select: {
+            id: true,
+            name: true,
+            sellingPrice: true
+          }
+        }),
+        tx.branchStock.findMany({
+          where: {
+            branchId,
+            productId: { in: productIds }
+          },
+          select: {
+            productId: true,
+            quantity: true
+          }
+        })
+      ]);
+
+      const productMap = new Map(products.map((product) => [product.id, product]));
+      const branchStockMap = new Map(branchStocks.map((stock) => [stock.productId, stock.quantity]));
 
       // 1. Validate stocks and compute prices
-      const itemsToCreate = [];
-      const movementsToCreate = [];
+      const itemsToCreate: any[] = [];
+      const movementsToCreate: any[] = [];
 
       for (const item of items) {
-        const prod = await tx.product.findUnique({ where: { id: item.productId } });
+        const prod = productMap.get(item.productId);
         if (!prod) throw new Error(`Product not found: ${item.productId}`);
 
         // Check branch stock
-        const bStock = await tx.branchStock.findUnique({
-          where: { branchId_productId: { branchId, productId: item.productId } }
-        });
-
-        if (!bStock || bStock.quantity < item.quantity) {
+        const currentBranchQty = branchStockMap.get(item.productId) || 0;
+        if (currentBranchQty < item.quantity) {
           throw new Error(`Insufficient stock for product ${prod.name} at this branch.`);
         }
 
@@ -89,18 +116,6 @@ router.post("/", protect, async (req: AuthenticatedRequest, res: Response) => {
           imei: item.imei || null
         });
 
-        // Decrement branch stock
-        await tx.branchStock.update({
-          where: { branchId_productId: { branchId, productId: item.productId } },
-          data: { quantity: { decrement: item.quantity } }
-        });
-
-        // Decrement product total stock
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stockQuantity: { decrement: item.quantity } }
-        });
-
         // Prepare stock movement
         movementsToCreate.push({
           productId: item.productId,
@@ -110,6 +125,21 @@ router.post("/", protect, async (req: AuthenticatedRequest, res: Response) => {
           notes: `POS sale checkout`
         });
       }
+
+      await Promise.all(
+        items.map((item: any) =>
+          Promise.all([
+            tx.branchStock.update({
+              where: { branchId_productId: { branchId, productId: item.productId } },
+              data: { quantity: { decrement: item.quantity } }
+            }),
+            tx.product.update({
+              where: { id: item.productId },
+              data: { stockQuantity: { decrement: item.quantity } }
+            })
+          ])
+        )
+      );
 
       // Calculate final payable amount
       const payableAmount = Math.max(0, subtotal - (discountAmount || 0) + (taxAmount || 0));
@@ -180,18 +210,17 @@ router.post("/", protect, async (req: AuthenticatedRequest, res: Response) => {
       });
 
       // Insert movements
-      for (const mv of movementsToCreate) {
-        await tx.stockMovement.create({
-          data: {
-            ...mv,
-            referenceId: sale.id
-          }
-        });
-      }
+      await tx.stockMovement.createMany({
+        data: movementsToCreate.map((mv) => ({
+          ...mv,
+          referenceId: sale.id
+        }))
+      });
 
       return sale;
     });
 
+    invalidateCache("reports:");
     return res.status(201).json(saleResult);
   } catch (error: any) {
     console.error(error);
@@ -319,6 +348,7 @@ router.post("/returns", protect, async (req, res) => {
       return { success: true, refundedAmount: refundValue };
     });
 
+    invalidateCache("reports:");
     return res.json(refundResult);
   } catch (error: any) {
     console.error(error);

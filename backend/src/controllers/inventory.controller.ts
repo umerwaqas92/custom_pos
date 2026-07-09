@@ -1,6 +1,7 @@
 import { Router } from "express";
 import prisma from "../utils/db";
 import { protect, restrictTo } from "../middleware/auth";
+import { invalidateCache } from "../utils/cache";
 
 const router = Router();
 
@@ -58,6 +59,7 @@ router.post("/adjust", protect, restrictTo("OWNER", "MANAGER", "WAREHOUSE"), asy
       return movement;
     });
 
+    invalidateCache("reports:");
     return res.json(result);
   } catch (error: any) {
     return res.status(400).json({ error: error.message || "Failed to adjust stock." });
@@ -123,6 +125,7 @@ router.post("/transfer", protect, restrictTo("OWNER", "MANAGER", "WAREHOUSE"), a
       return { success: true, transferred: qty };
     });
 
+    invalidateCache("reports:");
     return res.json(result);
   } catch (error: any) {
     return res.status(400).json({ error: error.message || "Transfer failed." });

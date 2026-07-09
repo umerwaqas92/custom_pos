@@ -73,7 +73,13 @@ model Product {
   purchaseItems  PurchaseItem[]
   saleItems      SaleItem[]
   stockMovements StockMovement[]
-  
+
+  @@index([categoryId])
+  @@index([brandId])
+  @@index([supplierId])
+  @@index([name])
+  @@index([stockQuantity])
+
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 }
@@ -87,6 +93,8 @@ model BranchStock {
   product    Product  @relation(fields: [productId], references: [id])
 
   @@unique([branchId, productId])
+  @@index([branchId])
+  @@index([productId])
 }
 
 model Category {
@@ -147,6 +155,10 @@ model PurchaseOrder {
   attachmentPath String?
   items          PurchaseItem[]
   payments       SupplierPayment[]
+  
+  @@index([supplierId])
+  @@index([status])
+  @@index([orderDate])
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 }
@@ -159,6 +171,9 @@ model PurchaseItem {
   product         Product       @relation(fields: [productId], references: [id])
   quantity        Int
   costPrice       Float
+
+  @@index([purchaseOrderId])
+  @@index([productId])
 }
 
 model Sale {
@@ -180,6 +195,11 @@ model Sale {
   notes          String?
   items          SaleItem[]
   warrantyClaims WarrantyClaim[]
+
+  @@index([customerId])
+  @@index([cashierId])
+  @@index([branchId])
+  @@index([saleDate])
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 }
@@ -197,6 +217,9 @@ model SaleItem {
   totalPrice   Float
   serialNumber String?
   imei         String?
+
+  @@index([saleId])
+  @@index([productId])
 }
 
 model RepairJob {
@@ -216,6 +239,11 @@ model RepairJob {
   estimatedDelivery DateTime?
   notes             String?
   photos            String?   // JSON string representing array of paths
+
+  @@index([customerId])
+  @@index([technicianId])
+  @@index([status])
+  @@index([createdAt])
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 }
@@ -229,6 +257,11 @@ model WarrantyClaim {
   status             String    @default("PENDING") // 'PENDING', 'APPROVED', 'REJECTED'
   resolutionDetails  String?
   notes              String?
+
+  @@index([saleId])
+  @@index([productId])
+  @@index([status])
+  @@index([claimDate])
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 }
@@ -242,6 +275,10 @@ model StockMovement {
   branchId    String?
   referenceId String?
   notes       String?
+
+  @@index([productId])
+  @@index([branchId])
+  @@index([createdAt])
   createdAt   DateTime @default(now())
 }
 
@@ -253,6 +290,9 @@ model Expense {
   description   String?
   paymentMethod String
   attachment    String?
+
+  @@index([date])
+  @@index([category])
   createdAt     DateTime @default(now())
 }
 
@@ -264,6 +304,9 @@ model CustomerCreditPayment {
   paymentDate   DateTime @default(now())
   paymentMethod String
   notes         String?
+
+  @@index([customerId])
+  @@index([paymentDate])
 }
 
 model SupplierPayment {
@@ -276,6 +319,10 @@ model SupplierPayment {
   paymentDate     DateTime       @default(now())
   paymentMethod   String
   notes           String?
+
+  @@index([supplierId])
+  @@index([purchaseOrderId])
+  @@index([paymentDate])
 }
 
 model ActivityLog {
@@ -284,6 +331,9 @@ model ActivityLog {
   user      User     @relation(fields: [userId], references: [id])
   action    String
   details   String?
+
+  @@index([userId])
+  @@index([createdAt])
   createdAt DateTime @default(now())
 }
 
@@ -313,6 +363,10 @@ model Transaction {
   description     String?
   branchId        String?
   createdBy       String?
+
+  @@index([bankAccountId])
+  @@index([branchId])
+  @@index([createdAt])
   createdAt       DateTime     @default(now())
 }
 
