@@ -8,7 +8,9 @@ import {
   AlertCircle,
   History,
   CheckCircle,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Edit,
+  Trash2
 } from "lucide-react";
 
 export default function Inventory() {
@@ -28,6 +30,75 @@ export default function Inventory() {
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+
+  // Edit states & actions
+  const [editProductId, setEditProductId] = useState("");
+  const [editProduct, setEditProduct] = useState({
+    name: "", sku: "", barcode: "", categoryId: "", brandId: "",
+    model: "", purchasePrice: "", sellingPrice: "", warrantyMonths: "12",
+    minStock: "5", type: "SINGLE", description: ""
+  });
+
+  const handleOpenEdit = (p: any) => {
+    setEditProductId(p.id);
+    setEditProduct({
+      name: p.name || "",
+      sku: p.sku || "",
+      barcode: p.barcode || "",
+      categoryId: p.categoryId || "",
+      brandId: p.brandId || "",
+      model: p.model || "",
+      purchasePrice: String(p.purchasePrice || ""),
+      sellingPrice: String(p.sellingPrice || ""),
+      warrantyMonths: String(p.warrantyMonths || "12"),
+      minStock: String(p.minStock || "5"),
+      type: p.type || "SINGLE",
+      description: p.description || ""
+    });
+    setEditOpen(true);
+  };
+
+  const handleEditProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const { name, sku, purchasePrice, sellingPrice } = editProduct;
+
+    if (!name || !sku || !purchasePrice || !sellingPrice) {
+      addNotification("Please fill in all required fields.", "warning");
+      return;
+    }
+
+    try {
+      await axios.put(`/api/products/${editProductId}`, {
+        ...editProduct,
+        purchasePrice: Number(purchasePrice),
+        sellingPrice: Number(sellingPrice),
+        warrantyMonths: Number(editProduct.warrantyMonths),
+        minStock: Number(editProduct.minStock)
+      });
+      addNotification("Product updated successfully.", "success");
+      setEditOpen(false);
+      loadInventory();
+    } catch (err: any) {
+      const msg = err.response?.data?.error || "Failed to update product.";
+      addNotification(msg, "warning");
+    }
+  };
+
+  const handleDeleteProduct = async (id: string, name: string) => {
+    if (!window.confirm(`Are you sure you want to delete "${name}"? This will delete all branch stocks and stock movements associated with it.`)) {
+      return;
+    }
+
+    try {
+      await axios.delete(`/api/products/${id}`);
+      addNotification("Product deleted successfully.", "success");
+      loadInventory();
+    } catch (err: any) {
+      const msg = err.response?.data?.error || "Failed to delete product.";
+      addNotification(msg, "warning");
+    }
+  };
 
   // Form states
   const [newProduct, setNewProduct] = useState({
@@ -248,12 +319,13 @@ export default function Inventory() {
                 <th className="pb-3 text-right">Retail Price</th>
                 <th className="pb-3 text-center">Total Stock</th>
                 <th className="pb-3 text-center">Location Levels</th>
+                <th className="pb-3 text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/50">
               {filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={9} className="py-8 text-center text-muted-foreground">
                     No products matching search parameters.
                   </td>
                 </tr>
@@ -282,6 +354,24 @@ export default function Inventory() {
                               {bs.branch.name}: <strong>{bs.quantity}</strong>
                             </span>
                           ))}
+                        </div>
+                      </td>
+                      <td className="py-4 text-center">
+                        <div className="flex justify-center gap-2">
+                          <button
+                            onClick={() => handleOpenEdit(p)}
+                            className="p-1 text-muted-foreground hover:text-primary transition"
+                            title="Edit"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteProduct(p.id, p.name)}
+                            className="p-1 text-muted-foreground hover:text-destructive transition"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -387,6 +477,159 @@ export default function Inventory() {
                 <button
                   type="button"
                   onClick={() => setAddOpen(false)}
+                  className="px-4 py-2 border border-border text-xs rounded hover:bg-secondary transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-primary text-white text-xs rounded hover:bg-primary/95 transition"
+                >
+                  Save Product
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Product Dialog Modal */}
+      {editOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 px-4 overflow-y-auto">
+          <div className="bg-card border border-border w-full max-w-lg p-6 rounded-2xl shadow-2xl relative my-8">
+            <h3 className="text-base font-bold text-foreground mb-4">Edit Catalog Product</h3>
+            <form onSubmit={handleEditProduct} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Product Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editProduct.name}
+                    onChange={(e) => setEditProduct({ ...editProduct, name: e.target.value })}
+                    className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase">SKU Code *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editProduct.sku}
+                    onChange={(e) => setEditProduct({ ...editProduct, sku: e.target.value })}
+                    className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Barcode (EAN/UPC)</label>
+                  <input
+                    type="text"
+                    value={editProduct.barcode}
+                    onChange={(e) => setEditProduct({ ...editProduct, barcode: e.target.value })}
+                    className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Product Model</label>
+                  <input
+                    type="text"
+                    value={editProduct.model}
+                    onChange={(e) => setEditProduct({ ...editProduct, model: e.target.value })}
+                    placeholder="e.g. iPhone 15 Pro, XPS 15"
+                    className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Category</label>
+                  <select
+                    value={editProduct.categoryId}
+                    onChange={(e) => setEditProduct({ ...editProduct, categoryId: e.target.value })}
+                    className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
+                  >
+                    <option value="">Choose category...</option>
+                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Brand</label>
+                  <select
+                    value={editProduct.brandId}
+                    onChange={(e) => setEditProduct({ ...editProduct, brandId: e.target.value })}
+                    className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
+                  >
+                    <option value="">Choose brand...</option>
+                    {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Purchase Cost (Rs.) *</label>
+                  <input
+                    type="number"
+                    required
+                    step="0.01"
+                    value={editProduct.purchasePrice}
+                    onChange={(e) => setEditProduct({ ...editProduct, purchasePrice: e.target.value })}
+                    className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Selling Price (Rs.) *</label>
+                  <input
+                    type="number"
+                    required
+                    step="0.01"
+                    value={editProduct.sellingPrice}
+                    onChange={(e) => setEditProduct({ ...editProduct, sellingPrice: e.target.value })}
+                    className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Warranty (Months)</label>
+                  <input
+                    type="number"
+                    value={editProduct.warrantyMonths}
+                    onChange={(e) => setEditProduct({ ...editProduct, warrantyMonths: e.target.value })}
+                    className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Min Alert Stock Level</label>
+                  <input
+                    type="number"
+                    value={editProduct.minStock}
+                    onChange={(e) => setEditProduct({ ...editProduct, minStock: e.target.value })}
+                    className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase">Product Type</label>
+                <select
+                  value={editProduct.type}
+                  onChange={(e) => setEditProduct({ ...editProduct, type: e.target.value })}
+                  className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
+                >
+                  <option value="SINGLE">Standard Electronics Item</option>
+                  <option value="VARIABLE">Variable Option Product</option>
+                  <option value="BUNDLE">Restocked Bundle Package</option>
+                  <option value="ACCESSORY">Shop Accessories Line</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase">Product Description</label>
+                <textarea
+                  value={editProduct.description}
+                  onChange={(e) => setEditProduct({ ...editProduct, description: e.target.value })}
+                  className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none h-16 resize-none"
+                />
+              </div>
+
+              <div className="flex gap-3 justify-end pt-4">
+                <button
+                  type="button"
+                  onClick={() => setEditOpen(false)}
                   className="px-4 py-2 border border-border text-xs rounded hover:bg-secondary transition"
                 >
                   Cancel

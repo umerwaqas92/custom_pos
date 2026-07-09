@@ -286,3 +286,52 @@ model ActivityLog {
   details   String?
   createdAt DateTime @default(now())
 }
+
+model BankAccount {
+  id            String        @id @default(uuid())
+  name          String        // e.g. "HBL Main Account", "Cash Drawer"
+  type          String        // 'CASH', 'BANK', 'MOBILE_WALLET'
+  accountNumber String?
+  bankName      String?
+  balance       Float         @default(0.0)
+  isActive      Boolean       @default(true)
+  notes         String?
+  transactions  Transaction[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model Transaction {
+  id              String       @id @default(uuid())
+  bankAccountId   String
+  bankAccount     BankAccount  @relation(fields: [bankAccountId], references: [id])
+  type            String       // 'INCOME', 'EXPENSE', 'TRANSFER', 'OPENING_BALANCE'
+  category        String       // 'SALE', 'EXPENSE', 'PURCHASE', 'CREDIT_PAYMENT', 'SUPPLIER_PAYMENT', 'TRANSFER', 'ADJUSTMENT', 'OPENING'
+  amount          Float
+  referenceType   String?      // 'SALE', 'EXPENSE', 'PURCHASE_ORDER', 'CREDIT_PAYMENT', 'SUPPLIER_PAYMENT', 'MANUAL'
+  referenceId     String?      // ID of the related record
+  description     String?
+  branchId        String?
+  createdBy       String?
+  createdAt       DateTime     @default(now())
+}
+
+model DailyClosing {
+  id                String    @id @default(uuid())
+  closingDate       DateTime  @unique
+  branchId          String?
+  openingBalance    Float     @default(0.0)
+  totalSales        Float     @default(0.0)
+  totalExpenses     Float     @default(0.0)
+  totalReturns      Float     @default(0.0)
+  cashIn            Float     @default(0.0)    // Other cash received
+  cashOut           Float     @default(0.0)    // Other cash paid out
+  expectedBalance   Float     @default(0.0)
+  actualBalance     Float     @default(0.0)
+  variance          Float     @default(0.0)    // actual - expected
+  status            String    @default("OPEN") // 'OPEN', 'CLOSED'
+  notes             String?
+  closedBy          String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
