@@ -88,3 +88,39 @@
 .animate-toast-slide {
   animation: slide-in-right 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+@media print {
+  /* Hide all background layouts, buttons, sidebars, headers */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Display only the receipt container block */
+  #printable-receipt,
+  #printable-receipt * {
+    visibility: visible;
+  }
+
+  #printable-receipt {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 !important;
+    padding: 16px !important;
+    border: none !important;
+    background: white !important;
+    color: #000000 !important;
+  }
+
+  /* Render ink-friendly dark text colors for print */
+  #printable-receipt h4,
+  #printable-receipt p,
+  #printable-receipt span,
+  #printable-receipt strong,
+  #printable-receipt div {
+    color: #000000 !important;
+    border-color: #e2e8f0 !important;
+  }
+}

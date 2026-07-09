@@ -117,11 +117,7 @@ export default function POS() {
 
   // Automatically adjust amountPaid when payableAmount or paymentMethod changes
   useEffect(() => {
-    if (paymentMethod === "CREDIT") {
-      setAmountPaid("0");
-    } else {
-      setAmountPaid(payableAmount.toFixed(2));
-    }
+    setAmountPaid(payableAmount.toFixed(2));
   }, [payableAmount, paymentMethod]);
 
   const handleInstantCheckout = async () => {
@@ -438,81 +434,66 @@ export default function POS() {
           {/* Payment Method Selector Grid */}
           <div className="space-y-1.5">
             <label className="text-[10px] font-bold text-muted-foreground uppercase">Payment Method</label>
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="grid grid-cols-3 gap-1.5">
               <button
                 type="button"
                 onClick={() => setPaymentMethod("CASH")}
-                className={`flex items-center gap-1.5 p-2 rounded-lg border text-left transition-all ${
+                className={`flex items-center justify-center gap-1 p-2 rounded-lg border text-left transition-all ${
                   paymentMethod === "CASH"
                     ? "bg-primary/10 border-primary text-primary font-bold shadow"
                     : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                 }`}
               >
                 <Banknote className="w-3.5 h-3.5 flex-shrink-0" />
-                <span className="text-[10px] font-extrabold">Cash</span>
+                <span className="text-[10px] font-extrabold font-black">Cash</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setPaymentMethod("CARD")}
-                className={`flex items-center gap-1.5 p-2 rounded-lg border text-left transition-all ${
+                className={`flex items-center justify-center gap-1 p-2 rounded-lg border text-left transition-all ${
                   paymentMethod === "CARD"
                     ? "bg-primary/10 border-primary text-primary font-bold shadow"
                     : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                 }`}
               >
                 <Landmark className="w-3.5 h-3.5 flex-shrink-0" />
-                <span className="text-[10px] font-extrabold font-extrabold">Bank</span>
+                <span className="text-[10px] font-extrabold font-black">Bank</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setPaymentMethod("MOBILE")}
-                className={`flex items-center gap-1.5 p-2 rounded-lg border text-left transition-all ${
+                className={`flex items-center justify-center gap-1 p-2 rounded-lg border text-left transition-all ${
                   paymentMethod === "MOBILE"
                     ? "bg-primary/10 border-primary text-primary font-bold shadow"
                     : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                 }`}
               >
                 <Wallet className="w-3.5 h-3.5 flex-shrink-0" />
-                <span className="text-[10px] font-extrabold font-extrabold">Wallet</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPaymentMethod("CREDIT")}
-                className={`flex items-center gap-1.5 p-2 rounded-lg border text-left transition-all ${
-                  paymentMethod === "CREDIT"
-                    ? "bg-primary/10 border-primary text-primary font-bold shadow"
-                    : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                }`}
-              >
-                <BookOpen className="w-3.5 h-3.5 flex-shrink-0" />
-                <span className="text-[10px] font-extrabold">Credit</span>
+                <span className="text-[10px] font-extrabold font-black">Wallet</span>
               </button>
             </div>
           </div>
 
           {/* Amount Paid input */}
-          {paymentMethod !== "CREDIT" && (
-            <div className="space-y-1">
-              <div className="flex justify-between items-center text-[10px] font-bold text-muted-foreground uppercase">
-                <span>Amount Paid (Rs.)</span>
-                {Number(amountPaid) > payableAmount && (
-                  <span className="text-emerald-400 font-extrabold normal-case">
-                    Change: Rs. {(Number(amountPaid) - payableAmount).toFixed(2)}
-                  </span>
-                )}
-              </div>
-              <input
-                type="number"
-                value={amountPaid}
-                onChange={(e) => setAmountPaid(e.target.value)}
-                step="0.01"
-                className="w-full bg-secondary border border-border px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
-              />
+          <div className="space-y-1">
+            <div className="flex justify-between items-center text-[10px] font-bold text-muted-foreground uppercase">
+              <span>Amount Paid (Rs.)</span>
+              {Number(amountPaid) > payableAmount && (
+                <span className="text-emerald-400 font-extrabold normal-case">
+                  Change: Rs. {(Number(amountPaid) - payableAmount).toFixed(2)}
+                </span>
+              )}
             </div>
-          )}
+            <input
+              type="number"
+              value={amountPaid}
+              onChange={(e) => setAmountPaid(e.target.value)}
+              step="0.01"
+              className="w-full bg-secondary border border-border px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
 
           <button
             onClick={handleInstantCheckout}
@@ -538,7 +519,7 @@ export default function POS() {
             </div>
 
             {/* Receipt layout */}
-            <div className="bg-secondary/30 p-4 border border-dashed border-border rounded-xl text-xs space-y-4">
+            <div id="printable-receipt" className="bg-secondary/30 p-4 border border-dashed border-border rounded-xl text-xs space-y-4">
               <div className="text-center border-b border-border pb-3">
                 <h4 className="font-extrabold text-foreground tracking-widest uppercase">ANTIGRAVITY POS</h4>
                 <p className="text-[10px] text-muted-foreground">Invoice Receipt Slip</p>
