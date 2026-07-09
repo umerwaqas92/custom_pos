@@ -594,8 +594,15 @@ export default function POS() {
                     <div>
                       <p className="font-semibold text-foreground">{item.product.name}</p>
                       <p className="text-[9px] text-muted-foreground">
-                        Qty: {item.quantity} @ Rs. {item.unitPrice} {item.serialNumber && `(S/N: ${item.serialNumber})`}
+                        Qty: {item.quantity} @ Rs. {item.unitPrice}
                       </p>
+                      {(item.serialNumber || item.imei) && (
+                        <p className="text-[9px] text-primary/80 font-bold mt-0.5">
+                          {item.serialNumber && `S/N: ${item.serialNumber}`}
+                          {item.serialNumber && item.imei && " | "}
+                          {item.imei && `IMEI: ${item.imei}`}
+                        </p>
+                      )}
                     </div>
                     <span className="font-bold text-foreground">Rs. {item.totalPrice.toFixed(2)}</span>
                   </div>
