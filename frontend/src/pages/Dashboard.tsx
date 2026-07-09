@@ -95,21 +95,21 @@ export default function Dashboard() {
   const statCards = [
     {
       title: "Today's Revenue",
-      value: `$${stats?.totalRevenue.toLocaleString()}`,
+      value: `Rs. ${stats?.totalRevenue.toLocaleString()}`,
       description: "Aggregated gross sales",
       icon: DollarSign,
       color: "bg-blue-500/10 text-blue-400 border-blue-500/20"
     },
     {
       title: "Net Profit Margin",
-      value: `$${stats?.netProfit.toLocaleString()}`,
+      value: `Rs. ${stats?.netProfit.toLocaleString()}`,
       description: "Gross revenue minus expenses",
       icon: TrendingUp,
       color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
     },
     {
       title: "Storefront Expenses",
-      value: `$${stats?.totalExpenses.toLocaleString()}`,
+      value: `Rs. ${stats?.totalExpenses.toLocaleString()}`,
       description: "Operating costs logged",
       icon: TrendingDown,
       color: "bg-rose-500/10 text-rose-400 border-rose-500/20"
@@ -297,7 +297,7 @@ export default function Dashboard() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs font-bold text-foreground">${p.revenue.toLocaleString()}</p>
+                      <p className="text-xs font-bold text-foreground">Rs. {p.revenue.toLocaleString()}</p>
                       <p className="text-[10px] text-muted-foreground">{p.quantity} units sold</p>
                     </div>
                   </div>

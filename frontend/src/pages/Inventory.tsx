@@ -266,8 +266,8 @@ export default function Inventory() {
                       <td className="py-4 text-muted-foreground">{p.sku}</td>
                       <td className="py-4 text-foreground">{p.brand?.name || "-"}</td>
                       <td className="py-4 text-foreground">{p.category?.name || "-"}</td>
-                      <td className="py-4 text-right text-muted-foreground">${p.purchasePrice}</td>
-                      <td className="py-4 text-right font-semibold text-foreground">${p.sellingPrice}</td>
+                      <td className="py-4 text-right text-muted-foreground">Rs. {p.purchasePrice}</td>
+                      <td className="py-4 text-right font-semibold text-foreground">Rs. {p.sellingPrice}</td>
                       <td className="py-4 text-center">
                         <span className={`font-bold px-2 py-0.5 rounded ${
                           isLow ? "bg-red-500/10 text-red-400" : "bg-green-500/10 text-green-400"

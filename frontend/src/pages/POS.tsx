@@ -281,7 +281,7 @@ export default function POS() {
                   </div>
 
                   <div className="flex items-center justify-between mt-4">
-                    <span className="font-bold text-sm text-foreground">${p.sellingPrice}</span>
+                    <span className="font-bold text-sm text-foreground">Rs. {p.sellingPrice}</span>
                     <span
                       className={`text-[10px] px-2 py-0.5 rounded font-bold ${
                         branchQty <= 0
@@ -330,7 +330,7 @@ export default function POS() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <h4 className="font-bold text-xs text-foreground truncate">{item.name}</h4>
-                    <p className="text-[10px] text-muted-foreground">SKU: {item.sku} | Price: ${item.sellingPrice}</p>
+                    <p className="text-[10px] text-muted-foreground">SKU: {item.sku} | Price: Rs. {item.sellingPrice}</p>
                   </div>
                   <button onClick={() => removeFromCart(item.productId)} className="text-muted-foreground hover:text-destructive">
                     <Trash2 className="w-4 h-4" />
@@ -373,7 +373,7 @@ export default function POS() {
                     </button>
                   </div>
                   <span className="font-bold text-xs text-foreground">
-                    ${((item.sellingPrice * item.quantity) * (1 - item.discount / 100)).toFixed(2)}
+                    Rs. {((item.sellingPrice * item.quantity) * (1 - item.discount / 100)).toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -395,7 +395,7 @@ export default function POS() {
               <option value="">Walk-in Customer</option>
               {customers.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.name} ({c.phone}) - Due: ${c.creditBalance}
+                  {c.name} ({c.phone}) - Due: Rs. {c.creditBalance}
                 </option>
               ))}
             </select>
@@ -405,14 +405,14 @@ export default function POS() {
           <div className="space-y-1.5 text-xs">
             <div className="flex justify-between text-muted-foreground">
               <span>Subtotal:</span>
-              <span>${subtotal.toFixed(2)}</span>
+              <span>Rs. {subtotal.toFixed(2)}</span>
             </div>
             
             {/* Cart overall discount */}
             <div className="flex justify-between text-muted-foreground items-center">
               <span className="flex items-center gap-1">
                 <Percent className="w-3.5 h-3.5 text-indigo-400" />
-                Cart Discount ($):
+                Cart Discount (Rs.):
               </span>
               <input
                 type="number"
@@ -423,11 +423,11 @@ export default function POS() {
             </div>
             <div className="flex justify-between text-muted-foreground">
               <span>Estimated Tax:</span>
-              <span>${finalTax.toFixed(2)}</span>
+              <span>Rs. {finalTax.toFixed(2)}</span>
             </div>
             <div className="flex justify-between font-black text-sm text-foreground pt-1.5 border-t border-border/50">
               <span>Grand Total:</span>
-              <span>${payableAmount.toFixed(2)}</span>
+              <span>Rs. {payableAmount.toFixed(2)}</span>
             </div>
           </div>
 
@@ -468,7 +468,7 @@ export default function POS() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase">Amount Paid ($)</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase">Amount Paid (Rs.)</label>
                 <input
                   type="number"
                   value={amountPaid}
@@ -481,7 +481,7 @@ export default function POS() {
               <div className="bg-secondary/50 p-4 rounded-xl border border-border text-xs space-y-1 text-muted-foreground">
                 <div className="flex justify-between font-bold text-foreground">
                   <span>Grand Total Payable:</span>
-                  <span>${payableAmount.toFixed(2)}</span>
+                  <span>Rs. {payableAmount.toFixed(2)}</span>
                 </div>
                 {paymentMethod === "CREDIT" && (
                   <p className="text-amber-400 mt-2">
@@ -525,10 +525,10 @@ export default function POS() {
                     <div>
                       <p className="font-semibold text-foreground">{item.product.name}</p>
                       <p className="text-[9px] text-muted-foreground">
-                        Qty: {item.quantity} @ ${item.unitPrice} {item.serialNumber && `(S/N: ${item.serialNumber})`}
+                        Qty: {item.quantity} @ Rs. {item.unitPrice} {item.serialNumber && `(S/N: ${item.serialNumber})`}
                       </p>
                     </div>
-                    <span className="font-bold text-foreground">${item.totalPrice.toFixed(2)}</span>
+                    <span className="font-bold text-foreground">Rs. {item.totalPrice.toFixed(2)}</span>
                   </div>
                 ))}
               </div>
@@ -536,26 +536,26 @@ export default function POS() {
               <div className="border-t border-border pt-3 space-y-1 text-[11px]">
                 <div className="flex justify-between text-muted-foreground">
                   <span>Subtotal:</span>
-                  <span>${receiptResult.totalAmount.toFixed(2)}</span>
+                  <span>Rs. {receiptResult.totalAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>Discount:</span>
-                  <span>-${receiptResult.discountAmount.toFixed(2)}</span>
+                  <span>-Rs. {receiptResult.discountAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>Sales Tax ({receiptResult.items[0]?.tax || 0}%):</span>
-                  <span>+${receiptResult.taxAmount.toFixed(2)}</span>
+                  <span>+Rs. {receiptResult.taxAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between font-black text-foreground text-xs pt-1 border-t border-border/40">
                   <span>Total Paid ({receiptResult.paymentMethod}):</span>
-                  <span>${receiptResult.paidAmount.toFixed(2)}</span>
+                  <span>Rs. {receiptResult.paidAmount.toFixed(2)}</span>
                 </div>
               </div>
 
               {receiptResult.customer && (
                 <div className="bg-secondary/60 p-2 rounded text-[10px] text-muted-foreground">
                   <p>Customer: <strong>{receiptResult.customer.name}</strong></p>
-                  <p>Repayment Balance: <strong>${receiptResult.customer.creditBalance}</strong></p>
+                  <p>Repayment Balance: <strong>Rs. {receiptResult.customer.creditBalance}</strong></p>
                 </div>
               )}
             </div>

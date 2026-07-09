@@ -225,7 +225,7 @@ export default function Accounting() {
                       <td className="py-4 text-muted-foreground">{new Date(exp.date).toLocaleDateString()}</td>
                       <td className="py-4 text-foreground uppercase font-semibold">{exp.paymentMethod}</td>
                       <td className="py-4 text-muted-foreground truncate max-w-xs">{exp.description || "-"}</td>
-                      <td className="py-4 text-right pr-2 font-extrabold text-red-400">${exp.amount}</td>
+                      <td className="py-4 text-right pr-2 font-extrabold text-red-400">Rs. {exp.amount}</td>
                     </tr>
                   ))
                 )}
@@ -269,7 +269,7 @@ export default function Accounting() {
                           ))}
                         </div>
                       </td>
-                      <td className="py-4 text-right font-black text-foreground">${pur.totalAmount}</td>
+                      <td className="py-4 text-right font-black text-foreground">Rs. {pur.totalAmount}</td>
                       <td className="py-4 text-center">
                         <span className={`text-[10px] px-2 py-0.5 rounded font-black uppercase ${
                           pur.status === "RECEIVED" ? "bg-green-500/10 text-green-400" : "bg-amber-500/10 text-amber-400"
@@ -318,7 +318,7 @@ export default function Accounting() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase">Expense Amount ($) *</label>
+                <label className="text-[10px] font-bold text-muted-foreground uppercase">Expense Amount (Rs.) *</label>
                 <input
                   type="number"
                   required
@@ -404,7 +404,7 @@ export default function Accounting() {
                         <span className="font-bold">{it.name}</span>
                         <div className="flex gap-3">
                           <span>Qty: {it.quantity}</span>
-                          <span>Cost: ${it.costPrice}</span>
+                          <span>Cost: Rs. {it.costPrice}</span>
                           <button
                             type="button"
                             onClick={() => handleRemovePurchaseItem(idx)}

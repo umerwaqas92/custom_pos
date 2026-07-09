@@ -194,7 +194,7 @@ export default function Contacts() {
                       </td>
                       <td className="py-4 text-right font-black text-foreground">
                         <span className={c.creditBalance > 0 ? "text-amber-400" : "text-green-400"}>
-                          ${c.creditBalance}
+                          Rs. {c.creditBalance}
                         </span>
                       </td>
                       <td className="py-4 text-center">
@@ -284,7 +284,7 @@ export default function Contacts() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase">Credit Limit ($)</label>
+                <label className="text-[10px] font-bold text-muted-foreground uppercase">Credit Limit (Rs.)</label>
                 <input
                   type="number"
                   value={newCust.creditLimit}
@@ -448,7 +448,7 @@ export default function Contacts() {
               <div className="bg-secondary/50 p-3 rounded-xl border border-border text-[11px] text-muted-foreground">
                 <div className="flex justify-between font-bold text-foreground">
                   <span>Current Outstanding Balance:</span>
-                  <span>${selectedCust.creditBalance}</span>
+                  <span>Rs. {selectedCust.creditBalance}</span>
                 </div>
               </div>
 
