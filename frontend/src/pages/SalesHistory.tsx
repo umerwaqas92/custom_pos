@@ -58,6 +58,82 @@ export default function SalesHistory() {
     }
   };
 
+  const handlePrint = () => {
+    const receiptEl = document.getElementById("printable-receipt");
+    if (!receiptEl) return;
+
+    let iframe = document.getElementById("receipt-print-iframe") as HTMLIFrameElement;
+    if (!iframe) {
+      iframe = document.createElement("iframe");
+      iframe.id = "receipt-print-iframe";
+      iframe.style.position = "fixed";
+      iframe.style.right = "0";
+      iframe.style.bottom = "0";
+      iframe.style.width = "0";
+      iframe.style.height = "0";
+      iframe.style.border = "none";
+      document.body.appendChild(iframe);
+    }
+
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) return;
+
+    const content = receiptEl.innerHTML;
+
+    doc.open();
+    doc.write(`
+      <html>
+        <head>
+          <title>Receipt</title>
+          <style>
+            body {
+              font-family: 'Courier New', Courier, monospace;
+              padding: 10px;
+              margin: 0;
+              color: #000;
+              font-size: 11px;
+              line-height: 1.4;
+            }
+            .text-center { text-align: center; }
+            .border-b { border-bottom: 1px dashed #000; }
+            .pb-3 { padding-bottom: 8px; }
+            .pt-3 { padding-top: 8px; }
+            .space-y-4 > * + * { margin-top: 12px; }
+            .space-y-2 > * + * { margin-top: 6px; }
+            .flex { display: flex; }
+            .justify-between { justify-content: space-between; }
+            .items-start { align-items: flex-start; }
+            .text-[9px] { font-size: 8px; }
+            .text-[10px] { font-size: 9px; }
+            .text-[11px] { font-size: 10px; }
+            .mt-1 { margin-top: 4px; }
+            .mt-0.5 { margin-top: 2px; }
+            .font-semibold { font-weight: 600; }
+            .font-bold { font-weight: bold; }
+            .font-extrabold { font-weight: 800; }
+            .font-black { font-weight: 900; }
+            .bg-secondary\\/60 { background: #f2f2f2; padding: 4px; border-radius: 4px; margin-top: 6px; }
+            .text-primary\\/80 { color: #000; font-weight: bold; }
+            .text-muted-foreground { color: #333; }
+            .text-foreground { color: #000; }
+          </style>
+        </head>
+        <body>
+          <div class="space-y-4">
+            ${content}
+          </div>
+          <script>
+            window.focus();
+            setTimeout(() => {
+              window.print();
+            }, 250);
+          </script>
+        </body>
+      </html>
+    `);
+    doc.close();
+  };
+
   const filteredSales = sales.filter((s) => {
     const matchesSearch =
       s.id.toLowerCase().includes(search.toLowerCase()) ||
@@ -334,7 +410,7 @@ export default function SalesHistory() {
 
             <div className="flex gap-3">
               <button
-                onClick={() => window.print()}
+                onClick={handlePrint}
                 className="flex-1 border border-border hover:bg-secondary text-foreground text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition"
               >
                 <Receipt className="w-4 h-4" />
