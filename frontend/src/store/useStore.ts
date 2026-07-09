@@ -51,6 +51,7 @@ interface StateStore {
   theme: "light" | "dark";
   gstEnabled: boolean;
   gstRate: number;
+  lowStockCount: number;
 
   // Actions
   login: (token: string, user: User) => void;
@@ -67,9 +68,10 @@ interface StateStore {
   toggleTheme: () => void;
   setGstSettings: (enabled: boolean, rate: number) => void;
   loadSettings: () => Promise<void>;
+  checkLowStock: () => Promise<void>;
 }
 
-export const useStore = create<StateStore>((set) => ({
+export const useStore = create<StateStore>((set, get) => ({
   token: localStorage.getItem("pos_token"),
   user: localStorage.getItem("pos_user") ? JSON.parse(localStorage.getItem("pos_user")!) : null,
   branches: [],
@@ -79,6 +81,7 @@ export const useStore = create<StateStore>((set) => ({
   theme: (localStorage.getItem("pos_theme") as "light" | "dark") || "dark",
   gstEnabled: localStorage.getItem("pos_gst_enabled") === "true",
   gstRate: parseFloat(localStorage.getItem("pos_gst_rate") || "0"),
+  lowStockCount: 0,
 
   // Load settings from backend on initialization
   loadSettings: async () => {
@@ -212,4 +215,25 @@ export const useStore = create<StateStore>((set) => ({
       localStorage.setItem("pos_gst_rate", String(rate));
       return { gstEnabled: enabled, gstRate: rate };
     }),
+
+  checkLowStock: async () => {
+    try {
+      const res = await axios.get("/api/inventory/alerts");
+      const alerts: any[] = res.data;
+      const count = alerts.length;
+      const prevCount = get().lowStockCount;
+      set({ lowStockCount: count });
+
+      if (count > prevCount && count > 0) {
+        const lowItems = alerts.slice(0, 3).map((p) => `${p.name} (${p.stockQuantity}/${p.minStock})`);
+        const msg =
+          count <= 3
+            ? `Low stock alert: ${lowItems.join(", ")}`
+            : `Low stock alert: ${lowItems.join(", ")} +${count - 3} more`;
+        get().addNotification(msg, "warning");
+      }
+    } catch (err) {
+      console.error("Failed to check low stock alerts:", err);
+    }
+  },
 }));

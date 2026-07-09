@@ -20,7 +20,7 @@ import {
 const PAGE_SIZE = 15;
 
 export default function Inventory() {
-  const { selectedBranchId, branches, addNotification } = useStore();
+  const { selectedBranchId, branches, addNotification, checkLowStock } = useStore();
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
@@ -245,6 +245,7 @@ export default function Inventory() {
       addNotification("Stock adjusted successfully.", "success");
       setAdjustOpen(false);
       loadInventory();
+      checkLowStock();
       setAdjustment({ productId: "", branchId: "", quantity: "", reason: "" });
     } catch (err: any) {
       const msg = err.response?.data?.error || "Failed to adjust stock.";
@@ -271,6 +272,7 @@ export default function Inventory() {
       addNotification("Inventory transferred successfully.", "success");
       setTransferOpen(false);
       loadInventory();
+      checkLowStock();
       setTransfer({ productId: "", fromBranchId: "", toBranchId: "", quantity: "", notes: "" });
     } catch (err: any) {
       const msg = err.response?.data?.error || "Transfer failed.";

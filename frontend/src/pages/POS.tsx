@@ -33,7 +33,8 @@ export default function POS() {
     clearCart,
     addNotification,
     gstEnabled,
-    gstRate
+    gstRate,
+    checkLowStock
   } = useStore();
 
   const [products, setProducts] = useState<any[]>([]);
@@ -214,6 +215,9 @@ export default function POS() {
       clearCart();
       setCartDiscount(0);
       setSelectedCustId("");
+
+      // Check for low stock after stock levels change
+      checkLowStock();
 
       // Reload products to update stock numbers
       const prodRes = await axios.get("/api/products", {

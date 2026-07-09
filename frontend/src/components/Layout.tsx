@@ -19,7 +19,8 @@ import {
   FileText,
   Settings,
   CreditCard,
-  BarChart3
+  BarChart3,
+  AlertTriangle
 } from "lucide-react";
 
 export default function Layout() {
@@ -33,13 +34,22 @@ export default function Layout() {
     notifications,
     clearNotification,
     theme,
-    toggleTheme
+    toggleTheme,
+    lowStockCount,
+    checkLowStock
   } = useStore();
 
   const location = useLocation();
   const navigate = useNavigate();
   const [notifOpen, setNotifOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // Check low stock on mount and every 5 minutes
+  useEffect(() => {
+    checkLowStock();
+    const interval = setInterval(checkLowStock, 300000); // 5 minutes
+    return () => clearInterval(interval);
+  }, [checkLowStock]);
 
   // Load branches
   useEffect(() => {
@@ -212,6 +222,20 @@ export default function Layout() {
 
           {/* Notifications & Settings Actions */}
           <div className="flex items-center gap-4 relative">
+
+            {/* Low Stock Alert Badge */}
+            {lowStockCount > 0 && (
+              <button
+                onClick={() => navigate("/inventory")}
+                className="p-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 transition relative"
+                title="Low stock items"
+              >
+                <AlertTriangle className="w-5 h-5" />
+                <span className="absolute -top-1.5 -right-1.5 bg-amber-500 text-white text-[9px] font-bold w-5 h-5 flex items-center justify-center rounded-full">
+                  {lowStockCount}
+                </span>
+              </button>
+            )}
 
             {/* Bell Notifications */}
             <button
