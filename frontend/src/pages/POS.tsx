@@ -348,7 +348,7 @@ export default function POS() {
         </div>
 
         {/* Cart Item List */}
-        <div className="flex-1 overflow-y-auto divide-y divide-border/60 py-2 pr-1 space-y-4 min-h-0 max-h-[calc(100vh-440px)]">
+        <div className="flex-1 overflow-y-auto divide-y divide-border/60 py-2 pr-1 space-y-4 min-h-0 max-h-[240px]">
           {cart.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full py-16 text-center text-muted-foreground space-y-2">
               <ShoppingCart className="w-10 h-10 opacity-30" />
