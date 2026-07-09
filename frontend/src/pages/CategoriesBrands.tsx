@@ -7,7 +7,9 @@ import {
   Tag,
   Grid,
   CheckCircle,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Edit,
+  Trash2
 } from "lucide-react";
 
 export default function CategoriesBrands() {
@@ -26,6 +28,49 @@ export default function CategoriesBrands() {
   // Forms state
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newBrandName, setNewBrandName] = useState("");
+
+  // Edit State
+  const [editOpen, setEditOpen] = useState(false);
+  const [editType, setEditType] = useState<"CATEGORY" | "BRAND" | null>(null);
+  const [editId, setEditId] = useState("");
+  const [editName, setEditName] = useState("");
+
+  const handleOpenEdit = (type: "CATEGORY" | "BRAND", id: string, name: string) => {
+    setEditType(type);
+    setEditId(id);
+    setEditName(name);
+    setEditOpen(true);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editName.trim()) return;
+
+    try {
+      const endpoint = editType === "CATEGORY" ? `/api/products/categories/${editId}` : `/api/products/brands/${editId}`;
+      await axios.put(endpoint, { name: editName });
+      addNotification(`${editType === "CATEGORY" ? "Category" : "Brand"} updated successfully.`, "success");
+      setEditOpen(false);
+      loadData();
+    } catch (err: any) {
+      addNotification("Failed to update item.", "warning");
+    }
+  };
+
+  const handleDelete = async (type: "CATEGORY" | "BRAND", id: string, name: string) => {
+    if (!window.confirm(`Are you sure you want to delete ${type === "CATEGORY" ? "category" : "brand"} "${name}"? Products using it will set to unassigned.`)) {
+      return;
+    }
+
+    try {
+      const endpoint = type === "CATEGORY" ? `/api/products/categories/${id}` : `/api/products/brands/${id}`;
+      await axios.delete(endpoint);
+      addNotification(`${type === "CATEGORY" ? "Category" : "Brand"} deleted successfully.`, "success");
+      loadData();
+    } catch (err: any) {
+      addNotification("Failed to delete item.", "warning");
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -144,6 +189,7 @@ export default function CategoriesBrands() {
                   <th className="pb-3 pl-2">Category ID Reference</th>
                   <th className="pb-3">Category Name</th>
                   <th className="pb-3">Created Date</th>
+                  <th className="pb-3 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
@@ -154,6 +200,24 @@ export default function CategoriesBrands() {
                       <td className="py-4 pl-2 text-muted-foreground font-mono">{cat.id}</td>
                       <td className="py-4 font-bold text-foreground">{cat.name}</td>
                       <td className="py-4 text-muted-foreground">{new Date(cat.createdAt).toLocaleDateString()}</td>
+                      <td className="py-4 text-center">
+                        <div className="flex justify-center gap-2">
+                          <button
+                            onClick={() => handleOpenEdit("CATEGORY", cat.id, cat.name)}
+                            className="p-1 text-muted-foreground hover:text-primary transition"
+                            title="Edit"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete("CATEGORY", cat.id, cat.name)}
+                            className="p-1 text-muted-foreground hover:text-destructive transition"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
               </tbody>
@@ -170,6 +234,7 @@ export default function CategoriesBrands() {
                   <th className="pb-3 pl-2">Brand ID Reference</th>
                   <th className="pb-3">Brand Name</th>
                   <th className="pb-3">Created Date</th>
+                  <th className="pb-3 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
@@ -180,6 +245,24 @@ export default function CategoriesBrands() {
                       <td className="py-4 pl-2 text-muted-foreground font-mono">{br.id}</td>
                       <td className="py-4 font-bold text-foreground">{br.name}</td>
                       <td className="py-4 text-muted-foreground">{new Date(br.createdAt).toLocaleDateString()}</td>
+                      <td className="py-4 text-center">
+                        <div className="flex justify-center gap-2">
+                          <button
+                            onClick={() => handleOpenEdit("BRAND", br.id, br.name)}
+                            className="p-1 text-muted-foreground hover:text-primary transition"
+                            title="Edit"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete("BRAND", br.id, br.name)}
+                            className="p-1 text-muted-foreground hover:text-destructive transition"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
               </tbody>
@@ -257,6 +340,43 @@ export default function CategoriesBrands() {
                   className="px-4 py-2 bg-primary text-white text-xs rounded hover:bg-primary/95 transition"
                 >
                   Save Brand
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Category/Brand Dialog Modal */}
+      {editOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 px-4">
+          <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
+            <h3 className="font-bold text-sm text-foreground mb-4">Edit {editType === "CATEGORY" ? "Category" : "Brand"}</h3>
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase">{editType === "CATEGORY" ? "Category Name" : "Brand Name"} *</label>
+                <input
+                  type="text"
+                  required
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
+                />
+              </div>
+
+              <div className="flex gap-3 justify-end pt-4">
+                <button
+                  type="button"
+                  onClick={() => { setEditOpen(false); setEditType(null); }}
+                  className="px-4 py-2 border border-border text-xs rounded hover:bg-secondary transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-primary text-white text-xs rounded hover:bg-primary/95 transition"
+                >
+                  Save Changes
                 </button>
               </div>
             </form>

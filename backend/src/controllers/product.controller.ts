@@ -30,6 +30,39 @@ router.post("/categories", protect, restrictTo("OWNER", "MANAGER"), async (req, 
   }
 });
 
+// Update Category
+router.put("/categories/:id", protect, restrictTo("OWNER", "MANAGER"), async (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ error: "Name is required." });
+  try {
+    const updated = await prisma.category.update({
+      where: { id },
+      data: { name }
+    });
+    return res.json(updated);
+  } catch (error) {
+    return res.status(400).json({ error: "Failed to update category." });
+  }
+});
+
+// Delete Category
+router.delete("/categories/:id", protect, restrictTo("OWNER", "MANAGER"), async (req, res) => {
+  const { id } = req.params;
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.product.updateMany({
+        where: { categoryId: id },
+        data: { categoryId: null }
+      });
+      await tx.category.delete({ where: { id } });
+    });
+    return res.json({ message: "Category deleted successfully." });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to delete category." });
+  }
+});
+
 // ==================== BRAND ROUTES ====================
 
 // List Brands
@@ -53,6 +86,39 @@ router.post("/brands", protect, restrictTo("OWNER", "MANAGER"), async (req, res)
     return res.status(201).json(brand);
   } catch (error) {
     return res.status(400).json({ error: "Brand already exists." });
+  }
+});
+
+// Update Brand
+router.put("/brands/:id", protect, restrictTo("OWNER", "MANAGER"), async (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ error: "Name is required." });
+  try {
+    const updated = await prisma.brand.update({
+      where: { id },
+      data: { name }
+    });
+    return res.json(updated);
+  } catch (error) {
+    return res.status(400).json({ error: "Failed to update brand." });
+  }
+});
+
+// Delete Brand
+router.delete("/brands/:id", protect, restrictTo("OWNER", "MANAGER"), async (req, res) => {
+  const { id } = req.params;
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.product.updateMany({
+        where: { brandId: id },
+        data: { brandId: null }
+      });
+      await tx.brand.delete({ where: { id } });
+    });
+    return res.json({ message: "Brand deleted successfully." });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to delete brand." });
   }
 });
 
