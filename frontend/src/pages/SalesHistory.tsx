@@ -263,11 +263,18 @@ export default function SalesHistory() {
             {/* Receipt layout */}
             <div id="printable-receipt" className="bg-secondary/30 p-4 border border-dashed border-border rounded-xl text-xs space-y-4">
               <div className="text-center border-b border-border pb-3">
-                <h4 className="font-extrabold text-foreground tracking-widest uppercase">ANTIGRAVITY POS</h4>
-                <p className="text-[10px] text-muted-foreground">Invoice Receipt Slip</p>
+                <h4 className="font-extrabold text-foreground tracking-widest uppercase">
+                  {activeSale.branch?.name || "ANTIGRAVITY POS"}
+                </h4>
+                {activeSale.branch?.address && (
+                  <p className="text-[9px] text-muted-foreground mt-0.5">{activeSale.branch.address}</p>
+                )}
+                {activeSale.branch?.phone && (
+                  <p className="text-[9px] text-muted-foreground">{activeSale.branch.phone}</p>
+                )}
+                <p className="text-[10px] text-muted-foreground mt-1">Invoice Receipt Slip</p>
                 <p className="text-[9px] text-muted-foreground mt-1">Date: {new Date(activeSale.saleDate).toLocaleString()}</p>
                 <p className="text-[9px] text-muted-foreground">Cashier: {activeSale.cashier?.name}</p>
-                <p className="text-[9px] text-muted-foreground">Location: {activeSale.branch?.name}</p>
               </div>
 
               <div className="space-y-2">

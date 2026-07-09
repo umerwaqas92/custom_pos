@@ -521,8 +521,16 @@ export default function POS() {
             {/* Receipt layout */}
             <div id="printable-receipt" className="bg-secondary/30 p-4 border border-dashed border-border rounded-xl text-xs space-y-4">
               <div className="text-center border-b border-border pb-3">
-                <h4 className="font-extrabold text-foreground tracking-widest uppercase">ANTIGRAVITY POS</h4>
-                <p className="text-[10px] text-muted-foreground">Invoice Receipt Slip</p>
+                <h4 className="font-extrabold text-foreground tracking-widest uppercase">
+                  {receiptResult.branch?.name || "ANTIGRAVITY POS"}
+                </h4>
+                {receiptResult.branch?.address && (
+                  <p className="text-[9px] text-muted-foreground mt-0.5">{receiptResult.branch.address}</p>
+                )}
+                {receiptResult.branch?.phone && (
+                  <p className="text-[9px] text-muted-foreground">{receiptResult.branch.phone}</p>
+                )}
+                <p className="text-[10px] text-muted-foreground mt-1">Invoice Receipt Slip</p>
                 <p className="text-[9px] text-muted-foreground mt-1">Date: {new Date(receiptResult.saleDate).toLocaleString()}</p>
               </div>
 

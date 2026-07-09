@@ -156,7 +156,8 @@ router.post("/", protect, async (req: AuthenticatedRequest, res: Response) => {
         include: {
           items: { include: { product: true } },
           customer: true,
-          cashier: true
+          cashier: true,
+          branch: true
         }
       });
 

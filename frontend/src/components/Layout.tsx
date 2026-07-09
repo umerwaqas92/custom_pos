@@ -17,7 +17,8 @@ import {
   ChevronRight,
   ShieldCheck,
   Layers,
-  FileText
+  FileText,
+  Settings
 } from "lucide-react";
 
 export default function Layout() {
@@ -69,7 +70,8 @@ export default function Layout() {
     { name: "Brands & Categories", path: "/categories-brands", icon: Layers, roles: ["OWNER", "MANAGER"] },
     { name: "Repairs", path: "/repairs", icon: Wrench, roles: ["OWNER", "MANAGER", "CASHIER", "TECHNICIAN"] },
     { name: "Contacts", path: "/contacts", icon: Users, roles: ["OWNER", "MANAGER", "CASHIER"] },
-    { name: "Accounting", path: "/accounting", icon: Briefcase, roles: ["OWNER", "MANAGER"] }
+    { name: "Accounting", path: "/accounting", icon: Briefcase, roles: ["OWNER", "MANAGER"] },
+    { name: "Settings", path: "/settings", icon: Settings, roles: ["OWNER", "MANAGER"] }
   ];
 
   const activeBranch = branches.find(b => b.id === selectedBranchId);

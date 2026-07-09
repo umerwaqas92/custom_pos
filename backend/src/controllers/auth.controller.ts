@@ -200,4 +200,35 @@ router.post("/branches", protect, restrictTo("OWNER"), async (req, res) => {
   }
 });
 
+// Update branch (OWNER only)
+router.put("/branches/:id", protect, restrictTo("OWNER"), async (req, res) => {
+  const { id } = req.params;
+  const { name, address, phone } = req.body;
+  if (!name) return res.status(400).json({ error: "Branch name is required." });
+  try {
+    const updatedBranch = await prisma.branch.update({
+      where: { id },
+      data: { name, address, phone }
+    });
+    return res.json(updatedBranch);
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to update branch." });
+  }
+});
+
+// Delete branch (OWNER only)
+router.delete("/branches/:id", protect, restrictTo("OWNER"), async (req, res) => {
+  const { id } = req.params;
+  try {
+    await prisma.branchStock.deleteMany({ where: { branchId: id } });
+    await prisma.user.updateMany({ where: { branchId: id }, data: { branchId: null } });
+    await prisma.dailyClosing.deleteMany({ where: { branchId: id } });
+    await prisma.branch.delete({ where: { id } });
+    return res.json({ message: "Branch deleted successfully." });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Failed to delete branch." });
+  }
+});
+
 export default router;
