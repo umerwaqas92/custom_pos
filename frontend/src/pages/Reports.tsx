@@ -195,7 +195,15 @@ export default function Reports() {
   // Helper to format table values beautifully
   const formatCellValue = (key: string, value: any) => {
     if (typeof value === "number") {
-      if (key.toLowerCase().includes("qty") || key.toLowerCase().includes("count")) {
+      const normalizedKey = key.toLowerCase();
+      const isNumericNonCurrency =
+        normalizedKey.includes("qty") ||
+        normalizedKey.includes("count") ||
+        normalizedKey.includes("stock") ||
+        normalizedKey.includes("points") ||
+        normalizedKey.includes("months");
+
+      if (isNumericNonCurrency) {
         return value.toString();
       }
       return `Rs. ${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;

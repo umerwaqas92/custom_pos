@@ -178,7 +178,11 @@ export default function Inventory() {
   const loadInventory = async () => {
     try {
       const [prodRes, catRes, brandRes] = await Promise.all([
-        axios.get("/api/products"),
+        axios.get("/api/products", {
+          params: {
+            branchId: selectedBranchId || undefined
+          }
+        }),
         axios.get("/api/products/categories"),
         axios.get("/api/products/brands")
       ]);
@@ -192,7 +196,7 @@ export default function Inventory() {
 
   useEffect(() => {
     loadInventory();
-  }, []);
+  }, [selectedBranchId]);
 
   const loadMovements = async () => {
     try {
@@ -283,6 +287,10 @@ export default function Inventory() {
   // Filter products list
   const filteredProducts = useMemo(() => {
     const result = products.filter((p) => {
+      const branchQty =
+        selectedBranchId
+          ? p.branchStocks?.find((bs: any) => bs.branchId === selectedBranchId)?.quantity ?? 0
+          : p.stockQuantity;
       const matchesSearch =
         p.name.toLowerCase().includes(search.toLowerCase()) ||
         p.sku.toLowerCase().includes(search.toLowerCase()) ||
@@ -291,7 +299,7 @@ export default function Inventory() {
       const matchesCat = !selectedCat || p.categoryId === selectedCat;
       const matchesBrand = !selectedBrand || p.brandId === selectedBrand;
 
-      const matchesLowStock = !lowStockOnly || p.stockQuantity <= p.minStock;
+      const matchesLowStock = !lowStockOnly || branchQty <= p.minStock;
 
       return matchesSearch && matchesCat && matchesBrand && matchesLowStock;
     });
@@ -305,7 +313,14 @@ export default function Inventory() {
         case "category": aVal = (a.category?.name || "").toLowerCase(); bVal = (b.category?.name || "").toLowerCase(); break;
         case "purchasePrice": aVal = a.purchasePrice; bVal = b.purchasePrice; break;
         case "sellingPrice": aVal = a.sellingPrice; bVal = b.sellingPrice; break;
-        case "stock": aVal = a.stockQuantity; bVal = b.stockQuantity; break;
+        case "stock":
+          aVal = selectedBranchId
+            ? a.branchStocks?.find((bs: any) => bs.branchId === selectedBranchId)?.quantity ?? 0
+            : a.stockQuantity;
+          bVal = selectedBranchId
+            ? b.branchStocks?.find((bs: any) => bs.branchId === selectedBranchId)?.quantity ?? 0
+            : b.stockQuantity;
+          break;
         default: aVal = a.name.toLowerCase(); bVal = b.name.toLowerCase();
       }
       if (aVal < bVal) return sortDir === "asc" ? -1 : 1;
@@ -314,7 +329,7 @@ export default function Inventory() {
     });
 
     return result;
-  }, [products, search, selectedCat, selectedBrand, lowStockOnly, sortKey, sortDir]);
+  }, [products, search, selectedCat, selectedBrand, lowStockOnly, sortKey, sortDir, selectedBranchId]);
 
   const totalPages = Math.ceil(filteredProducts.length / PAGE_SIZE);
   const paginatedProducts = filteredProducts.slice(
@@ -490,7 +505,11 @@ export default function Inventory() {
                 </tr>
               ) : (
                 paginatedProducts.map((p) => {
-                  const isLow = p.stockQuantity <= p.minStock;
+                  const branchQty =
+                    selectedBranchId
+                      ? p.branchStocks?.find((bs: any) => bs.branchId === selectedBranchId)?.quantity ?? 0
+                      : p.stockQuantity;
+                  const isLow = branchQty <= p.minStock;
                   return (
                     <tr key={p.id} className={`hover:bg-secondary/20 transition ${selectedIds.has(p.id) ? "bg-primary/5" : ""}`}>
                       <td className="py-4 pl-2">
@@ -511,7 +530,7 @@ export default function Inventory() {
                         <span className={`font-bold px-2 py-0.5 rounded ${
                           isLow ? "bg-red-500/10 text-red-400" : "bg-green-500/10 text-green-400"
                         }`}>
-                          {p.stockQuantity} qty
+                          {branchQty} qty
                         </span>
                       </td>
                       <td className="py-4 text-center">

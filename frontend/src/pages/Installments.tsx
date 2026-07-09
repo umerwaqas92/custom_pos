@@ -41,6 +41,7 @@ export default function Installments() {
   // Previews/Contract Details Modal
   const [activeContract, setActiveContract] = useState<any | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const uploadsBaseUrl = axios.defaults.baseURL || "";
 
   const fetchSales = async () => {
     setLoading(true);
@@ -163,7 +164,6 @@ export default function Installments() {
       setDownPayment("");
       setCnicFrontFile(null);
       setCnicBackFile(null);
-      setCnicBackFile(null); // cheque reset check
       setChequeFile(null);
       fetchSales();
     } catch (err: any) {
@@ -747,7 +747,7 @@ export default function Installments() {
                 <p className="text-[10px] font-bold text-muted-foreground uppercase">Uploaded Contract Documents</p>
                 <div className="grid grid-cols-3 gap-2">
                   <button
-                    onClick={() => setPreviewImage(`http://localhost:5001${activeContract.emiDetails.cnicFrontPath}`)}
+                    onClick={() => setPreviewImage(`${uploadsBaseUrl}${activeContract.emiDetails.cnicFrontPath}`)}
                     className="border border-border bg-secondary hover:bg-secondary/80 p-2 rounded-xl text-center flex flex-col items-center justify-center gap-1 cursor-pointer"
                   >
                     <Eye className="w-4.5 h-4.5 text-primary" />
@@ -755,7 +755,7 @@ export default function Installments() {
                   </button>
 
                   <button
-                    onClick={() => setPreviewImage(`http://localhost:5001${activeContract.emiDetails.cnicBackPath}`)}
+                    onClick={() => setPreviewImage(`${uploadsBaseUrl}${activeContract.emiDetails.cnicBackPath}`)}
                     className="border border-border bg-secondary hover:bg-secondary/80 p-2 rounded-xl text-center flex flex-col items-center justify-center gap-1 cursor-pointer"
                   >
                     <Eye className="w-4.5 h-4.5 text-primary" />
@@ -763,7 +763,7 @@ export default function Installments() {
                   </button>
 
                   <button
-                    onClick={() => setPreviewImage(`http://localhost:5001${activeContract.emiDetails.chequePath}`)}
+                    onClick={() => setPreviewImage(`${uploadsBaseUrl}${activeContract.emiDetails.chequePath}`)}
                     className="border border-border bg-secondary hover:bg-secondary/80 p-2 rounded-xl text-center flex flex-col items-center justify-center gap-1 cursor-pointer"
                   >
                     <Eye className="w-4.5 h-4.5 text-primary" />
