@@ -794,28 +794,37 @@ export default function POS() {
               )}
             </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={handlePrint}
-                className="flex-1 border border-border hover:bg-secondary text-foreground text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition"
-              >
-                <Receipt className="w-4 h-4" />
-                Print Slip
-              </button>
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-3">
+                <button
+                  onClick={handlePrint}
+                  className="flex-1 border border-border hover:bg-secondary text-foreground text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer"
+                >
+                  <Receipt className="w-4 h-4" />
+                  Print Slip
+                </button>
+                <button
+                  onClick={downloadPdf}
+                  className="flex-1 border border-border hover:bg-secondary text-foreground text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer"
+                >
+                  <FileText className="w-4 h-4 text-primary" />
+                  Download PDF
+                </button>
+              </div>
               {receiptResult.paymentMethod === "EMI" ? (
                 <button
                   onClick={() => {
                     setReceiptResult(null);
                     navigate("/installments");
                   }}
-                  className="flex-1 bg-primary hover:bg-primary/95 text-white text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1 transition shadow-md shadow-primary/10 cursor-pointer"
+                  className="w-full bg-primary hover:bg-primary/95 text-white text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1 transition shadow-md shadow-primary/10 cursor-pointer"
                 >
                   Setup Installments Plan ➔
                 </button>
               ) : (
                 <button
                   onClick={() => setReceiptResult(null)}
-                  className="flex-1 bg-primary hover:bg-primary/95 text-white text-xs font-bold py-2.5 rounded-xl transition cursor-pointer"
+                  className="w-full bg-primary hover:bg-primary/95 text-white text-xs font-bold py-2.5 rounded-xl transition cursor-pointer"
                 >
                   Dismiss Window
                 </button>

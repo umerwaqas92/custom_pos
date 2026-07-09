@@ -58,6 +58,59 @@ export default function SalesHistory() {
     }
   };
 
+  const downloadPdf = () => {
+    if (!activeSale) return;
+    const element = document.getElementById("printable-receipt");
+    if (!element) return;
+
+    addNotification("Generating PDF Receipt, please wait...", "info");
+
+    const opt = {
+      margin: 0.4,
+      filename: `Invoice_Receipt_${activeSale.id.substring(0, 8)}.pdf`,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+      jsPDF: { unit: "in", format: "letter", orientation: "portrait" }
+    };
+
+    const execute = () => {
+      // @ts-ignore
+      const html2pdf = window.html2pdf;
+      if (html2pdf) {
+        // Temporarily style for pdf contrast
+        const oldStyle = element.style.cssText;
+        element.style.display = "block";
+        element.style.backgroundColor = "#ffffff";
+        element.style.color = "#000000";
+        element.style.padding = "24px";
+
+        html2pdf()
+          .set(opt)
+          .from(element)
+          .save()
+          .then(() => {
+            element.style.cssText = oldStyle;
+            addNotification("PDF downloaded successfully!", "success");
+          })
+          .catch((err: any) => {
+            console.error(err);
+            element.style.cssText = oldStyle;
+            addNotification("Failed to generate PDF.", "error");
+          });
+      }
+    };
+
+    // @ts-ignore
+    if (!window.html2pdf) {
+      const script = document.createElement("script");
+      script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+      script.onload = execute;
+      document.body.appendChild(script);
+    } else {
+      execute();
+    }
+  };
+
   const handlePrint = () => {
     const receiptEl = document.getElementById("printable-receipt");
     if (!receiptEl) return;
@@ -387,17 +440,26 @@ export default function SalesHistory() {
               )}
             </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={handlePrint}
-                className="flex-1 border border-border hover:bg-secondary text-foreground text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition"
-              >
-                <Receipt className="w-4 h-4" />
-                Print Slip
-              </button>
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-3">
+                <button
+                  onClick={handlePrint}
+                  className="flex-1 border border-border hover:bg-secondary text-foreground text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer"
+                >
+                  <Receipt className="w-4 h-4" />
+                  Print Slip
+                </button>
+                <button
+                  onClick={downloadPdf}
+                  className="flex-1 border border-border hover:bg-secondary text-foreground text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer"
+                >
+                  <FileText className="w-4 h-4 text-primary" />
+                  Download PDF
+                </button>
+              </div>
               <button
                 onClick={() => { setReceiptOpen(false); setActiveSale(null); }}
-                className="flex-1 bg-primary hover:bg-primary/95 text-white text-xs font-bold py-2.5 rounded-xl transition"
+                className="w-full bg-primary hover:bg-primary/95 text-white text-xs font-bold py-2.5 rounded-xl transition cursor-pointer text-center"
               >
                 Dismiss Window
               </button>
