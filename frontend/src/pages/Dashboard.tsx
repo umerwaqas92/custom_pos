@@ -94,21 +94,21 @@ export default function Dashboard() {
 
   const statCards = [
     {
-      title: "Today's Revenue",
+      title: "30-Day Revenue",
       value: `Rs. ${stats?.totalRevenue.toLocaleString()}`,
       description: "Aggregated gross sales",
       icon: DollarSign,
       color: "bg-blue-500/10 text-blue-400 border-blue-500/20"
     },
     {
-      title: "Net Profit Margin",
+      title: "30-Day Net Profit",
       value: `Rs. ${stats?.netProfit.toLocaleString()}`,
       description: "Gross revenue minus expenses",
       icon: TrendingUp,
       color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
     },
     {
-      title: "Storefront Expenses",
+      title: "30-Day Expenses",
       value: `Rs. ${stats?.totalExpenses.toLocaleString()}`,
       description: "Operating costs logged",
       icon: TrendingDown,
@@ -165,7 +165,7 @@ export default function Dashboard() {
         <div className="lg:col-span-2 bg-card border border-border p-6 rounded-2xl flex flex-col justify-between h-96">
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp className="w-5 h-5 text-primary" />
-            <h3 className="font-bold text-sm text-foreground">Sales Trend (Last 7 Days)</h3>
+            <h3 className="font-bold text-sm text-foreground">Sales Trend (Last 30 Days)</h3>
           </div>
           <div className="flex-1 w-full min-h-0">
             <ResponsiveContainer width="100%" height="100%">

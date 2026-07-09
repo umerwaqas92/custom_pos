@@ -17,8 +17,17 @@ router.get("/dashboard-stats", protect, restrictTo("OWNER", "MANAGER"), async (r
       }
     });
 
-    // Total sales and revenue aggregates
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    thirtyDaysAgo.setHours(0, 0, 0, 0);
+
+    // Total sales and revenue aggregates (last 30 days)
     const salesAgg = await prisma.sale.aggregate({
+      where: {
+        saleDate: {
+          gte: thirtyDaysAgo
+        }
+      },
       _sum: {
         payableAmount: true,
         discountAmount: true,
@@ -29,8 +38,13 @@ router.get("/dashboard-stats", protect, restrictTo("OWNER", "MANAGER"), async (r
       }
     });
 
-    // Expenses aggregates
+    // Expenses aggregates (last 30 days)
     const expensesAgg = await prisma.expense.aggregate({
+      where: {
+        date: {
+          gte: thirtyDaysAgo
+        }
+      },
       _sum: {
         amount: true
       }
@@ -83,14 +97,15 @@ router.get("/dashboard-stats", protect, restrictTo("OWNER", "MANAGER"), async (r
 // Charts data aggregates (OWNER, MANAGER)
 router.get("/charts", protect, restrictTo("OWNER", "MANAGER"), async (req, res) => {
   try {
-    // 1. Sales Trend (Last 7 days daily revenue)
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    // 1. Sales Trend (Last 30 days daily revenue)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    thirtyDaysAgo.setHours(0, 0, 0, 0);
 
     const sales = await prisma.sale.findMany({
       where: {
         saleDate: {
-          gte: sevenDaysAgo
+          gte: thirtyDaysAgo
         }
       },
       select: {
@@ -101,7 +116,7 @@ router.get("/charts", protect, restrictTo("OWNER", "MANAGER"), async (req, res) 
 
     // Group sales by day
     const trendMap: { [key: string]: number } = {};
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 30; i++) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const label = d.toISOString().split("T")[0];
