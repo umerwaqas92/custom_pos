@@ -18,7 +18,8 @@ import {
   Layers,
   FileText,
   Settings,
-  CreditCard
+  CreditCard,
+  BarChart3
 } from "lucide-react";
 
 export default function Layout() {
@@ -71,6 +72,7 @@ export default function Layout() {
     { name: "Brands & Categories", path: "/categories-brands", icon: Layers, roles: ["OWNER", "MANAGER"] },
     { name: "Contacts", path: "/contacts", icon: Users, roles: ["OWNER", "MANAGER", "CASHIER"] },
     { name: "Accounting", path: "/accounting", icon: Briefcase, roles: ["OWNER", "MANAGER"] },
+    { name: "Reports", path: "/reports", icon: BarChart3, roles: ["OWNER", "MANAGER"] },
     { name: "Settings", path: "/settings", icon: Settings, roles: ["OWNER", "MANAGER"] }
   ];
 
