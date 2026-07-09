@@ -88,6 +88,7 @@ router.post("/", protect, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const saleResult = await prisma.$transaction(async (tx) => {
       let subtotal = 0;
+      let computedTaxAmount = 0;
       const productIds: string[] = Array.from(new Set(items.map((item: any) => String(item.productId))));
       const [products, branchStocks] = await Promise.all([
         tx.product.findMany({
@@ -135,9 +136,11 @@ router.post("/", protect, async (req: AuthenticatedRequest, res: Response) => {
         const baseTotal = itemUnitPrice * item.quantity;
         const discValue = baseTotal * (itemDiscount / 100);
         const taxValue = (baseTotal - discValue) * (itemTax / 100);
-        const itemTotal = baseTotal - discValue + taxValue;
+        const lineSubtotal = baseTotal - discValue;
+        const itemTotal = lineSubtotal + taxValue;
 
-        subtotal += itemTotal;
+        subtotal += lineSubtotal;
+        computedTaxAmount += taxValue;
 
         itemsToCreate.push({
           productId: item.productId,
@@ -176,7 +179,6 @@ router.post("/", protect, async (req: AuthenticatedRequest, res: Response) => {
       );
 
       // Calculate final payable amount
-      const computedTaxAmount = gstRate > 0 ? itemsToCreate.reduce((sum, item) => sum + item.totalPrice, 0) - subtotal : 0;
       const payableAmount = Math.max(0, subtotal - (discountAmount || 0) + computedTaxAmount);
       
       // Determine payment status
@@ -187,6 +189,10 @@ router.post("/", protect, async (req: AuthenticatedRequest, res: Response) => {
         if (!customerId) throw new Error("Customer profile is required for credit transactions.");
         debt = payableAmount;
         paymentStatus = "UNPAID";
+      } else if (paymentMethod === "EMI") {
+        if (!customerId) throw new Error("Customer profile is required for EMI transactions.");
+        debt = Math.max(0, payableAmount - paidAmount);
+        paymentStatus = paidAmount > 0 ? "PARTIAL" : "UNPAID";
       } else if (paidAmount < payableAmount) {
         debt = payableAmount - paidAmount;
         paymentStatus = "PARTIAL";
