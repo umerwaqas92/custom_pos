@@ -47,7 +47,7 @@ export default function Contacts() {
 
   // Forms state
   const [newCust, setNewCust] = useState({
-    name: "", phone: "", email: "", address: "", creditLimit: "500", notes: ""
+    name: "", phone: "", email: "", address: "", creditLimit: "10000000", notes: ""
   });
 
   const [newSupp, setNewSupp] = useState({
@@ -88,7 +88,7 @@ export default function Contacts() {
       addNotification("Customer profile created.", "success");
       setCustOpen(false);
       loadContacts();
-      setNewCust({ name: "", phone: "", email: "", address: "", creditLimit: "500", notes: "" });
+      setNewCust({ name: "", phone: "", email: "", address: "", creditLimit: "10000000", notes: "" });
     } catch (err: any) {
       const msg = err.response?.data?.error || "Failed to create customer.";
       addNotification(msg, "warning");
@@ -610,15 +610,7 @@ export default function Contacts() {
                 />
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase">Credit Limit (Rs.)</label>
-                <input
-                  type="number"
-                  value={newCust.creditLimit}
-                  onChange={(e) => setNewCust({ ...newCust, creditLimit: e.target.value })}
-                  className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
-                />
-              </div>
+
 
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-muted-foreground uppercase">Delivery Address</label>
@@ -752,10 +744,7 @@ export default function Contacts() {
                     <label className="text-[10px] font-bold text-muted-foreground uppercase">Address</label>
                     <input type="text" value={editForm.address || ""} onChange={(e) => setEditForm({ ...editForm, address: e.target.value })} className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none" />
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase">Credit Limit</label>
-                    <input type="number" value={editForm.creditLimit || ""} onChange={(e) => setEditForm({ ...editForm, creditLimit: e.target.value })} className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none" />
-                  </div>
+
                 </>
               ) : (
                 <>
