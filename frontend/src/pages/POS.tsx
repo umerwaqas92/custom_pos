@@ -12,7 +12,10 @@ import {
   Percent,
   Receipt,
   CheckCircle,
-  X
+  X,
+  Banknote,
+  Smartphone,
+  BookOpen
 } from "lucide-react";
 
 export default function POS() {
@@ -453,18 +456,73 @@ export default function POS() {
             <h3 className="text-lg font-bold text-foreground mb-4">Select Payment & Finalize</h3>
 
             <form onSubmit={handleCheckoutSubmit} className="space-y-4">
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <label className="text-xs font-semibold text-muted-foreground uppercase">Payment Method</label>
-                <select
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="w-full bg-secondary border border-border px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                >
-                  <option value="CASH">Cash Payment</option>
-                  <option value="CARD">Card / POS machine</option>
-                  <option value="MOBILE">Mobile Money Transfer</option>
-                  <option value="CREDIT">Customer Credit Ledger</option>
-                </select>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setPaymentMethod("CASH"); setAmountPaid(payableAmount.toFixed(2)); }}
+                    className={`flex items-center gap-2.5 p-3 rounded-xl border text-left transition-all ${
+                      paymentMethod === "CASH"
+                        ? "bg-primary/10 border-primary text-primary font-bold shadow"
+                        : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+                    }`}
+                  >
+                    <Banknote className="w-4 h-4 flex-shrink-0" />
+                    <div className="text-[11px] leading-tight">
+                      <p className="font-extrabold">Cash Drawer</p>
+                      <p className="opacity-70 text-[9px]">Physical notes</p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { setPaymentMethod("CARD"); setAmountPaid(payableAmount.toFixed(2)); }}
+                    className={`flex items-center gap-2.5 p-3 rounded-xl border text-left transition-all ${
+                      paymentMethod === "CARD"
+                        ? "bg-primary/10 border-primary text-primary font-bold shadow"
+                        : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+                    }`}
+                  >
+                    <CreditCard className="w-4 h-4 flex-shrink-0" />
+                    <div className="text-[11px] leading-tight">
+                      <p className="font-extrabold">Card Swipe</p>
+                      <p className="opacity-70 text-[9px]">POS terminal</p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { setPaymentMethod("MOBILE"); setAmountPaid(payableAmount.toFixed(2)); }}
+                    className={`flex items-center gap-2.5 p-3 rounded-xl border text-left transition-all ${
+                      paymentMethod === "MOBILE"
+                        ? "bg-primary/10 border-primary text-primary font-bold shadow"
+                        : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+                    }`}
+                  >
+                    <Smartphone className="w-4 h-4 flex-shrink-0" />
+                    <div className="text-[11px] leading-tight">
+                      <p className="font-extrabold">Mobile Pay</p>
+                      <p className="opacity-70 text-[9px]">EasyPaisa/Bank</p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { setPaymentMethod("CREDIT"); setAmountPaid("0"); }}
+                    className={`flex items-center gap-2.5 p-3 rounded-xl border text-left transition-all ${
+                      paymentMethod === "CREDIT"
+                        ? "bg-primary/10 border-primary text-primary font-bold shadow"
+                        : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+                    }`}
+                  >
+                    <BookOpen className="w-4 h-4 flex-shrink-0" />
+                    <div className="text-[11px] leading-tight">
+                      <p className="font-extrabold">Store Credit</p>
+                      <p className="opacity-70 text-[9px]">Add to ledger</p>
+                    </div>
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-1.5">
