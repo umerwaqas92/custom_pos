@@ -17,7 +17,8 @@ import {
   Banknote,
   BookOpen,
   Landmark,
-  Wallet
+  Wallet,
+  FileText
 } from "lucide-react";
 
 export default function POS() {
@@ -223,6 +224,59 @@ export default function POS() {
     } catch (err: any) {
       const msg = err.response?.data?.error || "Transaction failed.";
       addNotification(msg, "warning");
+    }
+  };
+
+  const downloadPdf = () => {
+    if (!receiptResult) return;
+    const element = document.getElementById("printable-receipt");
+    if (!element) return;
+
+    addNotification("Generating PDF Receipt, please wait...", "info");
+
+    const opt = {
+      margin: 0.4,
+      filename: `Invoice_Receipt_${receiptResult.id.substring(0, 8)}.pdf`,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+      jsPDF: { unit: "in", format: "letter", orientation: "portrait" }
+    };
+
+    const execute = () => {
+      // @ts-ignore
+      const html2pdf = window.html2pdf;
+      if (html2pdf) {
+        // Temporarily style for pdf contrast
+        const oldStyle = element.style.cssText;
+        element.style.display = "block";
+        element.style.backgroundColor = "#ffffff";
+        element.style.color = "#000000";
+        element.style.padding = "24px";
+
+        html2pdf()
+          .set(opt)
+          .from(element)
+          .save()
+          .then(() => {
+            element.style.cssText = oldStyle;
+            addNotification("PDF downloaded successfully!", "success");
+          })
+          .catch((err: any) => {
+            console.error(err);
+            element.style.cssText = oldStyle;
+            addNotification("Failed to generate PDF.", "error");
+          });
+      }
+    };
+
+    // @ts-ignore
+    if (!window.html2pdf) {
+      const script = document.createElement("script");
+      script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+      script.onload = execute;
+      document.body.appendChild(script);
+    } else {
+      execute();
     }
   };
 
