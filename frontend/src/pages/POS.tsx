@@ -565,7 +565,14 @@ export default function POS() {
       {/* Invoice Receipt Modal */}
       {receiptResult && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/75 backdrop-blur-sm z-50 px-4 overflow-y-auto">
-          <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl space-y-6 my-8">
+          <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl space-y-6 my-8 relative">
+            <button
+              onClick={() => setReceiptResult(null)}
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition"
+              title="Close Dialog"
+            >
+              <X className="w-4 h-4" />
+            </button>
             <div className="text-center space-y-1">
               <CheckCircle className="w-12 h-12 text-green-400 mx-auto" />
               <h3 className="text-lg font-black tracking-tight text-foreground">Transaction Complete</h3>
@@ -663,6 +670,13 @@ export default function POS() {
       {custModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 px-4">
           <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative animate-fade-in">
+            <button
+              onClick={() => setCustModalOpen(false)}
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition"
+              title="Close Dialog"
+            >
+              <X className="w-4 h-4" />
+            </button>
             <h3 className="font-bold text-sm text-foreground mb-4">Register New Customer</h3>
             <form onSubmit={handleCreateCustomer} className="space-y-4">
               <div className="space-y-1">

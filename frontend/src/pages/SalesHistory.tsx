@@ -253,7 +253,14 @@ export default function SalesHistory() {
       {/* Invoice Receipt Modal */}
       {receiptOpen && activeSale && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/75 backdrop-blur-sm z-50 px-4 overflow-y-auto">
-          <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl space-y-6 my-8">
+          <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl space-y-6 my-8 relative">
+            <button
+              onClick={() => setReceiptOpen(false)}
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition"
+              title="Close Dialog"
+            >
+              <X className="w-4 h-4" />
+            </button>
             <div className="text-center space-y-1">
               <CheckCircle className="w-12 h-12 text-green-400 mx-auto" />
               <h3 className="text-lg font-black tracking-tight text-foreground">Invoice Voucher Details</h3>
