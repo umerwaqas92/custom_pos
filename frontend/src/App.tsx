@@ -8,7 +8,6 @@ import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import POS from "./pages/POS";
 import Inventory from "./pages/Inventory";
-import Repairs from "./pages/Repairs";
 import Contacts from "./pages/Contacts";
 import Accounting from "./pages/Accounting";
 import CategoriesBrands from "./pages/CategoriesBrands";
@@ -197,15 +196,7 @@ export default function App() {
             }
           />
 
-          {/* Repairs (Technician, Cashier, Manager, Owner) */}
-          <Route
-            path="repairs"
-            element={
-              <RoleGuard allowedRoles={["OWNER", "MANAGER", "CASHIER", "TECHNICIAN"]}>
-                <Repairs />
-              </RoleGuard>
-            }
-          />
+
 
           {/* Contacts (Owner, Manager, Cashier) */}
           <Route
