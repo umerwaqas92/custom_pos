@@ -122,6 +122,40 @@ router.delete("/brands/:id", protect, restrictTo("OWNER", "MANAGER"), async (req
   }
 });
 
+// Bulk Delete Categories
+router.post("/categories/bulk-delete", protect, restrictTo("OWNER", "MANAGER"), async (req, res) => {
+  const { ids } = req.body;
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ error: "No category IDs provided." });
+  }
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.product.updateMany({ where: { categoryId: { in: ids } }, data: { categoryId: null } });
+      await tx.category.deleteMany({ where: { id: { in: ids } } });
+    });
+    return res.json({ message: `${ids.length} categories deleted successfully.` });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to bulk delete categories." });
+  }
+});
+
+// Bulk Delete Brands
+router.post("/brands/bulk-delete", protect, restrictTo("OWNER", "MANAGER"), async (req, res) => {
+  const { ids } = req.body;
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ error: "No brand IDs provided." });
+  }
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.product.updateMany({ where: { brandId: { in: ids } }, data: { brandId: null } });
+      await tx.brand.deleteMany({ where: { id: { in: ids } } });
+    });
+    return res.json({ message: `${ids.length} brands deleted successfully.` });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to bulk delete brands." });
+  }
+});
+
 // ==================== PRODUCT ROUTES ====================
 
 // List and Search Products
