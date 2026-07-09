@@ -125,12 +125,14 @@ export default function POS() {
     const handleKeyPress = (e: KeyboardEvent) => {
       const isCommandKey = e.metaKey || e.ctrlKey;
 
-      if (e.key === "Escape") {
+      if (e.key === "Enter" && !isCommandKey) {
         if (receiptResult) {
+          e.preventDefault();
           setReceiptResult(null);
           return;
         }
         if (custModalOpen) {
+          e.preventDefault();
           setCustModalOpen(false);
           return;
         }
@@ -456,7 +458,7 @@ export default function POS() {
           <span>Ctrl/Cmd+Enter: Checkout</span>
           <span>Ctrl/Cmd+Shift+C: Clear Cart</span>
           <span>Ctrl/Cmd+Shift+R: Refresh</span>
-          <span>Esc: Close Modal</span>
+          <span>Enter: Close Dialog</span>
         </div>
 
         {/* Categories Bar */}
