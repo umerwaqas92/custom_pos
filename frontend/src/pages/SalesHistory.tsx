@@ -23,6 +23,7 @@ export default function SalesHistory() {
   const [search, setSearch] = useState("");
   const [selectedBranch, setSelectedBranch] = useState("ALL");
   const [selectedCustomer, setSelectedCustomer] = useState("ALL");
+  const [dateFilter, setDateFilter] = useState("ALL"); // ALL, TODAY, 7_DAYS, 30_DAYS
   
   // Selected sale for receipt display
   const [activeSale, setActiveSale] = useState<any | null>(null);
@@ -66,7 +67,27 @@ export default function SalesHistory() {
     const matchesBranch = selectedBranch === "ALL" || s.branchId === selectedBranch;
     const matchesCustomer = selectedCustomer === "ALL" || s.customerId === selectedCustomer;
 
-    return matchesSearch && matchesBranch && matchesCustomer;
+    // Date range filtering
+    let matchesDate = true;
+    const saleDate = new Date(s.saleDate);
+    const now = new Date();
+
+    if (dateFilter === "TODAY") {
+      matchesDate =
+        saleDate.getDate() === now.getDate() &&
+        saleDate.getMonth() === now.getMonth() &&
+        saleDate.getFullYear() === now.getFullYear();
+    } else if (dateFilter === "7_DAYS") {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(now.getDate() - 7);
+      matchesDate = saleDate >= sevenDaysAgo;
+    } else if (dateFilter === "30_DAYS") {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(now.getDate() - 30);
+      matchesDate = saleDate >= thirtyDaysAgo;
+    }
+
+    return matchesSearch && matchesBranch && matchesCustomer && matchesDate;
   });
 
   const paymentMethodNames: Record<string, string> = {
@@ -95,8 +116,8 @@ export default function SalesHistory() {
       </div>
 
       {/* Filters and Search Bar */}
-      <div className="bg-card border border-border rounded-2xl p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="relative">
+      <div className="bg-card border border-border rounded-2xl p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="relative col-span-1 sm:col-span-2 lg:col-span-1">
           <Search className="w-4 h-4 absolute left-3 top-3.5 text-muted-foreground" />
           <input
             type="text"
@@ -120,7 +141,7 @@ export default function SalesHistory() {
         </div>
 
         <div className="flex items-center gap-2 bg-secondary/50 border border-border p-2.5 rounded-xl">
-          <span className="text-[10px] font-bold uppercase text-muted-foreground pl-1.5">Customer profile:</span>
+          <span className="text-[10px] font-bold uppercase text-muted-foreground pl-1.5">Customer Profile:</span>
           <select
             value={selectedCustomer}
             onChange={(e) => setSelectedCustomer(e.target.value)}
@@ -128,6 +149,21 @@ export default function SalesHistory() {
           >
             <option value="ALL">All Profiles</option>
             {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </div>
+
+        <div className="flex items-center gap-2 bg-secondary/50 border border-border p-2.5 rounded-xl">
+          <Calendar className="w-3.5 h-3.5 text-muted-foreground pl-1.5" />
+          <span className="text-[10px] font-bold uppercase text-muted-foreground pl-1">Date Range:</span>
+          <select
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            className="flex-1 bg-transparent text-xs text-foreground focus:outline-none cursor-pointer"
+          >
+            <option value="ALL">All Time</option>
+            <option value="TODAY">Today Only</option>
+            <option value="7_DAYS">Last 7 Days</option>
+            <option value="30_DAYS">Last 30 Days</option>
           </select>
         </div>
       </div>
