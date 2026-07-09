@@ -600,27 +600,7 @@ export default function Contacts() {
                 />
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase">Email Address</label>
-                <input
-                  type="email"
-                  value={newCust.email}
-                  onChange={(e) => setNewCust({ ...newCust, email: e.target.value })}
-                  className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
-                />
-              </div>
 
-
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase">Delivery Address</label>
-                <input
-                  type="text"
-                  value={newCust.address}
-                  onChange={(e) => setNewCust({ ...newCust, address: e.target.value })}
-                  className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
-                />
-              </div>
 
               <div className="flex gap-3 justify-end pt-4">
                 <button
@@ -736,14 +716,7 @@ export default function Contacts() {
                     <label className="text-[10px] font-bold text-muted-foreground uppercase">Phone *</label>
                     <input type="text" required value={editForm.phone || ""} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none" />
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase">Email</label>
-                    <input type="email" value={editForm.email || ""} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none" />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase">Address</label>
-                    <input type="text" value={editForm.address || ""} onChange={(e) => setEditForm({ ...editForm, address: e.target.value })} className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none" />
-                  </div>
+
 
                 </>
               ) : (
