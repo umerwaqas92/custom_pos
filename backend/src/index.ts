@@ -13,6 +13,7 @@ import reportsRouter from "./controllers/reports.controller";
 
 import path from "path";
 import fs from "fs";
+import { startScheduler } from "./utils/scheduler";
 
 dotenv.config();
 
@@ -54,4 +55,5 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 // Start the server
 app.listen(PORT, () => {
   console.log(`Backend server successfully running on port ${PORT}`);
+  startScheduler();
 });

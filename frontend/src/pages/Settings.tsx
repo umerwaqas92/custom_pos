@@ -121,8 +121,69 @@ export default function Settings() {
     }
   };
 
+  const [backups, setBackups] = useState<any[]>([]);
+
+  const loadBackups = async () => {
+    try {
+      const res = await axios.get("/api/auth/backup/list");
+      setBackups(res.data);
+    } catch (err) {
+      console.error("Failed to load backups list.");
+    }
+  };
+
+  const handleDownloadBackup = async (filename: string) => {
+    try {
+      const res = await axios.get(`/api/auth/backup/download/${filename}`, { responseType: "blob" });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      addNotification("Backup downloaded successfully.", "success");
+    } catch (err) {
+      addNotification("Failed to download backup.", "warning");
+    }
+  };
+
+  const handleRestoreBackup = async (filename: string) => {
+    const confirmRestore = window.confirm(
+      `WARNING: Are you sure you want to restore the system to the backup: "${filename}"?\n\nThis will overwrite all current data. This action cannot be undone.`
+    );
+    if (!confirmRestore) return;
+
+    addNotification("Restoring system data...", "info");
+    try {
+      const res = await axios.post(`/api/auth/backup/restore/${filename}`);
+      addNotification(res.data.message || "System data restored successfully.", "success");
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (err: any) {
+      addNotification(err.response?.data?.error || "Failed to restore data.", "warning");
+    }
+  };
+
+  const handleDeleteBackup = async (filename: string) => {
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete the backup file: "${filename}"?`
+    );
+    if (!confirmDelete) return;
+
+    try {
+      const res = await axios.delete(`/api/auth/backup/delete/${filename}`);
+      addNotification(res.data.message || "Backup file deleted.", "success");
+      loadBackups();
+    } catch (err: any) {
+      addNotification(err.response?.data?.error || "Failed to delete backup file.", "warning");
+    }
+  };
+
   useEffect(() => {
     loadBranches();
+    loadBackups();
   }, []);
 
   const handleAddBranch = async (e: React.FormEvent) => {
@@ -311,6 +372,71 @@ export default function Settings() {
               </button>
             </form>
           </div>
+        </div>
+
+        {/* Automatic Backups List */}
+        <div className="pt-5 border-t border-border/50 space-y-3">
+          <div className="flex justify-between items-center">
+            <h4 className="font-bold text-xs text-foreground uppercase tracking-wider">Automatic Backups (Every 7 Days)</h4>
+            <span className="text-[10px] bg-secondary border border-border px-2.5 py-1 rounded-lg text-muted-foreground font-semibold">
+              Retention: Last 5 Backups
+            </span>
+          </div>
+
+          {backups.length === 0 ? (
+            <div className="bg-secondary/20 border border-border/50 rounded-xl p-6 text-center text-muted-foreground text-xs">
+              No automatic backups generated yet. (They are created every 7 days, or when the server restarts).
+            </div>
+          ) : (
+            <div className="border border-border/60 rounded-xl overflow-hidden bg-secondary/10">
+              <table className="w-full text-xs text-left border-collapse">
+                <thead>
+                  <tr className="bg-secondary/40 border-b border-border text-muted-foreground text-[10px] uppercase font-bold">
+                    <th className="py-2.5 px-4">Backup Name</th>
+                    <th className="py-2.5 px-4">Size</th>
+                    <th className="py-2.5 px-4">Created Date</th>
+                    <th className="py-2.5 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/40">
+                  {backups.map((bk) => {
+                    const sizeMB = (bk.size / (1024 * 1024)).toFixed(2);
+                    const dateStr = new Date(bk.createdAt).toLocaleString();
+                    return (
+                      <tr key={bk.filename} className="hover:bg-secondary/20 transition">
+                        <td className="py-2.5 px-4 font-mono text-[11px] text-foreground">{bk.filename}</td>
+                        <td className="py-2.5 px-4 text-muted-foreground">{sizeMB} MB</td>
+                        <td className="py-2.5 px-4 text-muted-foreground">{dateStr}</td>
+                        <td className="py-2.5 px-4 text-right space-x-3">
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadBackup(bk.filename)}
+                            className="text-primary hover:underline font-bold transition cursor-pointer"
+                          >
+                            Download
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRestoreBackup(bk.filename)}
+                            className="text-amber-400 hover:underline font-bold transition cursor-pointer"
+                          >
+                            Restore
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteBackup(bk.filename)}
+                            className="text-red-400 hover:underline font-bold transition cursor-pointer"
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
 

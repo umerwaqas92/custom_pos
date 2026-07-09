@@ -38,3 +38,7 @@ uploads/
 # Temp files
 tmp/
 temp/
+
+# Backups
+backups/
+*.zip
