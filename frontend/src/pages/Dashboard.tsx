@@ -35,7 +35,7 @@ interface Stats {
   totalRevenue: number;
   totalExpenses: number;
   netProfit: number;
-  activeRepairs: number;
+  totalCustomers: number;
   pendingPurchases: number;
   pendingWarranties: number;
 }
@@ -279,7 +279,7 @@ export default function Dashboard() {
         <div className="bg-card border border-border p-6 rounded-2xl flex flex-col justify-between h-96">
           <div className="flex items-center gap-2 mb-4">
             <FileCheck className="w-5 h-5 text-green-400" />
-            <h3 className="font-bold text-sm text-foreground">Top-Selling Products</h3>
+            <h3 className="font-bold text-sm text-foreground">Top-Selling Products (30 Days)</h3>
           </div>
           <div className="flex-1 w-full min-h-0">
             {topProducts.length === 0 ? (
