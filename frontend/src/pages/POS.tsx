@@ -301,20 +301,19 @@ export default function POS() {
                   key={p.id}
                   disabled={branchQty <= 0}
                   onClick={() => addToCart(p, branchQty)}
-                  className={`bg-secondary/40 border text-left p-2.5 rounded-xl flex flex-col justify-between hover:border-primary/50 transition cursor-pointer relative ${
+                  className={`bg-secondary/40 border text-left p-2 rounded-xl flex flex-col justify-between hover:border-primary/50 transition cursor-pointer relative ${
                     branchQty <= 0 ? "opacity-50 cursor-not-allowed" : ""
                   }`}
                 >
                   <div className="space-y-0.5">
-                    <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider">{p.brand?.name}</span>
-                    <h4 className="font-semibold text-[11px] leading-tight text-foreground line-clamp-2">{p.name}</h4>
-                    <p className="text-[9px] text-muted-foreground">SKU: {p.sku}</p>
+                    <span className="text-[8px] uppercase font-bold text-muted-foreground tracking-wider block leading-none">{p.brand?.name}</span>
+                    <h4 className="font-bold text-[10px] leading-snug text-foreground line-clamp-1" title={p.name}>{p.name}</h4>
                   </div>
 
-                  <div className="flex items-center justify-between mt-2">
-                    <span className="font-bold text-xs text-foreground">Rs. {p.sellingPrice}</span>
+                  <div className="flex items-center justify-between mt-1.5 pt-1 border-t border-border/20">
+                    <span className="font-extrabold text-[10px] text-foreground">Rs. {p.sellingPrice}</span>
                     <span
-                      className={`text-[10px] px-2 py-0.5 rounded font-bold ${
+                      className={`text-[8px] px-1 py-0.5 rounded font-bold ${
                         branchQty <= 0
                           ? "bg-red-500/10 text-red-400"
                           : isLowStock
@@ -322,7 +321,7 @@ export default function POS() {
                           : "bg-green-500/10 text-green-400"
                       }`}
                     >
-                      {branchQty <= 0 ? "Out of Stock" : `${branchQty} Available`}
+                      {branchQty <= 0 ? "Out" : `${branchQty} Avail`}
                     </span>
                   </div>
                 </button>
