@@ -236,7 +236,7 @@ export default function POS() {
   };
 
   return (
-    <div className="flex-1 flex gap-6 h-[calc(100vh-195px)] overflow-hidden">
+    <div className="flex-1 flex gap-6 h-full min-h-0 overflow-hidden">
       
       {/* Catalog / Left Panel */}
       <div className="flex-1 flex flex-col min-w-0 bg-card border border-border rounded-2xl p-4 space-y-4 h-full min-h-0">

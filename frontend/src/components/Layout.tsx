@@ -77,7 +77,7 @@ export default function Layout() {
   const activeBranch = branches.find(b => b.id === selectedBranchId);
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground transition-all duration-300">
+    <div className="flex h-screen bg-background text-foreground transition-all duration-300 overflow-hidden">
       <ToastContainer />
       
       {/* Sidebar */}
@@ -183,7 +183,7 @@ export default function Layout() {
       </aside>
 
       {/* Main Workspace */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         
         {/* Top Header */}
         <header className="h-16 border-b border-border bg-card flex items-center justify-between px-6 z-20 relative">
