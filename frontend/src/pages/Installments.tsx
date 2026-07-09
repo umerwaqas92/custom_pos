@@ -188,185 +188,166 @@ export default function Installments() {
             Underwrite active credit agreements, process CNIC identity records, and collect installment payments.
           </p>
         </div>
-
-        {/* Tab switchers */}
-        <div className="flex items-center gap-1.5 bg-secondary/50 border border-border p-1 rounded-xl">
-          <button
-            onClick={() => setActiveTab("active")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-              activeTab === "active"
-                ? "bg-primary text-white shadow"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Active Accounts ({activeEmiContracts.length})
-          </button>
-          <button
-            onClick={() => setActiveTab("pending")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-              activeTab === "pending"
-                ? "bg-primary text-white shadow"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Pending Contracts ({pendingEmiSales.length})
-          </button>
-        </div>
       </div>
 
-      {activeTab === "active" ? (
-        // Active Accounts view
-        <div className="flex-1 flex flex-col min-h-0 bg-card border border-border rounded-2xl p-4 space-y-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Search by customer, guarantor, or sale invoice..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 text-xs bg-secondary border border-border rounded-xl focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-            </div>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-secondary text-xs border border-border rounded-xl px-3 py-2 focus:outline-none"
-            >
-              <option value="ALL">All Statuses</option>
-              <option value="ACTIVE">Active Agreements</option>
-              <option value="COMPLETED">Completed Agreements</option>
-            </select>
+      {/* Pending Contracts Section (Only visible if there are pending drafts) */}
+      {pendingEmiSales.length > 0 && (
+        <div className="bg-card border border-border rounded-2xl p-4 flex flex-col max-h-[220px] min-h-0 space-y-2">
+          <div className="flex items-center justify-between border-b border-border pb-1">
+            <h3 className="font-bold text-xs text-foreground uppercase tracking-wider flex items-center gap-1.5 text-amber-500">
+              <AlertCircle className="w-4 h-4" /> Pending EMI Contracts ({pendingEmiSales.length})
+            </h3>
+            <span className="text-[10px] text-muted-foreground font-bold">Needs CNIC/Cheque Upload & Guarantor Details</span>
           </div>
 
-          <div className="flex-1 overflow-y-auto pr-1 min-h-0 font-medium">
-            {loading && sales.length === 0 ? (
-              <div className="py-20 text-center text-xs text-muted-foreground">Loading accounts...</div>
-            ) : filteredActiveContracts.length === 0 ? (
-              <div className="py-20 text-center text-xs text-muted-foreground flex flex-col items-center justify-center space-y-2">
-                <CreditCard className="w-10 h-10 opacity-20" />
-                <p>No active installment accounts found.</p>
-              </div>
-            ) : (
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="border-b border-border text-muted-foreground font-semibold">
-                    <th className="pb-3 pl-2">Invoice Ref</th>
-                    <th className="pb-3">Customer</th>
-                    <th className="pb-3">Guarantor</th>
-                    <th className="pb-3 text-center">Tenure</th>
-                    <th className="pb-3 text-right">Monthly Payment</th>
-                    <th className="pb-3 text-right">Remaining Principal</th>
-                    <th className="pb-3 text-center">Status</th>
-                    <th className="pb-3 text-right pr-2">Action</th>
+          <div className="flex-1 overflow-y-auto pr-1 min-h-0">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-border text-muted-foreground font-semibold">
+                  <th className="pb-2 pl-2">Invoice Ref</th>
+                  <th className="pb-2">Date</th>
+                  <th className="pb-2">Customer Name</th>
+                  <th className="pb-2 text-right">Items Price</th>
+                  <th className="pb-2 text-right pr-2">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/50">
+                {pendingEmiSales.map((sale) => (
+                  <tr key={sale.id} className="hover:bg-secondary/20 transition">
+                    <td className="py-2 pl-2 font-mono font-bold text-foreground">
+                      #{sale.id.substring(0, 8)}
+                    </td>
+                    <td className="py-2 text-muted-foreground">
+                      {new Date(sale.saleDate).toLocaleDateString()}
+                    </td>
+                    <td className="py-2 font-semibold text-foreground">
+                      {sale.customer?.name || "Walk-in"}
+                    </td>
+                    <td className="py-2 text-right font-extrabold text-foreground">
+                      Rs. {sale.payableAmount.toFixed(2)}
+                    </td>
+                    <td className="py-2 text-right pr-2">
+                      <button
+                        onClick={() => setSelectedSale(sale)}
+                        className="bg-amber-500 hover:bg-amber-600 text-black px-2.5 py-1 rounded-lg text-[10px] font-black ml-auto flex items-center gap-1 shadow cursor-pointer"
+                      >
+                        Configure EMI
+                      </button>
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-border/50">
-                  {filteredActiveContracts.map((sale) => {
-                    const emi = sale.emiDetails;
-                    const paidInstallments = emi.installments.filter((i: any) => i.status === "PAID").length;
-                    const totalRemaining = emi.totalPrincipal - emi.downPayment - emi.installments
-                      .filter((i: any) => i.status === "PAID")
-                      .reduce((sum: number, i: any) => sum + i.amount, 0);
-
-                    return (
-                      <tr key={sale.id} className="hover:bg-secondary/20 transition">
-                        <td className="py-3 pl-2 font-mono font-bold text-foreground">
-                          #{sale.id.substring(0, 8)}
-                        </td>
-                        <td className="py-3 font-semibold text-foreground">
-                          {sale.customer?.name || "Walk-in"}
-                        </td>
-                        <td className="py-3 text-muted-foreground">{emi.guarantorName}</td>
-                        <td className="py-3 text-center text-muted-foreground font-bold">
-                          {paidInstallments} / {emi.months} months
-                        </td>
-                        <td className="py-3 text-right font-bold text-foreground">
-                          Rs. {emi.monthlyPayment.toFixed(2)}
-                        </td>
-                        <td className="py-3 text-right font-extrabold text-foreground">
-                          Rs. {totalRemaining.toFixed(2)}
-                        </td>
-                        <td className="py-3 text-center">
-                          <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                              emi.status === "COMPLETED"
-                                ? "bg-green-500/10 text-green-400"
-                                : "bg-blue-500/10 text-blue-400"
-                            }`}
-                          >
-                            {emi.status}
-                          </span>
-                        </td>
-                        <td className="py-3 text-right pr-2">
-                          <button
-                            onClick={() => setActiveContract(sale)}
-                            className="bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 p-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1 ml-auto cursor-pointer"
-                          >
-                            <Eye className="w-3.5 h-3.5" /> View Plan
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
-      ) : (
-        // Pending Contracts view
-        <div className="flex-1 flex flex-col min-h-0 bg-card border border-border rounded-2xl p-4 space-y-4">
-          <div className="flex-1 overflow-y-auto pr-1 min-h-0">
-            {loading && sales.length === 0 ? (
-              <div className="py-20 text-center text-xs text-muted-foreground">Loading transactions...</div>
-            ) : pendingEmiSales.length === 0 ? (
-              <div className="py-20 text-center text-xs text-muted-foreground flex flex-col items-center justify-center space-y-2">
-                <CheckCircle className="w-10 h-10 opacity-20 text-green-500" />
-                <p>All EMI purchases have active agreements configured!</p>
-              </div>
-            ) : (
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="border-b border-border text-muted-foreground font-semibold">
-                    <th className="pb-3 pl-2">Invoice Ref</th>
-                    <th className="pb-3">Date</th>
-                    <th className="pb-3">Customer Name</th>
-                    <th className="pb-3 text-right">Items Price</th>
-                    <th className="pb-3 text-right pr-2">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/50">
-                  {pendingEmiSales.map((sale) => (
+      )}
+
+      {/* Active Accounts Section */}
+      <div className="flex-1 flex flex-col min-h-0 bg-card border border-border rounded-2xl p-4 space-y-4">
+        <div className="flex items-center justify-between border-b border-border pb-2">
+          <h3 className="font-bold text-xs text-foreground uppercase tracking-wider flex items-center gap-1.5 text-primary">
+            <CreditCard className="w-4 h-4" /> Active Installment Accounts ({activeEmiContracts.length})
+          </h3>
+          <span className="text-[10px] text-muted-foreground font-bold">Monthly Repayments Schedule & Audits</span>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search by customer, guarantor, or sale invoice..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 text-xs bg-secondary border border-border rounded-xl focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="bg-secondary text-xs border border-border rounded-xl px-3 py-2 focus:outline-none font-bold"
+          >
+            <option value="ALL">All Statuses</option>
+            <option value="ACTIVE">Active Agreements</option>
+            <option value="COMPLETED">Completed Agreements</option>
+          </select>
+        </div>
+
+        <div className="flex-1 overflow-y-auto pr-1 min-h-0 font-medium">
+          {loading && sales.length === 0 ? (
+            <div className="py-20 text-center text-xs text-muted-foreground">Loading accounts...</div>
+          ) : filteredActiveContracts.length === 0 ? (
+            <div className="py-20 text-center text-xs text-muted-foreground flex flex-col items-center justify-center space-y-2">
+              <CreditCard className="w-10 h-10 opacity-20" />
+              <p>No active installment accounts found.</p>
+            </div>
+          ) : (
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-border text-muted-foreground font-semibold">
+                  <th className="pb-3 pl-2">Invoice Ref</th>
+                  <th className="pb-3">Customer</th>
+                  <th className="pb-3">Guarantor</th>
+                  <th className="pb-3 text-center">Tenure</th>
+                  <th className="pb-3 text-right">Monthly Payment</th>
+                  <th className="pb-3 text-right">Remaining Principal</th>
+                  <th className="pb-3 text-center">Status</th>
+                  <th className="pb-3 text-right pr-2">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/50">
+                {filteredActiveContracts.map((sale) => {
+                  const emi = sale.emiDetails;
+                  const paidInstallments = emi.installments.filter((i: any) => i.status === "PAID").length;
+                  const totalRemaining = emi.totalPrincipal - emi.downPayment - emi.installments
+                    .filter((i: any) => i.status === "PAID")
+                    .reduce((sum: number, i: any) => sum + i.amount, 0);
+
+                  return (
                     <tr key={sale.id} className="hover:bg-secondary/20 transition">
                       <td className="py-3 pl-2 font-mono font-bold text-foreground">
                         #{sale.id.substring(0, 8)}
                       </td>
-                      <td className="py-3 text-muted-foreground">
-                        {new Date(sale.saleDate).toLocaleDateString()}
-                      </td>
                       <td className="py-3 font-semibold text-foreground">
                         {sale.customer?.name || "Walk-in"}
                       </td>
+                      <td className="py-3 text-muted-foreground">{emi.guarantorName}</td>
+                      <td className="py-3 text-center text-muted-foreground font-bold">
+                        {paidInstallments} / {emi.months} months
+                      </td>
+                      <td className="py-3 text-right font-bold text-foreground">
+                        Rs. {emi.monthlyPayment.toFixed(2)}
+                      </td>
                       <td className="py-3 text-right font-extrabold text-foreground">
-                        Rs. {sale.payableAmount.toFixed(2)}
+                        Rs. {totalRemaining.toFixed(2)}
+                      </td>
+                      <td className="py-3 text-center">
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            emi.status === "COMPLETED"
+                              ? "bg-green-500/10 text-green-400"
+                              : "bg-blue-500/10 text-blue-400"
+                          }`}
+                        >
+                          {emi.status}
+                        </span>
                       </td>
                       <td className="py-3 text-right pr-2">
                         <button
-                          onClick={() => setSelectedSale(sale)}
-                          className="bg-primary hover:bg-primary/90 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold ml-auto flex items-center gap-1 shadow-md shadow-primary/10 cursor-pointer"
+                          onClick={() => setActiveContract(sale)}
+                          className="bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 p-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1 ml-auto cursor-pointer"
                         >
-                          Configure EMI Plan
+                          <Eye className="w-3.5 h-3.5" /> View Plan
                         </button>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
-      )}
+      </div>
 
       {/* AGREEMENT CONFIGURATION FORM MODAL */}
       {selectedSale && (
