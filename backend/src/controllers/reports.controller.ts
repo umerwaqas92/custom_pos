@@ -9,6 +9,7 @@ const ExcelJS = require("exceljs");
 const PDFDocument = require("pdfkit");
 
 const router = Router();
+const LOW_STOCK_THRESHOLD = 3;
 
 // ==================== DASHBOARD REPORT WIDGETS ====================
 
@@ -33,7 +34,7 @@ router.get("/dashboard-stats", protect, restrictTo("OWNER", "MANAGER"), async (r
         prisma.product.count({
           where: {
             stockQuantity: {
-              lte: prisma.product.fields.minStock
+              lte: LOW_STOCK_THRESHOLD
             }
           }
         }),
@@ -445,10 +446,37 @@ async function compileReportData(type: string, filters: { startDate?: string; en
     }
 
     case "low-stock": {
+      if (branchId) {
+        const branchStocks = await prisma.branchStock.findMany({
+          where: { branchId },
+          include: {
+            branch: true,
+            product: {
+              include: {
+                category: true,
+                brand: true
+              }
+            }
+          }
+        });
+
+        return branchStocks
+          .filter((st) => st.quantity <= LOW_STOCK_THRESHOLD)
+          .map(st => ({
+            sku: st.product.sku,
+            productName: st.product.name,
+            category: st.product.category?.name || "N/A",
+            brand: st.product.brand?.name || "N/A",
+            location: st.branch.name,
+            stockLimit: LOW_STOCK_THRESHOLD,
+            currentStock: st.quantity
+          }));
+      }
+
       const products = await prisma.product.findMany({
         where: {
           stockQuantity: {
-            lte: prisma.product.fields.minStock
+            lte: LOW_STOCK_THRESHOLD
           }
         },
         include: {
@@ -462,7 +490,7 @@ async function compileReportData(type: string, filters: { startDate?: string; en
         productName: p.name,
         category: p.category?.name || "N/A",
         brand: p.brand?.name || "N/A",
-        stockLimit: p.minStock,
+        stockLimit: LOW_STOCK_THRESHOLD,
         currentStock: p.stockQuantity
       }));
     }

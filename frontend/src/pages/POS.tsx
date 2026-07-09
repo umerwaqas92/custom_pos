@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 
 export default function POS() {
+  const LOW_STOCK_THRESHOLD = 3;
   const navigate = useNavigate();
   const {
     selectedBranchId,
@@ -423,7 +424,7 @@ export default function POS() {
             filteredProducts.map((p) => {
               const bStock = p.branchStocks?.find((bs: any) => bs.branchId === selectedBranchId);
               const branchQty = bStock ? bStock.quantity : 0;
-              const isLowStock = branchQty <= p.minStock;
+              const isLowStock = branchQty <= LOW_STOCK_THRESHOLD;
 
               return (
                 <button

@@ -28,6 +28,8 @@ import {
   Users
 } from "lucide-react";
 
+const LOW_STOCK_THRESHOLD = 3;
+
 interface Stats {
   totalProducts: number;
   lowStockCount: number;
@@ -266,7 +268,7 @@ export default function Dashboard() {
                       <td className="py-3 font-semibold text-foreground">{prod.name}</td>
                       <td className="py-3 text-muted-foreground">{prod.sku}</td>
                       <td className="py-3 text-center font-bold text-red-400">{prod.stockQuantity}</td>
-                      <td className="py-3 text-center text-muted-foreground">{prod.minStock}</td>
+                      <td className="py-3 text-center text-muted-foreground">{LOW_STOCK_THRESHOLD}</td>
                     </tr>
                   ))
                 )}

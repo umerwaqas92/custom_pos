@@ -4,6 +4,7 @@ import { protect, restrictTo } from "../middleware/auth";
 import { invalidateCache } from "../utils/cache";
 
 const router = Router();
+const LOW_STOCK_THRESHOLD = 3;
 
 // Adjust stock quantity manually (OWNER, MANAGER, WAREHOUSE)
 router.post("/adjust", protect, restrictTo("OWNER", "MANAGER", "WAREHOUSE"), async (req, res) => {
@@ -153,11 +154,11 @@ router.get("/movements", protect, async (req, res) => {
 // Get low stock alerts
 router.get("/alerts", protect, async (req, res) => {
   try {
-    // Finds products where the aggregated stock quantity is less than or equal to minStock
+    // Global low-stock threshold is fixed at 3 units.
     const lowStockProducts = await prisma.product.findMany({
       where: {
         stockQuantity: {
-          lte: prisma.product.fields.minStock
+          lte: LOW_STOCK_THRESHOLD
         }
       },
       include: {
@@ -169,7 +170,12 @@ router.get("/alerts", protect, async (req, res) => {
       }
     });
 
-    return res.json(lowStockProducts);
+    return res.json(
+      lowStockProducts.map((product) => ({
+        ...product,
+        minStock: LOW_STOCK_THRESHOLD
+      }))
+    );
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: "Failed to load stock alerts." });

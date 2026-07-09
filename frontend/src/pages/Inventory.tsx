@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 const PAGE_SIZE = 15;
+const LOW_STOCK_THRESHOLD = 3;
 
 export default function Inventory() {
   const { selectedBranchId, branches, addNotification, checkLowStock } = useStore();
@@ -299,7 +300,7 @@ export default function Inventory() {
       const matchesCat = !selectedCat || p.categoryId === selectedCat;
       const matchesBrand = !selectedBrand || p.brandId === selectedBrand;
 
-      const matchesLowStock = !lowStockOnly || branchQty <= p.minStock;
+      const matchesLowStock = !lowStockOnly || branchQty <= LOW_STOCK_THRESHOLD;
 
       return matchesSearch && matchesCat && matchesBrand && matchesLowStock;
     });
@@ -509,7 +510,7 @@ export default function Inventory() {
                     selectedBranchId
                       ? p.branchStocks?.find((bs: any) => bs.branchId === selectedBranchId)?.quantity ?? 0
                       : p.stockQuantity;
-                  const isLow = branchQty <= p.minStock;
+                  const isLow = branchQty <= LOW_STOCK_THRESHOLD;
                   return (
                     <tr key={p.id} className={`hover:bg-secondary/20 transition ${selectedIds.has(p.id) ? "bg-primary/5" : ""}`}>
                       <td className="py-4 pl-2">

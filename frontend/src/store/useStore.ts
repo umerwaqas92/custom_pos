@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import axios from "axios";
 
+const LOW_STOCK_THRESHOLD = 3;
+
 export interface User {
   id: string;
   name: string;
@@ -224,7 +226,7 @@ export const useStore = create<StateStore>((set, get) => ({
       set({ lowStockCount: count });
 
       if (count > prevCount && count > 0) {
-        const lowItems = alerts.slice(0, 3).map((p) => `${p.name} (${p.stockQuantity}/${p.minStock})`);
+        const lowItems = alerts.slice(0, 3).map((p) => `${p.name} (${p.stockQuantity}/${LOW_STOCK_THRESHOLD})`);
         const msg =
           count <= 3
             ? `Low stock alert: ${lowItems.join(", ")}`
