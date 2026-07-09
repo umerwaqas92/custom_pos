@@ -17,7 +17,8 @@ import {
   ShieldCheck,
   Layers,
   FileText,
-  Settings
+  Settings,
+  CreditCard
 } from "lucide-react";
 
 export default function Layout() {
@@ -78,12 +79,11 @@ export default function Layout() {
   return (
     <div className="flex h-screen bg-background text-foreground transition-all duration-300 overflow-hidden">
       <ToastContainer />
-      
+
       {/* Sidebar */}
       <aside
-        className={`${
-          sidebarOpen ? "w-64" : "w-20"
-        } bg-card border-r border-border flex flex-col justify-between transition-all duration-300 relative z-30`}
+        className={`${sidebarOpen ? "w-64" : "w-20"
+          } bg-card border-r border-border flex flex-col justify-between transition-all duration-300 relative z-30`}
       >
         <div>
           {/* Logo Section */}
@@ -96,7 +96,7 @@ export default function Layout() {
               </div>
               {sidebarOpen && (
                 <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
-                  Quicko Electronics
+                  Electronics
                 </span>
               )}
             </div>
@@ -119,11 +119,10 @@ export default function Layout() {
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition duration-150 ${
-                      isActive
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition duration-150 ${isActive
                         ? "bg-primary text-white shadow-lg shadow-primary/20"
                         : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                    }`}
+                      }`}
                   >
                     <Icon className="w-5 h-5 flex-shrink-0" />
                     {sidebarOpen && <span className="font-medium text-sm">{item.name}</span>}
@@ -183,10 +182,10 @@ export default function Layout() {
 
       {/* Main Workspace */}
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
-        
+
         {/* Top Header */}
         <header className="h-16 border-b border-border bg-card flex items-center justify-between px-6 z-20 relative">
-          
+
           {/* Active Branch Display */}
           <div className="flex items-center gap-3">
             <span className="text-sm font-semibold text-muted-foreground">Store Branch:</span>
@@ -211,7 +210,7 @@ export default function Layout() {
 
           {/* Notifications & Settings Actions */}
           <div className="flex items-center gap-4 relative">
-            
+
             {/* Bell Notifications */}
             <button
               onClick={() => setNotifOpen(!notifOpen)}
@@ -237,13 +236,12 @@ export default function Layout() {
                     notifications.map(n => (
                       <div
                         key={n.id}
-                        className={`p-2.5 rounded-lg border text-xs flex justify-between gap-2 ${
-                          n.type === "warning"
+                        className={`p-2.5 rounded-lg border text-xs flex justify-between gap-2 ${n.type === "warning"
                             ? "bg-amber-500/10 border-amber-500/20 text-amber-300"
                             : n.type === "success"
-                            ? "bg-green-500/10 border-green-500/20 text-green-300"
-                            : "bg-blue-500/10 border-blue-500/20 text-blue-300"
-                        }`}
+                              ? "bg-green-500/10 border-green-500/20 text-green-300"
+                              : "bg-blue-500/10 border-blue-500/20 text-blue-300"
+                          }`}
                       >
                         <div>
                           <p className="font-medium">{n.message}</p>

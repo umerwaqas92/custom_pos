@@ -61,14 +61,14 @@ function Login() {
       <div className="w-full max-w-md bg-card border border-border p-8 rounded-2xl shadow-2xl relative overflow-hidden backdrop-blur-md">
         {/* Glow accent */}
         <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
-        
+
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 text-primary mb-3">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold tracking-tight text-foreground">QUICKO ELECTRONICS POS</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-foreground"> ELECTRONICS POS</h2>
           <p className="text-sm text-muted-foreground mt-1">Electronics Shop Management Dashboard</p>
         </div>
 
@@ -169,7 +169,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={!token ? <Login /> : <Navigate to="/" replace />} />
-        
+
         <Route
           path="/"
           element={token ? <Layout /> : <Navigate to="/login" replace />}

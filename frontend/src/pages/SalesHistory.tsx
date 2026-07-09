@@ -18,13 +18,13 @@ export default function SalesHistory() {
   const [sales, setSales] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
-  
+
   // Filters state
   const [search, setSearch] = useState("");
   const [selectedBranch, setSelectedBranch] = useState("ALL");
   const [selectedCustomer, setSelectedCustomer] = useState("ALL");
   const [dateFilter, setDateFilter] = useState("ALL"); // ALL, TODAY, 7_DAYS, 30_DAYS
-  
+
   // Selected sale for receipt display
   const [activeSale, setActiveSale] = useState<any | null>(null);
   const [receiptOpen, setReceiptOpen] = useState(false);
@@ -186,8 +186,8 @@ export default function SalesHistory() {
           <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Average Sale Value</span>
           <span className="text-lg font-black text-foreground mt-1">
             Rs. {
-              (filteredSales.length > 0 
-                ? (filteredSales.reduce((acc, curr) => acc + curr.payableAmount, 0) / filteredSales.length) 
+              (filteredSales.length > 0
+                ? (filteredSales.reduce((acc, curr) => acc + curr.payableAmount, 0) / filteredSales.length)
                 : 0
               ).toLocaleString(undefined, { minimumFractionDigits: 2 })
             }
@@ -271,7 +271,7 @@ export default function SalesHistory() {
             <div id="printable-receipt" className="bg-secondary/30 p-4 border border-dashed border-border rounded-xl text-xs space-y-4">
               <div className="text-center border-b border-border pb-3">
                 <h4 className="font-extrabold text-foreground tracking-widest uppercase">
-                  {activeSale.branch?.name || "QUICKO ELECTRONICS"}
+                  {activeSale.branch?.name || " ELECTRONICS"}
                 </h4>
                 {activeSale.branch?.address && (
                   <p className="text-[9px] text-muted-foreground mt-0.5">{activeSale.branch.address}</p>

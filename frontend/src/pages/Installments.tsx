@@ -32,6 +32,7 @@ export default function Installments() {
   const [guarantorPhone, setGuarantorPhone] = useState("");
   const [guarantorAddress, setGuarantorAddress] = useState("");
   const [emiMonths, setEmiMonths] = useState(3);
+  const [interestRate, setInterestRate] = useState("10");
   const [downPayment, setDownPayment] = useState("");
   const [cnicFrontFile, setCnicFrontFile] = useState<File | null>(null);
   const [cnicBackFile, setCnicBackFile] = useState<File | null>(null);
@@ -112,7 +113,7 @@ export default function Installments() {
     formData.append("guarantorPhone", guarantorPhone);
     formData.append("guarantorAddress", guarantorAddress);
     formData.append("months", String(emiMonths));
-    formData.append("interestRate", String(getMarkupRate(emiMonths)));
+    formData.append("interestRate", String(parseFloat(interestRate || "0")));
     formData.append("downPayment", String(parsedDown));
     formData.append("cnicFront", cnicFrontFile);
     formData.append("cnicBack", cnicBackFile);
@@ -129,9 +130,11 @@ export default function Installments() {
       setGuarantorPhone("");
       setGuarantorAddress("");
       setEmiMonths(3);
+      setInterestRate("10");
       setDownPayment("");
       setCnicFrontFile(null);
       setCnicBackFile(null);
+      setCnicBackFile(null); // cheque reset check
       setChequeFile(null);
       fetchSales();
     } catch (err: any) {
@@ -165,7 +168,7 @@ export default function Installments() {
 
   // Math Calculations for live preview
   const originalAmount = selectedSale?.payableAmount || 0;
-  const markupRate = getMarkupRate(emiMonths);
+  const markupRate = parseFloat(interestRate || "0");
   const markupAdded = originalAmount * (markupRate / 100);
   const totalPrincipal = originalAmount + markupAdded;
   const parsedDown = parseFloat(downPayment || "0");
@@ -487,18 +490,30 @@ export default function Installments() {
                   <TrendingUp className="w-3.5 h-3.5 text-emerald-400" /> EMI Terms Configurator
                 </h3>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold text-muted-foreground uppercase">Tenure Months</label>
                     <select
                       value={emiMonths}
                       onChange={(e) => setEmiMonths(Number(e.target.value))}
-                      className="w-full bg-card text-xs border border-border px-3 py-2 rounded-xl focus:outline-none font-bold"
+                      className="w-full bg-card text-xs border border-border px-3 py-2.5 rounded-xl focus:outline-none font-bold"
                     >
-                      <option value={3}>3 Months (+5% Markup)</option>
-                      <option value={6}>6 Months (+10% Markup)</option>
-                      <option value={12}>12 Months (+15% Markup)</option>
+                      <option value={3}>3 Months</option>
+                      <option value={6}>6 Months</option>
+                      <option value={12}>12 Months</option>
                     </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase">Markup (%)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      required
+                      value={interestRate}
+                      onChange={(e) => setInterestRate(e.target.value)}
+                      placeholder="e.g. 10"
+                      className="w-full bg-card text-xs border border-border px-3 py-2 rounded-xl focus:outline-none font-bold text-primary"
+                    />
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold text-muted-foreground uppercase">Down Payment</label>
@@ -537,6 +552,26 @@ export default function Installments() {
                   <div className="flex justify-between bg-primary/10 border border-primary/20 p-2.5 rounded-xl text-primary font-black mt-3">
                     <span>Monthly Repayment (x{emiMonths}):</span>
                     <span>Rs. {monthlyPayment.toLocaleString(undefined, { maximumFractionDigits: 2 })} / month</span>
+                  </div>
+                </div>
+
+                {/* Repayment Preview Table */}
+                <div className="space-y-1.5 border-t border-border pt-3">
+                  <label className="text-[9px] font-extrabold text-muted-foreground uppercase tracking-wider block">
+                    Installment Repayment Schedule Preview
+                  </label>
+                  <div className="max-h-24 overflow-y-auto border border-border rounded-xl divide-y divide-border/50 bg-card pr-1">
+                    {Array.from({ length: emiMonths }).map((_, idx) => {
+                      const dueDate = new Date();
+                      dueDate.setDate(dueDate.getDate() + (idx + 1) * 30);
+                      return (
+                        <div key={idx} className="flex justify-between items-center p-2 text-[10px] hover:bg-secondary/10">
+                          <span className="font-bold text-foreground">Month {idx + 1}</span>
+                          <span className="text-muted-foreground">Due: {dueDate.toLocaleDateString()}</span>
+                          <span className="font-extrabold text-primary">Rs. {monthlyPayment.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 

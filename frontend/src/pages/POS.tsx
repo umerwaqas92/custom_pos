@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import { useStore, CartItem } from "../store/useStore";
 import {
   Search,
@@ -20,6 +21,7 @@ import {
 } from "lucide-react";
 
 export default function POS() {
+  const navigate = useNavigate();
   const {
     selectedBranchId,
     cart,
@@ -50,7 +52,7 @@ export default function POS() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [receiptResult, setReceiptResult] = useState<any | null>(null);
   const [custModalOpen, setCustModalOpen] = useState(false);
-  const [openSerials, setOpenSerials] = useState<{[key: string]: boolean}>({});
+  const [openSerials, setOpenSerials] = useState<{ [key: string]: boolean }>({});
 
   // New Customer Form State
   const [newCust, setNewCust] = useState({ name: "", phone: "", email: "", address: "", creditLimit: "1000000" });
@@ -67,14 +69,14 @@ export default function POS() {
     try {
       const response = await axios.post("/api/accounting/customers", newCust);
       addNotification("Customer profile created successfully.", "success");
-      
+
       // Reload customers list
       const custRes = await axios.get("/api/accounting/customers");
       setCustomers(custRes.data);
-      
+
       // Auto-select the newly created customer
       setSelectedCustId(response.data.id);
-      
+
       setCustModalOpen(false);
       setNewCust({ name: "", phone: "", email: "", address: "", creditLimit: "1000000" });
     } catch (err: any) {
@@ -129,7 +131,7 @@ export default function POS() {
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (p.barcode && p.barcode.includes(searchQuery));
-    
+
     const matchesCategory = selectedCat === "ALL" || p.categoryId === selectedCat;
 
     return matchesSearch && matchesCategory;
@@ -209,7 +211,7 @@ export default function POS() {
       clearCart();
       setCartDiscount(0);
       setSelectedCustId("");
-      
+
       // Reload products to update stock numbers
       const prodRes = await axios.get("/api/products", {
         params: {
@@ -251,10 +253,10 @@ export default function POS() {
 
   return (
     <div className="flex-1 flex gap-6 h-full min-h-0 overflow-hidden">
-      
+
       {/* Catalog / Left Panel */}
       <div className="flex-1 flex flex-col min-w-0 bg-card border border-border rounded-2xl p-4 space-y-4 h-full min-h-0">
-        
+
         {/* Search header controls */}
         <div className="flex flex-col sm:flex-row gap-3">
           <form onSubmit={handleBarcodeSubmit} className="flex-1 relative flex">
@@ -266,7 +268,7 @@ export default function POS() {
             />
             <Search className="w-5 h-5 text-muted-foreground absolute left-3 top-3" />
           </form>
-          
+
           <input
             type="text"
             value={searchQuery}
@@ -280,9 +282,8 @@ export default function POS() {
         <div className="flex gap-2 overflow-x-auto pb-1.5 scrollbar-thin">
           <button
             onClick={() => setSelectedCat("ALL")}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition ${
-              selectedCat === "ALL" ? "bg-primary text-white" : "bg-secondary text-muted-foreground hover:bg-secondary/80"
-            }`}
+            className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition ${selectedCat === "ALL" ? "bg-primary text-white" : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+              }`}
           >
             All Products
           </button>
@@ -290,9 +291,8 @@ export default function POS() {
             <button
               key={cat.id}
               onClick={() => setSelectedCat(cat.id)}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition ${
-                selectedCat === cat.id ? "bg-primary text-white" : "bg-secondary text-muted-foreground hover:bg-secondary/80"
-              }`}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition ${selectedCat === cat.id ? "bg-primary text-white" : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+                }`}
             >
               {cat.name}
             </button>
@@ -316,9 +316,8 @@ export default function POS() {
                   key={p.id}
                   disabled={branchQty <= 0}
                   onClick={() => addToCart(p, branchQty)}
-                  className={`bg-secondary/40 border text-left p-2 rounded-xl flex flex-col justify-between hover:border-primary/50 transition cursor-pointer relative ${
-                    branchQty <= 0 ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
+                  className={`bg-secondary/40 border text-left p-2 rounded-xl flex flex-col justify-between hover:border-primary/50 transition cursor-pointer relative ${branchQty <= 0 ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                 >
                   <div className="space-y-0.5">
                     <span className="text-[8px] uppercase font-bold text-muted-foreground tracking-wider block leading-none">{p.brand?.name}</span>
@@ -328,13 +327,12 @@ export default function POS() {
                   <div className="flex items-center justify-between mt-1.5 pt-1 border-t border-border/20">
                     <span className="font-extrabold text-[10px] text-foreground">Rs. {p.sellingPrice}</span>
                     <span
-                      className={`text-[8px] px-1 py-0.5 rounded font-bold ${
-                        branchQty <= 0
+                      className={`text-[8px] px-1 py-0.5 rounded font-bold ${branchQty <= 0
                           ? "bg-red-500/10 text-red-400"
                           : isLowStock
-                          ? "bg-amber-500/10 text-amber-400"
-                          : "bg-green-500/10 text-green-400"
-                      }`}
+                            ? "bg-amber-500/10 text-amber-400"
+                            : "bg-green-500/10 text-green-400"
+                        }`}
                     >
                       {branchQty <= 0 ? "Out" : `${branchQty} Avail`}
                     </span>
@@ -348,7 +346,7 @@ export default function POS() {
 
       {/* POS Cart / Right Panel */}
       <div className="w-96 bg-card border border-border rounded-2xl flex flex-col justify-between p-4 overflow-hidden h-full min-h-0 max-h-full">
-        
+
         {/* Cart Header */}
         <div className="flex items-center justify-between border-b border-border pb-3">
           <div className="flex items-center gap-2">
@@ -441,7 +439,7 @@ export default function POS() {
 
         {/* Customer & Totals Summary Panel */}
         <div className="border-t border-border pt-4 space-y-3">
-          
+
           {/* Customer Selection */}
           <div className="flex items-center gap-1.5">
             <div className="flex-1 flex items-center gap-2 bg-secondary/50 border border-border p-2 rounded-xl">
@@ -475,7 +473,7 @@ export default function POS() {
               <span>Subtotal:</span>
               <span>Rs. {subtotal.toFixed(2)}</span>
             </div>
-            
+
             {/* Cart overall discount */}
             <div className="flex justify-between text-muted-foreground items-center">
               <span className="flex items-center gap-1">
@@ -506,11 +504,10 @@ export default function POS() {
               <button
                 type="button"
                 onClick={() => setPaymentMethod("CASH")}
-                className={`flex items-center justify-center gap-1 p-2 rounded-lg border text-left transition-all ${
-                  paymentMethod === "CASH"
+                className={`flex items-center justify-center gap-1 p-2 rounded-lg border text-left transition-all ${paymentMethod === "CASH"
                     ? "bg-primary/10 border-primary text-primary font-bold shadow"
                     : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                }`}
+                  }`}
               >
                 <Banknote className="w-3.5 h-3.5 flex-shrink-0" />
                 <span className="text-[10px] font-extrabold font-black">Cash</span>
@@ -519,11 +516,10 @@ export default function POS() {
               <button
                 type="button"
                 onClick={() => setPaymentMethod("CARD")}
-                className={`flex items-center justify-center gap-1 p-2 rounded-lg border text-left transition-all ${
-                  paymentMethod === "CARD"
+                className={`flex items-center justify-center gap-1 p-2 rounded-lg border text-left transition-all ${paymentMethod === "CARD"
                     ? "bg-primary/10 border-primary text-primary font-bold shadow"
                     : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                }`}
+                  }`}
               >
                 <Landmark className="w-3.5 h-3.5 flex-shrink-0" />
                 <span className="text-[10px] font-extrabold font-black">Bank</span>
@@ -532,11 +528,10 @@ export default function POS() {
               <button
                 type="button"
                 onClick={() => setPaymentMethod("MOBILE")}
-                className={`flex items-center justify-center gap-1 p-2 rounded-lg border text-left transition-all ${
-                  paymentMethod === "MOBILE"
+                className={`flex items-center justify-center gap-1 p-2 rounded-lg border text-left transition-all ${paymentMethod === "MOBILE"
                     ? "bg-primary/10 border-primary text-primary font-bold shadow"
                     : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                }`}
+                  }`}
               >
                 <Wallet className="w-3.5 h-3.5 flex-shrink-0" />
                 <span className="text-[10px] font-extrabold font-black">Wallet</span>
@@ -545,11 +540,10 @@ export default function POS() {
               <button
                 type="button"
                 onClick={() => setPaymentMethod("CREDIT")}
-                className={`flex items-center justify-center gap-1 p-2 rounded-lg border text-left transition-all ${
-                  paymentMethod === "CREDIT"
+                className={`flex items-center justify-center gap-1 p-2 rounded-lg border text-left transition-all ${paymentMethod === "CREDIT"
                     ? "bg-primary/10 border-primary text-primary font-bold shadow"
                     : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                }`}
+                  }`}
               >
                 <BookOpen className="w-3.5 h-3.5 flex-shrink-0" />
                 <span className="text-[10px] font-extrabold font-black">Credit</span>
@@ -558,11 +552,10 @@ export default function POS() {
               <button
                 type="button"
                 onClick={() => setPaymentMethod("EMI")}
-                className={`flex items-center justify-center gap-1 p-2 rounded-lg border text-left transition-all ${
-                  paymentMethod === "EMI"
+                className={`flex items-center justify-center gap-1 p-2 rounded-lg border text-left transition-all ${paymentMethod === "EMI"
                     ? "bg-primary/10 border-primary text-primary font-bold shadow"
                     : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                }`}
+                  }`}
               >
                 <CreditCard className="w-3.5 h-3.5 flex-shrink-0" />
                 <span className="text-[10px] font-extrabold font-black">EMI</span>
@@ -623,7 +616,7 @@ export default function POS() {
             <div id="printable-receipt" className="bg-secondary/30 p-4 border border-dashed border-border rounded-xl text-xs space-y-4">
               <div className="text-center border-b border-border pb-3">
                 <h4 className="font-extrabold text-foreground tracking-widest uppercase">
-                  {receiptResult.branch?.name || "QUICKO ELECTRONICS"}
+                  {receiptResult.branch?.name || " ELECTRONICS"}
                 </h4>
                 {receiptResult.branch?.address && (
                   <p className="text-[9px] text-muted-foreground mt-0.5">{receiptResult.branch.address}</p>
@@ -672,18 +665,22 @@ export default function POS() {
                 <div className="flex justify-between font-black text-foreground text-xs pt-1 border-t border-border/40">
                   <p className="font-bold text-foreground">
                     {receiptResult.paymentMethod === "CASH" ? "Cash" :
-                     receiptResult.paymentMethod === "CARD" ? "Bank" :
-                     receiptResult.paymentMethod === "MOBILE" ? "Wallet" :
-                     receiptResult.paymentMethod === "EMI" ? "EMI Installment" : "Credit"}
+                      receiptResult.paymentMethod === "CARD" ? "Bank" :
+                        receiptResult.paymentMethod === "MOBILE" ? "Wallet" :
+                          receiptResult.paymentMethod === "EMI" ? "EMI Installment" : "Credit"}
                   </p>
                   <span>Rs. {receiptResult.paidAmount.toFixed(2)}</span>
                 </div>
               </div>
 
               {receiptResult.customer && (
-                <div className="bg-secondary/60 p-2 rounded text-[10px] text-muted-foreground">
+                <div className="bg-secondary/60 p-2 rounded text-[10px] text-muted-foreground space-y-0.5">
                   <p>Customer: <strong>{receiptResult.customer.name}</strong></p>
-                  <p>Repayment Balance: <strong>Rs. {receiptResult.customer.creditBalance}</strong></p>
+                  {receiptResult.paymentMethod === "EMI" ? (
+                    <p className="text-primary font-bold">Financed Balance: <strong>Rs. {receiptResult.payableAmount.toFixed(2)}</strong></p>
+                  ) : (
+                    <p>Repayment Balance: <strong>Rs. {receiptResult.customer.creditBalance}</strong></p>
+                  )}
                 </div>
               )}
             </div>
@@ -696,12 +693,24 @@ export default function POS() {
                 <Receipt className="w-4 h-4" />
                 Print Slip
               </button>
-              <button
-                onClick={() => setReceiptResult(null)}
-                className="flex-1 bg-primary hover:bg-primary/95 text-white text-xs font-bold py-2.5 rounded-xl transition"
-              >
-                Dismiss Window
-              </button>
+              {receiptResult.paymentMethod === "EMI" ? (
+                <button
+                  onClick={() => {
+                    setReceiptResult(null);
+                    navigate("/installments");
+                  }}
+                  className="flex-1 bg-primary hover:bg-primary/95 text-white text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1 transition shadow-md shadow-primary/10 cursor-pointer"
+                >
+                  Setup Installments Plan ➔
+                </button>
+              ) : (
+                <button
+                  onClick={() => setReceiptResult(null)}
+                  className="flex-1 bg-primary hover:bg-primary/95 text-white text-xs font-bold py-2.5 rounded-xl transition cursor-pointer"
+                >
+                  Dismiss Window
+                </button>
+              )}
             </div>
           </div>
         </div>

@@ -126,14 +126,14 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 flex-1">
-      
+
       {/* Welcome banner */}
       <div className="bg-card border border-border p-6 rounded-2xl flex items-center justify-between relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
         <div className="space-y-1 relative z-10">
           <div className="flex items-center gap-2 text-primary">
             <Sparkles className="w-5 h-5" />
-            <span className="text-xs font-bold uppercase tracking-wider">Quicko Electronics Dashboard</span>
+            <span className="text-xs font-bold uppercase tracking-wider"> Electronics Dashboard</span>
           </div>
           <h1 className="text-2xl font-black tracking-tight text-foreground">Welcome to the Dashboard</h1>
           <p className="text-sm text-muted-foreground">Monitor inventory levels, track cashier checkouts, and view technical operations.</p>
@@ -161,7 +161,7 @@ export default function Dashboard() {
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* Sales Trend (Area Chart) */}
         <div className="lg:col-span-2 bg-card border border-border p-6 rounded-2xl flex flex-col justify-between h-96">
           <div className="flex items-center gap-2 mb-4">
@@ -236,7 +236,7 @@ export default function Dashboard() {
 
       {/* Details Lists (Low Stock + Brand sales) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
+
         {/* Low Stock Alerts */}
         <div className="bg-card border border-border p-6 rounded-2xl flex flex-col">
           <div className="flex items-center gap-2 mb-4">
