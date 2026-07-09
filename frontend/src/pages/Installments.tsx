@@ -17,7 +17,9 @@ import {
   DollarSign,
   TrendingUp,
   Receipt,
-  RefreshCw
+  RefreshCw,
+  Check,
+  Clock
 } from "lucide-react";
 
 export default function Installments() {
@@ -668,166 +670,310 @@ export default function Installments() {
       )}
 
       {/* DETAILED ACTIVE CONTRACT MODAL SCHEDULER */}
-      {activeContract && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/75 backdrop-blur-sm z-50 px-4 overflow-y-auto">
-          <div className="bg-card border border-border w-full max-w-4xl p-6 rounded-2xl shadow-2xl grid grid-cols-1 md:grid-cols-12 gap-6 my-8 relative">
-            <button
-              onClick={() => setActiveContract(null)}
-              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
+      {activeContract && (() => {
+        const emi = activeContract.emiDetails;
+        const paidCount = emi.installments.filter((i: any) => i.status === "PAID").length;
+        const paidAmount = emi.installments.filter((i: any) => i.status === "PAID").reduce((sum: number, i: any) => sum + i.amount, 0);
+        const remainingAmount = emi.totalPrincipal - emi.downPayment - paidAmount;
+        
+        return (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
+            <div className="bg-card border border-border/80 w-full max-w-5xl rounded-2xl shadow-2xl flex flex-col md:grid md:grid-cols-12 gap-6 md:gap-8 p-6 md:p-8 relative max-h-[90vh] overflow-y-auto">
+              <button
+                onClick={() => setActiveContract(null)}
+                className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors duration-150 cursor-pointer p-1.5 hover:bg-secondary rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
 
-            {/* Left Column: Contract Metadata & Documents */}
-            <div className="md:col-span-5 space-y-4">
-              <div>
-                <span className="px-2 py-0.5 rounded text-[9px] font-black tracking-widest uppercase bg-primary/20 text-primary">
-                  EMI Contract Info
-                </span>
-                <div className="flex justify-between items-start mt-1">
-                  <div>
-                    <h3 className="text-base font-black text-foreground">Invoice #{activeContract.id.substring(0, 8)}</h3>
-                    <p className="text-[10px] text-muted-foreground">Dated: {new Date(activeContract.saleDate).toLocaleDateString()}</p>
+              {/* Left Column: Contract Metadata & Documents */}
+              <div className="md:col-span-5 space-y-5">
+                <div className="border-b border-border/60 pb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold tracking-wider uppercase bg-primary/10 text-primary border border-primary/20">
+                      EMI Contract Info
+                    </span>
+                    {emi.status === "COMPLETED" ? (
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold tracking-wider uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        Completed
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold tracking-wider uppercase bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                        Active Plan
+                      </span>
+                    )}
                   </div>
-                  <button
-                    onClick={downloadPdf}
-                    className="bg-primary hover:bg-primary/95 text-white font-bold px-2.5 py-1.5 rounded-lg text-[10px] flex items-center gap-1 shadow-md shadow-primary/10 cursor-pointer"
-                  >
-                    <Receipt className="w-3.5 h-3.5" /> Download PDF
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-2 text-xs border border-border p-3 rounded-xl bg-secondary/20">
-                <p className="font-bold text-foreground">Customer Profile</p>
-                <div className="space-y-1.5 text-muted-foreground">
-                  <p className="flex items-center gap-1.5 text-[10px]">
-                    <User className="w-3.5 h-3.5 text-muted-foreground" /> {activeContract.customer?.name || "Walk-in"}
-                  </p>
-                  <p className="flex items-center gap-1.5 text-[10px]">
-                    <Phone className="w-3.5 h-3.5 text-muted-foreground" /> {activeContract.customer?.phone || "N/A"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-2 text-xs border border-border p-3 rounded-xl bg-secondary/20">
-                <p className="font-bold text-foreground">Purchased Items</p>
-                <div className="space-y-2 max-h-32 overflow-y-auto pr-1">
-                  {activeContract.items?.map((item: any) => (
-                    <div key={item.id} className="border-b border-border/40 pb-1.5 last:border-b-0 text-[10px]">
-                      <div className="flex justify-between font-semibold text-foreground">
-                        <span className="truncate max-w-[150px]">{item.product?.name}</span>
-                        <span>Rs. {item.totalPrice.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between text-muted-foreground text-[9px]">
-                        <span>Qty: {item.quantity} @ Rs. {item.unitPrice}</span>
-                      </div>
-                      {(item.serialNumber || item.imei) && (
-                        <p className="text-[9px] text-primary/80 font-bold mt-0.5 leading-none">
-                          {item.serialNumber && `S/N: ${item.serialNumber}`}
-                          {item.serialNumber && item.imei && " | "}
-                          {item.imei && `IMEI: ${item.imei}`}
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-2 text-xs border border-border p-3 rounded-xl bg-secondary/20">
-                <p className="font-bold text-foreground">Guarantor / Reference Details</p>
-                <div className="space-y-1.5 text-muted-foreground">
-                  <p className="flex items-center gap-1.5 text-[10px] font-semibold text-foreground">
-                    <User className="w-3.5 h-3.5 text-primary" /> {activeContract.emiDetails.guarantorName}
-                  </p>
-                  <p className="flex items-center gap-1.5 text-[10px]">
-                    <Phone className="w-3.5 h-3.5 text-muted-foreground" /> {activeContract.emiDetails.guarantorPhone}
-                  </p>
-                  <p className="flex items-start gap-1.5 text-[10px]">
-                    <MapPin className="w-3.5 h-3.5 text-muted-foreground mt-0.5 flex-shrink-0" /> 
-                    <span className="leading-snug">{activeContract.emiDetails.guarantorAddress}</span>
-                  </p>
-                </div>
-              </div>
-
-              {/* Document Scans previews */}
-              <div className="space-y-2">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase">Uploaded Contract Documents</p>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    onClick={() => setPreviewImage(`${uploadsBaseUrl}${activeContract.emiDetails.cnicFrontPath}`)}
-                    className="border border-border bg-secondary hover:bg-secondary/80 p-2 rounded-xl text-center flex flex-col items-center justify-center gap-1 cursor-pointer"
-                  >
-                    <Eye className="w-4.5 h-4.5 text-primary" />
-                    <span className="text-[9px] font-bold text-muted-foreground truncate w-full">CNIC Front</span>
-                  </button>
-
-                  <button
-                    onClick={() => setPreviewImage(`${uploadsBaseUrl}${activeContract.emiDetails.cnicBackPath}`)}
-                    className="border border-border bg-secondary hover:bg-secondary/80 p-2 rounded-xl text-center flex flex-col items-center justify-center gap-1 cursor-pointer"
-                  >
-                    <Eye className="w-4.5 h-4.5 text-primary" />
-                    <span className="text-[9px] font-bold text-muted-foreground truncate w-full">CNIC Back</span>
-                  </button>
-
-                  <button
-                    onClick={() => setPreviewImage(`${uploadsBaseUrl}${activeContract.emiDetails.chequePath}`)}
-                    className="border border-border bg-secondary hover:bg-secondary/80 p-2 rounded-xl text-center flex flex-col items-center justify-center gap-1 cursor-pointer"
-                  >
-                    <Eye className="w-4.5 h-4.5 text-primary" />
-                    <span className="text-[9px] font-bold text-muted-foreground truncate w-full">Bank Cheque</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column: Payments Timeline schedule */}
-            <div className="md:col-span-7 flex flex-col min-h-[350px] space-y-4">
-              <div>
-                <span className="text-[10px] font-bold text-muted-foreground uppercase">Repayment Schedule Timeline</span>
-                <p className="text-[11px] text-muted-foreground">
-                  Monthly installment calculations: <strong>Rs. {activeContract.emiDetails.monthlyPayment.toFixed(2)}</strong> for {activeContract.emiDetails.months} months
-                </p>
-              </div>
-
-              <div className="flex-1 overflow-y-auto pr-1 border border-border rounded-xl divide-y divide-border/60 bg-secondary/10">
-                {activeContract.emiDetails.installments.map((inst: any) => (
-                  <div key={inst.id} className="p-3 flex items-center justify-between gap-4 hover:bg-secondary/20 transition text-xs">
-                    <div className="space-y-0.5">
-                      <p className="font-bold text-foreground">Installment #{inst.installmentNumber}</p>
-                      <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                        <Calendar className="w-3.5 h-3.5" /> Due Date: {new Date(inst.dueDate).toLocaleDateString()}
+                  <div className="flex justify-between items-center gap-4">
+                    <div>
+                      <h3 className="text-lg font-black tracking-tight text-foreground">
+                        Invoice <span className="font-mono text-primary">#{activeContract.id.substring(0, 8)}</span>
+                      </h3>
+                      <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5" /> Plan Started: {new Date(activeContract.saleDate).toLocaleDateString()}
                       </p>
                     </div>
+                    <button
+                      onClick={downloadPdf}
+                      className="bg-primary hover:bg-primary/90 text-white font-semibold px-3 py-1.5 rounded-xl text-[10px] flex items-center gap-1.5 shadow-md shadow-primary/20 transition-all duration-200 active:scale-95 cursor-pointer"
+                    >
+                      <Receipt className="w-3.5 h-3.5" /> Download PDF
+                    </button>
+                  </div>
+                </div>
 
-                    <div className="flex items-center gap-3">
-                      <div className="text-right">
-                        <p className="font-black text-foreground">Rs. {inst.amount.toFixed(2)}</p>
-                        {inst.paidDate && (
-                          <p className="text-[8px] text-muted-foreground">Paid: {new Date(inst.paidDate).toLocaleDateString()}</p>
-                        )}
-                      </div>
-
-                      {inst.status === "PAID" ? (
-                        <span className="bg-green-500/10 text-green-400 font-bold px-2 py-0.5 rounded text-[10px]">
-                          PAID
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => handlePayInstallment(activeContract.id, inst.id)}
-                          className="bg-primary text-white font-bold px-2.5 py-1 rounded-lg text-[10px] hover:bg-primary/95 shadow-md shadow-primary/10 cursor-pointer"
-                        >
-                          Collect
-                        </button>
-                      )}
+                {/* Customer Profile */}
+                <div className="space-y-3 p-4 rounded-xl border border-border/80 bg-secondary/15 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full filter blur-xl -mr-6 -mt-6 pointer-events-none" />
+                  <div className="flex items-center gap-2 border-b border-border/40 pb-2">
+                    <div className="bg-primary/10 p-1.5 rounded-lg text-primary">
+                      <User className="w-4 h-4" />
+                    </div>
+                    <h4 className="font-bold text-foreground text-xs">Customer Profile</h4>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-[9px] font-bold text-muted-foreground uppercase block">Name</span>
+                      <span className="font-semibold text-foreground">{activeContract.customer?.name || "Walk-in"}</span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-bold text-muted-foreground uppercase block">Contact</span>
+                      <span className="font-semibold text-foreground flex items-center gap-1">
+                        <Phone className="w-3 h-3 text-muted-foreground" /> {activeContract.customer?.phone || "N/A"}
+                      </span>
                     </div>
                   </div>
-                ))}
+                </div>
+
+                {/* Purchased Items */}
+                <div className="space-y-3 p-4 rounded-xl border border-border/80 bg-secondary/15">
+                  <div className="flex items-center gap-2 border-b border-border/40 pb-2">
+                    <div className="bg-primary/10 p-1.5 rounded-lg text-primary">
+                      <CreditCard className="w-4 h-4" />
+                    </div>
+                    <h4 className="font-bold text-foreground text-xs">Purchased Items</h4>
+                  </div>
+                  <div className="space-y-2.5 max-h-36 overflow-y-auto pr-1">
+                    {activeContract.items?.map((item: any) => (
+                      <div key={item.id} className="border-b border-border/30 pb-2 last:border-0 last:pb-0">
+                        <div className="flex justify-between items-start gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-semibold text-foreground text-[11px] truncate leading-tight">{item.product?.name}</p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">
+                              Qty: {item.quantity} × Rs. {item.unitPrice.toLocaleString()}
+                            </p>
+                            {(item.serialNumber || item.imei) && (
+                              <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-1">
+                                {item.serialNumber && (
+                                  <span className="text-[9px] bg-primary/10 text-primary font-bold px-1.5 py-0.5 rounded">
+                                    S/N: {item.serialNumber}
+                                  </span>
+                                )}
+                                {item.imei && (
+                                  <span className="text-[9px] bg-blue-500/10 text-blue-400 font-bold px-1.5 py-0.5 rounded">
+                                    IMEI: {item.imei}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right text-[11px] font-bold text-foreground whitespace-nowrap">
+                            Rs. {item.totalPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Guarantor Details */}
+                <div className="space-y-3 p-4 rounded-xl border border-border/80 bg-secondary/15 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full filter blur-xl -mr-6 -mt-6 pointer-events-none" />
+                  <div className="flex items-center gap-2 border-b border-border/40 pb-2">
+                    <div className="bg-primary/10 p-1.5 rounded-lg text-primary">
+                      <User className="w-4 h-4" />
+                    </div>
+                    <h4 className="font-bold text-foreground text-xs">Guarantor / Reference Details</h4>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <span className="text-[9px] font-bold text-muted-foreground uppercase block">Guarantor Name</span>
+                      <span className="font-semibold text-foreground flex items-center gap-1.5">
+                        {activeContract.emiDetails.guarantorName}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-bold text-muted-foreground uppercase block">Phone Number</span>
+                      <span className="font-semibold text-foreground flex items-center gap-1">
+                        <Phone className="w-3 h-3 text-muted-foreground" /> {activeContract.emiDetails.guarantorPhone}
+                      </span>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-[9px] font-bold text-muted-foreground uppercase block">Address</span>
+                      <span className="font-medium text-muted-foreground flex items-start gap-1 leading-snug">
+                        <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0 text-muted-foreground" />
+                        {activeContract.emiDetails.guarantorAddress}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Uploaded Documents */}
+                <div className="space-y-2.5">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Uploaded Documents</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { label: "CNIC Front", path: activeContract.emiDetails.cnicFrontPath },
+                      { label: "CNIC Back", path: activeContract.emiDetails.cnicBackPath },
+                      { label: "Bank Cheque", path: activeContract.emiDetails.chequePath }
+                    ].map((doc, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setPreviewImage(`${uploadsBaseUrl}${doc.path}`)}
+                        className="group border border-border/80 bg-secondary/10 hover:bg-secondary/20 hover:border-primary/30 p-2.5 rounded-xl text-center flex flex-col items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer shadow-sm relative overflow-hidden"
+                      >
+                        <div className="bg-primary/5 group-hover:bg-primary/10 p-2 rounded-lg text-primary transition-colors duration-200">
+                          <FileText className="w-4 h-4" />
+                        </div>
+                        <span className="text-[9px] font-extrabold text-foreground group-hover:text-primary transition-colors duration-200 truncate w-full">
+                          {doc.label}
+                        </span>
+                        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                          <Eye className="w-2.5 h-2.5 text-primary" />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Payments Timeline schedule */}
+              <div className="md:col-span-7 flex flex-col space-y-6">
+                {/* Summary Cards */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-secondary/10 border border-border/80 p-3 rounded-xl">
+                    <span className="text-[9px] font-bold text-muted-foreground uppercase block">Total Financed</span>
+                    <span className="text-xs font-black text-foreground">
+                      Rs. {(emi.totalPrincipal - emi.downPayment).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="bg-emerald-500/5 border border-emerald-500/15 p-3 rounded-xl">
+                    <span className="text-[9px] font-bold text-emerald-400/80 uppercase block">Collected</span>
+                    <span className="text-xs font-black text-emerald-400">
+                      Rs. {paidAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="bg-amber-500/5 border border-amber-500/15 p-3 rounded-xl">
+                    <span className="text-[9px] font-bold text-amber-400/80 uppercase block">Outstanding</span>
+                    <span className="text-xs font-black text-amber-400 font-mono">
+                      Rs. {remainingAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Timeline Title and Progress Bar */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-end">
+                    <div>
+                      <span className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider block">
+                        Repayment Timeline
+                      </span>
+                      <p className="text-[10px] text-muted-foreground">
+                        Monthly amount: <strong className="text-foreground">Rs. {emi.monthlyPayment.toFixed(2)}</strong> for {emi.months} months
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xs font-black text-primary">{paidCount} / {emi.months} Paid</span>
+                    </div>
+                  </div>
+                  {/* Progress Bar */}
+                  <div className="w-full bg-secondary/30 h-1.5 rounded-full overflow-hidden border border-border/40">
+                    <div 
+                      className="bg-primary h-full rounded-full transition-all duration-500 ease-out"
+                      style={{ width: `${(paidCount / emi.months) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Timeline Node List */}
+                <div className="flex-1 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar pl-4 relative space-y-4 before:absolute before:left-[17px] before:top-2 before:bottom-2 before:w-[2px] before:bg-border/60">
+                  {emi.installments.map((inst: any) => {
+                    const isPaid = inst.status === "PAID";
+                    const isOverdue = !isPaid && new Date(inst.dueDate) < new Date();
+                    
+                    return (
+                      <div key={inst.id} className="relative pl-6 group">
+                        {/* Timeline Bullet */}
+                        <div className={`absolute left-[-23px] top-1.5 w-3 h-3 rounded-full border-2 bg-card z-10 flex items-center justify-center transition-all duration-300 ${
+                          isPaid 
+                            ? "border-emerald-500 bg-emerald-500 ring-4 ring-emerald-500/10" 
+                            : isOverdue 
+                              ? "border-red-500 bg-red-500 ring-4 ring-red-500/10 animate-pulse" 
+                              : "border-primary group-hover:border-primary/80 ring-4 ring-primary/5"
+                        }`} />
+                        
+                        {/* Installment Details Card */}
+                        <div className={`border rounded-xl p-3 flex items-center justify-between gap-4 transition-all duration-200 ${
+                          isPaid 
+                            ? "border-emerald-500/20 bg-emerald-500/5" 
+                            : isOverdue 
+                              ? "border-red-500/20 bg-red-500/5" 
+                              : "border-border/80 bg-secondary/5 hover:border-primary/20 hover:bg-secondary/10"
+                        }`}>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-foreground text-[11px]">
+                                Installment #{inst.installmentNumber}
+                              </span>
+                              {isPaid ? (
+                                <span className="bg-emerald-500/10 text-emerald-400 font-extrabold px-1.5 py-0.5 rounded text-[8px] uppercase tracking-wider border border-emerald-500/20">
+                                  Paid
+                                </span>
+                              ) : isOverdue ? (
+                                <span className="bg-red-500/10 text-red-400 font-extrabold px-1.5 py-0.5 rounded text-[8px] uppercase tracking-wider border border-red-500/20 animate-pulse">
+                                  Overdue
+                                </span>
+                              ) : (
+                                <span className="bg-primary/10 text-primary font-extrabold px-1.5 py-0.5 rounded text-[8px] uppercase tracking-wider border border-primary/20">
+                                  Pending
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                              <Calendar className="w-3 h-3 text-muted-foreground" /> Due Date: {new Date(inst.dueDate).toLocaleDateString()}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-4">
+                            <div className="text-right">
+                              <p className="font-black text-foreground text-xs">
+                                Rs. {inst.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                              </p>
+                              {inst.paidDate && (
+                                <p className="text-[9px] text-muted-foreground">
+                                  Paid on: {new Date(inst.paidDate).toLocaleDateString()}
+                                </p>
+                              )}
+                            </div>
+
+                            {!isPaid && (
+                              <button
+                                onClick={() => handlePayInstallment(activeContract.id, inst.id)}
+                                className="bg-primary hover:bg-primary/90 text-white font-bold px-3 py-1.5 rounded-lg text-[10px] shadow-sm hover:shadow-md transition-all duration-200 active:scale-95 cursor-pointer"
+                              >
+                                Collect
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Document scan lightbox preview Modal */}
       {previewImage && (
