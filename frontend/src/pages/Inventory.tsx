@@ -381,7 +381,12 @@ export default function Inventory() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card border border-border p-5 rounded-2xl">
         <div>
-          <h1 className="text-xl font-black tracking-tight text-foreground">Catalog & Stock Control</h1>
+          <h1 className="text-xl font-black tracking-tight text-foreground flex items-center gap-2">
+            <span className="w-8 h-8 rounded-xl bg-primary/10 p-1 ring-1 ring-primary/15 flex items-center justify-center">
+              <img src="/icons/inventory/header.png?v=1" alt="" className="w-full h-full object-contain" draggable={false} />
+            </span>
+            Catalog & Stock Control
+          </h1>
           <p className="text-xs text-muted-foreground">Manage active product listings, stock levels, and store logistics.</p>
         </div>
 
@@ -391,28 +396,28 @@ export default function Inventory() {
             onClick={() => setAddOpen(true)}
             className="bg-primary hover:bg-primary/95 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition"
           >
-            <Plus className="w-4 h-4" /> Add Product
+            <img src="/icons/inventory/add.png?v=1" alt="" className="w-4 h-4 object-contain brightness-0 invert" draggable={false} /> Add Product
           </button>
           
           <button
             onClick={() => setAdjustOpen(true)}
             className="border border-border bg-secondary hover:bg-secondary/80 text-foreground text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition"
           >
-            <Settings className="w-4 h-4" /> Stock Adjust
+            <img src="/icons/inventory/adjust.png?v=1" alt="" className="w-4 h-4 object-contain" draggable={false} /> Stock Adjust
           </button>
 
           <button
             onClick={() => setTransferOpen(true)}
             className="border border-border bg-secondary hover:bg-secondary/80 text-foreground text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition"
           >
-            <ArrowRightLeft className="w-4 h-4" /> Stock Transfer
+            <img src="/icons/inventory/transfer.png?v=1" alt="" className="w-4 h-4 object-contain" draggable={false} /> Stock Transfer
           </button>
 
           <button
             onClick={loadMovements}
             className="border border-border bg-secondary hover:bg-secondary/80 text-foreground text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition"
           >
-            <History className="w-4 h-4" /> Movements Logs
+            <img src="/icons/inventory/movements.png?v=1" alt="" className="w-4 h-4 object-contain" draggable={false} /> Movements Logs
           </button>
 
           <button
@@ -429,13 +434,16 @@ export default function Inventory() {
 
         {/* Filter controls */}
         <div className="flex flex-col md:flex-row gap-3">
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search SKU, name, or barcode..."
-            className="flex-1 bg-secondary text-foreground text-sm border border-border px-4 py-2.5 rounded-xl focus:outline-none"
-          />
+          <div className="flex-1 relative">
+            <img src="/icons/inventory/search.png?v=1" alt="" className="w-4 h-4 object-contain absolute left-3 top-3 opacity-70" draggable={false} />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search SKU, name, or barcode..."
+              className="w-full bg-secondary text-foreground text-sm border border-border pl-9 pr-4 py-2.5 rounded-xl focus:outline-none"
+            />
+          </div>
 
           <select
             value={selectedCat}
@@ -463,7 +471,7 @@ export default function Inventory() {
                 : "bg-secondary text-foreground border-border hover:bg-secondary/80"
             }`}
           >
-            <AlertCircle className="w-4 h-4" /> Low Stock
+            <img src="/icons/inventory/low-stock.png?v=1" alt="" className="w-4 h-4 object-contain" draggable={false} /> Low Stock
           </button>
         </div>
 
@@ -475,7 +483,7 @@ export default function Inventory() {
               onClick={handleBulkDelete}
               className="bg-red-500 hover:bg-red-600 text-white text-xs font-bold px-4 py-1.5 rounded-lg flex items-center gap-1 transition"
             >
-              <Trash2 className="w-3.5 h-3.5" /> Delete Selected
+              <img src="/icons/inventory/delete.png?v=1" alt="" className="w-3.5 h-3.5 object-contain brightness-0 invert" draggable={false} /> Delete Selected
             </button>
             <button
               onClick={() => setSelectedIds(new Set())}
@@ -560,14 +568,14 @@ export default function Inventory() {
                             className="p-1 text-muted-foreground hover:text-primary transition"
                             title="Edit"
                           >
-                            <Edit className="w-4 h-4" />
+                            <img src="/icons/inventory/edit.png?v=1" alt="" className="w-4 h-4 object-contain" draggable={false} />
                           </button>
                           <button
                             onClick={() => handleDeleteProduct(p.id, p.name)}
                             className="p-1 text-muted-foreground hover:text-destructive transition"
                             title="Delete"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <img src="/icons/inventory/delete.png?v=1" alt="" className="w-4 h-4 object-contain" draggable={false} />
                           </button>
                         </div>
                       </td>
