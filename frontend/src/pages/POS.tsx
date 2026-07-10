@@ -459,6 +459,7 @@ export default function POS() {
           <span>Ctrl/Cmd+Enter: Checkout</span>
           <span>Ctrl/Cmd+Shift+C: Clear Cart</span>
           <span>Ctrl/Cmd+Shift+R: Refresh</span>
+          <span>Ctrl/Cmd+Shift+F: Fullscreen</span>
           <span>Enter: Close Dialog</span>
         </div>
 

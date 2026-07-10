@@ -20,7 +20,9 @@ import {
   Settings,
   CreditCard,
   BarChart3,
-  AlertTriangle
+  AlertTriangle,
+  Maximize2,
+  Minimize2
 } from "lucide-react";
 
 export default function Layout() {
@@ -43,11 +45,58 @@ export default function Layout() {
   const navigate = useNavigate();
   const [notifOpen, setNotifOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const isPosRoute = location.pathname === "/pos";
+
+  const toggleFullscreen = async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
+        await document.documentElement.requestFullscreen();
+      }
+    } catch {
+      console.error("Fullscreen is not supported or was denied.");
+    }
+  };
 
   // Collapse sidebar on POS for maximum catalog/cart space
   useEffect(() => {
-    setSidebarOpen(location.pathname !== "/pos");
-  }, [location.pathname]);
+    setSidebarOpen(!isPosRoute);
+  }, [isPosRoute]);
+
+  // Sync fullscreen state with browser
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
+  }, []);
+
+  // Auto-enter fullscreen on POS; exit when leaving
+  useEffect(() => {
+    if (isPosRoute) {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+    } else if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+  }, [isPosRoute]);
+
+  // Ctrl/Cmd+Shift+F toggles fullscreen
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        toggleFullscreen();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   // Check low stock on mount and every 5 minutes
   useEffect(() => {
@@ -200,7 +249,8 @@ export default function Layout() {
       {/* Main Workspace */}
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
 
-        {/* Top Header */}
+        {/* Top Header — hidden on POS for maximum workspace */}
+        {!isPosRoute && (
         <header className="h-16 border-b border-border bg-card flex items-center justify-between px-6 z-20 relative">
 
           {/* Active Branch Display */}
@@ -244,6 +294,15 @@ export default function Layout() {
                 </span>
               </button>
             )}
+
+            {/* Fullscreen Toggle */}
+            <button
+              onClick={toggleFullscreen}
+              className="p-2 rounded-xl bg-secondary hover:bg-secondary/80 border border-border text-foreground transition"
+              title={isFullscreen ? "Exit fullscreen (Ctrl/Cmd+Shift+F)" : "Enter fullscreen (Ctrl/Cmd+Shift+F)"}
+            >
+              {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+            </button>
 
             {/* Bell Notifications */}
             <button
@@ -297,9 +356,21 @@ export default function Layout() {
             )}
           </div>
         </header>
+        )}
+
+        {/* POS fullscreen toggle (header is hidden on POS) */}
+        {isPosRoute && (
+          <button
+            onClick={toggleFullscreen}
+            className="fixed top-3 right-3 z-50 p-2 rounded-xl bg-card hover:bg-secondary border border-border text-foreground shadow-lg transition"
+            title={isFullscreen ? "Exit fullscreen (Ctrl/Cmd+Shift+F)" : "Enter fullscreen (Ctrl/Cmd+Shift+F)"}
+          >
+            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+          </button>
+        )}
 
         {/* Dynamic Route Pages Content */}
-        <main className="flex-1 overflow-y-auto p-6 flex flex-col">
+        <main className={`flex-1 overflow-y-auto flex flex-col ${isPosRoute ? "p-3" : "p-6"}`}>
           <Outlet />
         </main>
       </div>
