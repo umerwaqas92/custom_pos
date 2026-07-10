@@ -1,0 +1,306 @@
+# POS Icons Style Guide & Prompts
+
+This document lists all custom icons used in the app, where they live, the shared generation style, and the exact prompts used so you can regenerate or extend the set.
+
+---
+
+## Style system
+
+Use this style for every new icon so the set stays consistent.
+
+### Visual rules
+
+| Rule | Value |
+|------|--------|
+| Format | Transparent **PNG** (RGBA) |
+| Canvas | Square `1:1` (export ~128–256px for UI) |
+| Shape | Flat modern UI symbol, centered |
+| Contrast | High contrast; avoid pale/white-only icons |
+| Text | No text, no labels, no watermarks |
+| Shadow | No drop shadow on chroma sheet (optional soft depth in symbol only) |
+| Colors on symbol | Blue / indigo / amber / rose / teal / gold / white / navy — **never pure chroma green** |
+| Background for generation | Solid pure chroma key green `#00FF00` (full frame) |
+| After generate | Remove green → pure transparent PNG |
+
+### Chroma key prompt suffix (always append)
+
+```
+on solid pure chroma key green #00FF00 background only, full frame green, NOT green colors on the icon itself, flat modern UI, high contrast, no text, no drop shadow, square 1:1
+```
+
+### Post-process pipeline
+
+1. Generate on solid `#00FF00`.
+2. Sample green from image corners as key color.
+3. Remove pixels that are greenish **and** close to the key color.
+4. Soft-edge despill on fringes.
+5. Crop to content + pad, fit square, resize (sidebar `128`, dashboard `256`).
+6. Slightly darken near-white pixels if needed for light UI.
+7. Save as PNG with alpha.
+
+### App usage paths
+
+```
+frontend/public/icons/
+  dashboard/     → home KPI widgets
+  sidebar/       → main navigation
+```
+
+Dashboard cards use soft tint plates (`bg-sky-500/15`, etc.).  
+Sidebar items use `bg-primary/10` (inactive) / `bg-white/20` (active).
+
+---
+
+## Dashboard widgets
+
+**Folder:** `frontend/public/icons/dashboard/`  
+**Used in:** `frontend/src/pages/Dashboard.tsx`
+
+| File | Widget | Color plate (UI) | Prompt |
+|------|--------|------------------|--------|
+| `today-sales.png` | Today's Sales | Sky | See below |
+| `monthly-sales.png` | Monthly Sales | Blue | See below |
+| `monthly-profit.png` | Monthly Profit | Emerald | See below |
+| `monthly-expenses.png` | Monthly Expenses | Rose | See below |
+| `cash-balance.png` | Cash Balance / Wallet strip | Amber | See below |
+| `products-stock.png` | Products in Stock | Indigo | See below |
+| `low-stock.png` | Low Stock | Orange | See below |
+| `bank-balance.png` | Bank Balance strip | Teal | See below |
+
+### Dashboard prompts
+
+#### `today-sales.png`
+
+```
+UI icon only on solid pure chroma key green #00FF00 background only, full frame green.
+Centered white and light sky-blue calendar with dollar sign symbol only.
+Flat modern dashboard widget icon, high contrast, NOT green colors on the icon itself.
+No text, no drop shadow, square 1:1
+```
+
+#### `monthly-sales.png`
+
+```
+UI icon only on solid pure chroma key green #00FF00 background only, full frame green.
+Centered white and blue coins stack with small rising chart / upward arrow, monthly sales symbol.
+Flat modern dashboard widget icon, high contrast, NOT green colors on the icon itself.
+No text, no drop shadow, square 1:1
+```
+
+#### `monthly-profit.png`
+
+```
+UI icon only on solid pure chroma key green #00FF00 background only, full frame green.
+Centered white and gold upward arrow chart profit symbol with dollar.
+Flat modern dashboard widget icon, high contrast, NOT green colors on the icon itself (no emerald green fill).
+No text, no drop shadow, square 1:1
+```
+
+#### `monthly-expenses.png`
+
+```
+UI icon only on solid pure chroma key green #00FF00 background only, full frame green.
+Centered white and rose-red receipt with downward arrow, expenses symbol.
+Flat modern dashboard widget icon, high contrast, NOT green colors on the icon itself.
+No text, no drop shadow, square 1:1
+```
+
+#### `cash-balance.png`
+
+```
+UI icon only on solid pure chroma key green #00FF00 background only, full frame green.
+Centered white and gold wallet with cash banknotes symbol.
+Flat modern dashboard widget icon, high contrast, NOT green colors on the icon itself.
+No text, no drop shadow, square 1:1
+```
+
+#### `products-stock.png`
+
+```
+UI icon only on solid pure chroma key green #00FF00 background only, full frame green.
+Centered white and indigo package box inventory / products in stock symbol.
+Flat modern dashboard widget icon, high contrast, NOT green colors on the icon itself.
+No text, no drop shadow, square 1:1
+```
+
+#### `low-stock.png`
+
+```
+UI icon only on solid pure chroma key green #00FF00 background only, full frame green.
+Centered white and orange warning triangle low stock alert symbol (optional small empty box).
+Flat modern dashboard widget icon, high contrast, NOT green colors on the icon itself.
+No text, no drop shadow, square 1:1
+```
+
+#### `bank-balance.png`
+
+```
+UI icon only on solid pure chroma key green #00FF00 background only, full frame green.
+Centered white and deep navy / teal bank building with card symbol.
+Flat modern dashboard widget icon, high contrast, NOT green colors on the icon itself.
+No text, no drop shadow, square 1:1
+```
+
+---
+
+## Sidebar navigation
+
+**Folder:** `frontend/public/icons/sidebar/`  
+**Used in:** `frontend/src/components/Layout.tsx`
+
+| File | Menu item | Route | Prompt |
+|------|-----------|-------|--------|
+| `dashboard.png` | Dashboard | `/` | See below |
+| `pos.png` | POS Sales | `/pos` | See below |
+| `sales-history.png` | Sales History | `/sales-history` | See below |
+| `installments.png` | Installments | `/installments` | See below |
+| `inventory.png` | Inventory | `/inventory` | See below |
+| `categories.png` | Brands & Categories | `/categories-brands` | See below |
+| `contacts.png` | Contacts | `/contacts` | See below |
+| `accounting.png` | Accounting | `/accounting` | See below |
+| `reports.png` | Reports | `/reports` | See below |
+| `settings.png` | Settings | `/settings` | See below |
+
+### Sidebar prompts
+
+#### `dashboard.png`
+
+```
+Sidebar nav icon on solid chroma key green #00FF00 only.
+Centered white and blue dashboard grid layout symbol.
+Flat UI, high contrast, NOT green colors on the icon itself.
+No text, no shadow, square 1:1
+```
+
+#### `pos.png`
+
+```
+Sidebar nav icon on solid chroma key green #00FF00 only.
+Centered white and blue shopping cart POS sales symbol.
+Flat UI, high contrast, NOT green colors on the icon itself.
+No text, no shadow, square 1:1
+```
+
+#### `sales-history.png`
+
+```
+Sidebar nav icon on solid chroma key green #00FF00 only.
+Centered white and indigo invoice receipt sales history symbol.
+Flat UI, high contrast, NOT green colors on the icon itself.
+No text, no shadow, square 1:1
+```
+
+#### `installments.png`
+
+```
+Sidebar nav icon on solid chroma key green #00FF00 only.
+Centered white and purple credit card installments EMI symbol.
+Flat UI, high contrast, NOT green colors on the icon itself.
+No text, no shadow, square 1:1
+```
+
+#### `inventory.png`
+
+```
+Sidebar nav icon on solid chroma key green #00FF00 only.
+Centered white and amber package box inventory symbol.
+Flat UI, high contrast, NOT green colors on the icon itself.
+No text, no shadow, square 1:1
+```
+
+#### `categories.png`
+
+```
+Sidebar nav icon on solid chroma key green #00FF00 only.
+Centered white and violet stacked layers brands categories symbol.
+Flat UI, high contrast, NOT green colors on the icon itself.
+No text, no shadow, square 1:1
+```
+
+#### `contacts.png`
+
+```
+Sidebar nav icon on solid chroma key green #00FF00 only.
+Centered white and cyan people users contacts symbol.
+Flat UI, high contrast, NOT green colors on the icon itself.
+No text, no shadow, square 1:1
+```
+
+#### `accounting.png`
+
+```
+Sidebar nav icon on solid chroma key green #00FF00 only.
+Centered white and gold briefcase accounting finance symbol.
+Flat UI, high contrast, NOT green colors on the icon itself.
+No text, no shadow, square 1:1
+```
+
+#### `reports.png`
+
+```
+Sidebar nav icon on solid chroma key green #00FF00 only.
+Centered white and teal bar chart reports analytics symbol.
+Flat UI, high contrast, NOT green colors on the icon itself.
+No text, no shadow, square 1:1
+```
+
+#### `settings.png`
+
+```
+Sidebar nav icon on solid chroma key green #00FF00 only.
+Centered white and slate gear cog settings symbol.
+Flat UI, high contrast, NOT green colors on the icon itself.
+No text, no shadow, square 1:1
+```
+
+---
+
+## Template: new icon
+
+Copy and fill:
+
+```
+[ROLE: Sidebar nav icon | Dashboard widget icon]
+on solid pure chroma key green #00FF00 background only, full frame green.
+Centered [COLORS: white + accent color] [SYMBOL description].
+Flat modern UI, high contrast, NOT green colors on the icon itself.
+No text, no drop shadow, square 1:1
+```
+
+Then:
+
+1. Save generate output as temp JPG.
+2. Run chroma → transparent PNG.
+3. Place under `frontend/public/icons/dashboard/` or `sidebar/`.
+4. Reference in `Dashboard.tsx` or `Layout.tsx` as `/icons/.../name.png`.
+5. Add a row to this file.
+
+---
+
+## Code references
+
+```tsx
+// Dashboard widget
+iconSrc: "/icons/dashboard/today-sales.png"
+
+// Sidebar nav
+iconSrc: "/icons/sidebar/dashboard.png"
+```
+
+Lucide icons remain as **fallback** when `iconSrc` is missing.
+
+---
+
+## Do / Don’t
+
+**Do**
+
+- Always generate on `#00FF00` for easy keying.
+- Use saturated accent colors on the symbol (blue, gold, rose, etc.).
+- Keep symbols simple and readable at 20–28px.
+
+**Don’t**
+
+- Don’t put green, lime, or emerald fills on the symbol (they disappear in chroma key).
+- Don’t add text or multi-scene backgrounds.
+- Don’t ship JPG to production UI; use transparent PNG only.
