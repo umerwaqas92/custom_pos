@@ -17,15 +17,21 @@ export function Toast({ notification, onClose }: ToastProps) {
 
   const typeConfig = {
     success: {
-      bg: "bg-emerald-300 border-emerald-400 text-emerald-900 dark:bg-emerald-900/50 dark:border-emerald-500 dark:text-emerald-300",
+      border: "border-l-4 border-l-emerald-500 border-y border-r border-border",
+      text: "text-foreground",
+      iconColor: "text-emerald-500",
       icon: CheckCircle,
     },
     warning: {
-      bg: "bg-amber-300 border-amber-400 text-amber-900 dark:bg-amber-900/50 dark:border-amber-500 dark:text-amber-300",
+      border: "border-l-4 border-l-amber-500 border-y border-r border-border",
+      text: "text-foreground",
+      iconColor: "text-amber-500",
       icon: AlertTriangle,
     },
     info: {
-      bg: "bg-blue-300 border-blue-400 text-blue-900 dark:bg-blue-900/50 dark:border-blue-500 dark:text-blue-300",
+      border: "border-l-4 border-l-blue-500 border-y border-r border-border",
+      text: "text-foreground",
+      iconColor: "text-blue-500",
       icon: Info,
     },
   };
@@ -35,10 +41,10 @@ export function Toast({ notification, onClose }: ToastProps) {
 
   return (
     <div
-      className={`flex items-start gap-3 p-3.5 rounded-xl border ${config.bg} shadow-2xl backdrop-blur-md animate-toast-slide max-w-sm min-w-[280px] pointer-events-auto`}
+      className={`flex items-start gap-3 p-3.5 rounded-xl bg-card/90 text-foreground shadow-2xl backdrop-blur-md animate-toast-slide max-w-sm min-w-[280px] pointer-events-auto ${config.border}`}
     >
-      <Icon className="w-5 h-5 flex-shrink-0 mt-0.5" />
-      <div className="flex-1 text-xs font-bold leading-relaxed">
+      <Icon className={`w-5 h-5 flex-shrink-0 mt-0.5 ${config.iconColor}`} />
+      <div className="flex-1 text-xs font-semibold leading-relaxed">
         {notification.message}
       </div>
       <button

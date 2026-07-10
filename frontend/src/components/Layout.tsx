@@ -265,11 +265,11 @@ export default function Layout() {
                     notifications.map(n => (
                       <div
                         key={n.id}
-                        className={`p-2.5 rounded-lg border text-xs flex justify-between gap-2 ${n.type === "warning"
-                            ? "bg-amber-300 border-amber-400 text-amber-900 dark:bg-amber-900/50 dark:border-amber-500 dark:text-amber-300"
+                        className={`p-2.5 rounded-lg text-xs flex justify-between gap-2 border bg-card/60 backdrop-blur-sm ${n.type === "warning"
+                            ? "border-l-4 border-l-amber-500 border-y border-r border-border text-foreground"
                             : n.type === "success"
-                              ? "bg-emerald-300 border-emerald-400 text-emerald-900 dark:bg-emerald-900/50 dark:border-emerald-500 dark:text-emerald-300"
-                              : "bg-blue-300 border-blue-400 text-blue-900 dark:bg-blue-900/50 dark:border-blue-500 dark:text-blue-300"
+                              ? "border-l-4 border-l-emerald-500 border-y border-r border-border text-foreground"
+                              : "border-l-4 border-l-blue-500 border-y border-r border-border text-foreground"
                           }`}
                       >
                         <div>
