@@ -70,8 +70,8 @@ function Login() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold tracking-tight text-foreground"> ELECTRONICS POS</h2>
-          <p className="text-sm text-muted-foreground mt-1">Electronics Shop Management Dashboard</p>
+          <h2 className="text-2xl font-bold tracking-tight text-foreground"> POS System</h2>
+          <p className="text-sm text-muted-foreground mt-1">Shop Management Dashboard</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">

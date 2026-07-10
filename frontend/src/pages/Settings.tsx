@@ -38,7 +38,7 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode; accent: string }[
 ];
 
 export default function Settings() {
-  const { addNotification, gstEnabled, gstRate, setGstSettings } = useStore();
+  const { addNotification, gstEnabled, gstRate, setGstSettings, setBranches: setStoreBranches } = useStore();
   const [activeTab, setActiveTab] = useState<TabId>("shops");
 
   // ─── GST State ────────────────────────────────────────────────────────────
@@ -72,6 +72,7 @@ export default function Settings() {
     try {
       const res = await axios.get("/api/auth/branches");
       setBranches(res.data);
+      setStoreBranches(res.data);
     } catch {
       addNotification("Failed to load branches.", "warning");
     }

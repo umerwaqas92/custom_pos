@@ -52,7 +52,7 @@ interface ChartData {
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4"];
 
 export default function Dashboard() {
-  const { addNotification } = useStore();
+  const { addNotification, branches, selectedBranchId } = useStore();
   const [stats, setStats] = useState<Stats | null>(null);
   const [charts, setCharts] = useState<ChartData | null>(null);
   const [topProducts, setTopProducts] = useState<any[]>([]);
@@ -84,6 +84,9 @@ export default function Dashboard() {
   useEffect(() => {
     fetchDashboardData();
   }, [addNotification]);
+
+  const activeBranch = branches.find(b => b.id === selectedBranchId);
+  const displayName = activeBranch?.name || "Dashboard";
 
   if (loading) {
     return (
@@ -136,7 +139,7 @@ export default function Dashboard() {
         <div className="space-y-1 relative z-10">
           <div className="flex items-center gap-2 text-primary">
             <Sparkles className="w-5 h-5" />
-            <span className="text-xs font-bold uppercase tracking-wider"> Electronics Dashboard</span>
+            <span className="text-xs font-bold uppercase tracking-wider">{displayName} Dashboard</span>
           </div>
           <h1 className="text-2xl font-black tracking-tight text-foreground">Welcome to the Dashboard</h1>
           <p className="text-sm text-muted-foreground">Monitor inventory levels, track cashier checkouts, and view technical operations.</p>

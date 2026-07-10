@@ -61,7 +61,7 @@ export default function TrialExpiredOverlay({ onActivate, onResetTrial }: TrialE
               Evaluation Period Expired
             </h2>
             <p className="text-sm text-muted-foreground mt-2 text-center leading-relaxed">
-              Your 30-day trial of <strong>Electronics POS</strong> has ended. Access to point of sale, installments, and accounting features is locked.
+              Your 30-day trial of <strong>POS System</strong> has ended. Access to point of sale, installments, and accounting features is locked.
             </p>
 
             {/* License Activation Form matching login screen input design */}

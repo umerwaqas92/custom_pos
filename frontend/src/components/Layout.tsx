@@ -108,7 +108,7 @@ export default function Layout() {
               </div>
               {sidebarOpen && (
                 <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
-                  Electronics
+                  {activeBranch?.name || "POS"}
                 </span>
               )}
             </div>
@@ -204,7 +204,10 @@ export default function Layout() {
             {user && (user.role === "OWNER" || user.role === "MANAGER") ? (
               <select
                 value={selectedBranchId || ""}
-                onChange={(e) => setSelectedBranchId(e.target.value)}
+                onChange={(e) => {
+                  setSelectedBranchId(e.target.value);
+                  window.location.reload();
+                }}
                 className="bg-secondary text-foreground text-sm font-bold border border-border px-3 py-1.5 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
               >
                 {branches.map(b => (
