@@ -27,24 +27,25 @@ interface ReportItem {
   name: string;
   description: string;
   icon: React.ComponentType<any>;
+  iconSrc: string;
   category: "financial" | "inventory" | "entity" | "operations";
 }
 
 const REPORT_TYPES: ReportItem[] = [
-  { id: "sales-daily", name: "Daily Sales Report", description: "Granular breakdown of transaction histories day-by-day.", icon: TrendingUp, category: "financial" },
-  { id: "sales-monthly", name: "Monthly Sales Report", description: "Aggregated monthly sales volume, taxes, and discounts.", icon: Calendar, category: "financial" },
-  { id: "sales-annual", name: "Annual Sales Report", description: "Macro annual review of total business collections.", icon: BarChart3, category: "financial" },
-  { id: "profit-loss", name: "Profit & Loss Summary", description: "Revenue versus business expenses and net margins.", icon: DollarSign, category: "financial" },
-  { id: "inventory-value", name: "Inventory Value", description: "Complete retail and cost valuation of physical stocks.", icon: Package, category: "inventory" },
-  { id: "low-stock", name: "Low Stock Alerts", description: "Real-time list of products falling under threshold limits.", icon: AlertTriangle, category: "inventory" },
-  { id: "best-selling", name: "Best Selling Products", description: "Top products ranked by quantity sold and revenue.", icon: Award, category: "inventory" },
-  { id: "slow-moving", name: "Slow Moving Products", description: "Laggard catalog items with low turnover rates.", icon: Activity, category: "inventory" },
-  { id: "brand-share", name: "Brand Sales Report", description: "Revenue split and market share by product brand.", icon: Layers, category: "entity" },
-  { id: "category-share", name: "Category Sales Report", description: "Revenue split by product categories.", icon: Briefcase, category: "entity" },
-  { id: "supplier-summary", name: "Supplier Purchase Report", description: "Procurement volumes and order counts per supplier.", icon: Users, category: "entity" },
-  { id: "customer-summary", name: "Customer Ledger Report", description: "Sales volumes, loyalties, and unpaid credit balances.", icon: Users, category: "entity" },
-  { id: "technician-performance", name: "Technician Performance", description: "Repair job resolution stats and repair revenue.", icon: Wrench, category: "operations" },
-  { id: "warranty-summary", name: "Warranty Claims Report", description: "Log of active, pending, and resolved warranty cases.", icon: Shield, category: "operations" }
+  { id: "sales-daily", name: "Daily Sales Report", description: "Granular breakdown of transaction histories day-by-day.", icon: TrendingUp, iconSrc: "/icons/reports/sales-daily.png", category: "financial" },
+  { id: "sales-monthly", name: "Monthly Sales Report", description: "Aggregated monthly sales volume, taxes, and discounts.", icon: Calendar, iconSrc: "/icons/reports/sales-monthly.png", category: "financial" },
+  { id: "sales-annual", name: "Annual Sales Report", description: "Macro annual review of total business collections.", icon: BarChart3, iconSrc: "/icons/reports/sales-annual.png", category: "financial" },
+  { id: "profit-loss", name: "Profit & Loss Summary", description: "Revenue versus business expenses and net margins.", icon: DollarSign, iconSrc: "/icons/reports/profit-loss.png", category: "financial" },
+  { id: "inventory-value", name: "Inventory Value", description: "Complete retail and cost valuation of physical stocks.", icon: Package, iconSrc: "/icons/reports/inventory-value.png", category: "inventory" },
+  { id: "low-stock", name: "Low Stock Alerts", description: "Real-time list of products falling under threshold limits.", icon: AlertTriangle, iconSrc: "/icons/reports/low-stock.png", category: "inventory" },
+  { id: "best-selling", name: "Best Selling Products", description: "Top products ranked by quantity sold and revenue.", icon: Award, iconSrc: "/icons/reports/best-selling.png", category: "inventory" },
+  { id: "slow-moving", name: "Slow Moving Products", description: "Laggard catalog items with low turnover rates.", icon: Activity, iconSrc: "/icons/reports/slow-moving.png", category: "inventory" },
+  { id: "brand-share", name: "Brand Sales Report", description: "Revenue split and market share by product brand.", icon: Layers, iconSrc: "/icons/reports/brand-share.png", category: "entity" },
+  { id: "category-share", name: "Category Sales Report", description: "Revenue split by product categories.", icon: Briefcase, iconSrc: "/icons/reports/category-share.png", category: "entity" },
+  { id: "supplier-summary", name: "Supplier Purchase Report", description: "Procurement volumes and order counts per supplier.", icon: Users, iconSrc: "/icons/reports/supplier-summary.png", category: "entity" },
+  { id: "customer-summary", name: "Customer Ledger Report", description: "Sales volumes, loyalties, and unpaid credit balances.", icon: Users, iconSrc: "/icons/reports/customer-summary.png", category: "entity" },
+  { id: "technician-performance", name: "Technician Performance", description: "Repair job resolution stats and repair revenue.", icon: Wrench, iconSrc: "/icons/reports/technician-performance.png", category: "operations" },
+  { id: "warranty-summary", name: "Warranty Claims Report", description: "Log of active, pending, and resolved warranty cases.", icon: Shield, iconSrc: "/icons/reports/warranty-summary.png", category: "operations" }
 ];
 
 const getSummaryWidgets = (type: string, data: any[]) => {
@@ -223,7 +224,10 @@ export default function Reports() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-black tracking-tight text-foreground flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-primary" /> Reports Dashboard
+            <span className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center p-1">
+              <img src="/icons/sidebar/reports.png?v=1" alt="" className="w-full h-full object-contain" draggable={false} />
+            </span>
+            Reports Dashboard
           </h2>
           <p className="text-xs text-muted-foreground">
             Monitor shop performance, compile statistics, and export auditing sheets.
@@ -290,8 +294,17 @@ export default function Reports() {
                 >
                   <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full translate-x-8 -translate-y-8 group-hover:scale-125 transition duration-300" />
                   <div className="space-y-3">
-                    <div className="bg-primary/10 text-primary w-10 h-10 rounded-xl flex items-center justify-center group-hover:bg-primary group-hover:text-white transition duration-300">
-                      <Icon className="w-5 h-5" />
+                    <div className="bg-primary/10 w-12 h-12 rounded-xl flex items-center justify-center p-2 group-hover:bg-primary/20 transition duration-300 ring-1 ring-primary/15">
+                      {report.iconSrc ? (
+                        <img
+                          src={`${report.iconSrc}?v=1`}
+                          alt=""
+                          className="w-full h-full object-contain"
+                          draggable={false}
+                        />
+                      ) : (
+                        <Icon className="w-5 h-5 text-primary" />
+                      )}
                     </div>
                     <div>
                       <h4 className="font-extrabold text-sm text-foreground group-hover:text-primary transition duration-300">
@@ -326,7 +339,12 @@ export default function Reports() {
                 <ArrowLeft className="w-4 h-4" />
               </button>
               <div>
-                <h3 className="font-extrabold text-sm text-foreground flex items-center gap-1.5">
+                <h3 className="font-extrabold text-sm text-foreground flex items-center gap-2">
+                  {selectedReport.iconSrc && (
+                    <span className="w-7 h-7 rounded-lg bg-primary/10 p-1 ring-1 ring-primary/15 flex items-center justify-center">
+                      <img src={`${selectedReport.iconSrc}?v=1`} alt="" className="w-full h-full object-contain" draggable={false} />
+                    </span>
+                  )}
                   {selectedReport.name}
                 </h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
