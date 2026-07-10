@@ -117,16 +117,16 @@ export default function Layout() {
   };
 
   const navItems = [
-    { name: "Dashboard", path: "/", icon: LayoutDashboard, roles: ["OWNER", "MANAGER", "CASHIER", "WAREHOUSE", "TECHNICIAN"] },
-    { name: "POS Sales", path: "/pos", icon: ShoppingCart, roles: ["OWNER", "MANAGER", "CASHIER"] },
-    { name: "Sales History", path: "/sales-history", icon: FileText, roles: ["OWNER", "MANAGER", "CASHIER"] },
-    { name: "Installments", path: "/installments", icon: CreditCard, roles: ["OWNER", "MANAGER", "CASHIER"] },
-    { name: "Inventory", path: "/inventory", icon: Package, roles: ["OWNER", "MANAGER", "WAREHOUSE"] },
-    { name: "Brands & Categories", path: "/categories-brands", icon: Layers, roles: ["OWNER", "MANAGER"] },
-    { name: "Contacts", path: "/contacts", icon: Users, roles: ["OWNER", "MANAGER", "CASHIER"] },
-    { name: "Accounting", path: "/accounting", icon: Briefcase, roles: ["OWNER", "MANAGER"] },
-    { name: "Reports", path: "/reports", icon: BarChart3, roles: ["OWNER", "MANAGER"] },
-    { name: "Settings", path: "/settings", icon: Settings, roles: ["OWNER", "MANAGER"] }
+    { name: "Dashboard", path: "/", icon: LayoutDashboard, iconSrc: "/icons/sidebar/dashboard.png", roles: ["OWNER", "MANAGER", "CASHIER", "WAREHOUSE", "TECHNICIAN"] },
+    { name: "POS Sales", path: "/pos", icon: ShoppingCart, iconSrc: "/icons/sidebar/pos.png", roles: ["OWNER", "MANAGER", "CASHIER"] },
+    { name: "Sales History", path: "/sales-history", icon: FileText, iconSrc: "/icons/sidebar/sales-history.png", roles: ["OWNER", "MANAGER", "CASHIER"] },
+    { name: "Installments", path: "/installments", icon: CreditCard, iconSrc: "/icons/sidebar/installments.png", roles: ["OWNER", "MANAGER", "CASHIER"] },
+    { name: "Inventory", path: "/inventory", icon: Package, iconSrc: "/icons/sidebar/inventory.png", roles: ["OWNER", "MANAGER", "WAREHOUSE"] },
+    { name: "Brands & Categories", path: "/categories-brands", icon: Layers, iconSrc: "/icons/sidebar/categories.png", roles: ["OWNER", "MANAGER"] },
+    { name: "Contacts", path: "/contacts", icon: Users, iconSrc: "/icons/sidebar/contacts.png", roles: ["OWNER", "MANAGER", "CASHIER"] },
+    { name: "Accounting", path: "/accounting", icon: Briefcase, iconSrc: "/icons/sidebar/accounting.png", roles: ["OWNER", "MANAGER"] },
+    { name: "Reports", path: "/reports", icon: BarChart3, iconSrc: "/icons/sidebar/reports.png", roles: ["OWNER", "MANAGER"] },
+    { name: "Settings", path: "/settings", icon: Settings, iconSrc: "/icons/sidebar/settings.png", roles: ["OWNER", "MANAGER"] }
   ];
 
   const activeBranch = branches.find(b => b.id === selectedBranchId);
@@ -179,7 +179,22 @@ export default function Layout() {
                         : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                       }`}
                   >
-                    <Icon className="w-5 h-5 flex-shrink-0" />
+                    {item.iconSrc ? (
+                      <span
+                        className={`w-7 h-7 flex-shrink-0 rounded-lg flex items-center justify-center p-0.5 ${
+                          isActive ? "bg-white/20" : "bg-primary/10"
+                        }`}
+                      >
+                        <img
+                          src={`${item.iconSrc}?v=1`}
+                          alt=""
+                          className="w-full h-full object-contain"
+                          draggable={false}
+                        />
+                      </span>
+                    ) : (
+                      <Icon className="w-5 h-5 flex-shrink-0" />
+                    )}
                     {sidebarOpen && <span className="font-medium text-sm">{item.name}</span>}
                   </Link>
                 );
