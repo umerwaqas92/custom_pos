@@ -22,6 +22,17 @@ import {
 const PAGE_SIZE = 15;
 const LOW_STOCK_THRESHOLD = 3;
 
+/** Available qty for UI — branch stock is source of truth (product.stockQuantity can be stale). */
+function getAvailableQty(p: any, branchId: string | null | undefined): number {
+  if (branchId) {
+    return p.branchStocks?.find((bs: any) => bs.branchId === branchId)?.quantity ?? 0;
+  }
+  if (p.branchStocks?.length) {
+    return p.branchStocks.reduce((sum: number, bs: any) => sum + (bs.quantity || 0), 0);
+  }
+  return p.stockQuantity || 0;
+}
+
 export default function Inventory() {
   const { selectedBranchId, branches, addNotification, checkLowStock } = useStore();
   const [products, setProducts] = useState<any[]>([]);
@@ -290,10 +301,7 @@ export default function Inventory() {
   // Filter products list
   const filteredProducts = useMemo(() => {
     const result = products.filter((p) => {
-      const branchQty =
-        selectedBranchId
-          ? p.branchStocks?.find((bs: any) => bs.branchId === selectedBranchId)?.quantity ?? 0
-          : p.stockQuantity;
+      const branchQty = getAvailableQty(p, selectedBranchId);
       const matchesSearch =
         p.name.toLowerCase().includes(search.toLowerCase()) ||
         p.sku.toLowerCase().includes(search.toLowerCase()) ||
@@ -317,12 +325,8 @@ export default function Inventory() {
         case "purchasePrice": aVal = a.purchasePrice; bVal = b.purchasePrice; break;
         case "sellingPrice": aVal = a.sellingPrice; bVal = b.sellingPrice; break;
         case "stock":
-          aVal = selectedBranchId
-            ? a.branchStocks?.find((bs: any) => bs.branchId === selectedBranchId)?.quantity ?? 0
-            : a.stockQuantity;
-          bVal = selectedBranchId
-            ? b.branchStocks?.find((bs: any) => bs.branchId === selectedBranchId)?.quantity ?? 0
-            : b.stockQuantity;
+          aVal = getAvailableQty(a, selectedBranchId);
+          bVal = getAvailableQty(b, selectedBranchId);
           break;
         default: aVal = a.name.toLowerCase(); bVal = b.name.toLowerCase();
       }
@@ -515,10 +519,7 @@ export default function Inventory() {
                 </tr>
               ) : (
                 paginatedProducts.map((p) => {
-                  const branchQty =
-                    selectedBranchId
-                      ? p.branchStocks?.find((bs: any) => bs.branchId === selectedBranchId)?.quantity ?? 0
-                      : p.stockQuantity;
+                  const branchQty = getAvailableQty(p, selectedBranchId);
                   const isLow = branchQty <= LOW_STOCK_THRESHOLD;
                   return (
                     <tr key={p.id} className={`hover:bg-secondary/20 transition ${selectedIds.has(p.id) ? "bg-primary/5" : ""}`}>

@@ -16,80 +16,192 @@ const LOW_STOCK_THRESHOLD = 3;
 // Dashboard aggregates (OWNER, MANAGER)
 router.get("/dashboard-stats", protect, restrictTo("OWNER", "MANAGER"), async (req, res) => {
   try {
-    const cached = await withCache("reports:dashboard-stats", 10000, async () => {
+    const branchId = req.query.branchId ? String(req.query.branchId) : "";
+    const cacheKey = `reports:dashboard-stats:${branchId || "all"}`;
+
+    const cached = await withCache(cacheKey, 10000, async () => {
+      const now = new Date();
+
+      const startOfToday = new Date(now);
+      startOfToday.setHours(0, 0, 0, 0);
+
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       thirtyDaysAgo.setHours(0, 0, 0, 0);
 
       const [
-        totalProducts,
-        lowStockCount,
-        salesAgg,
-        expensesAgg,
+        productsForStock,
+        branchStockGroups,
+        todaySalesAgg,
+        monthSalesAgg,
+        monthExpensesAgg,
+        last30SalesAgg,
+        last30ExpensesAgg,
         totalCustomers,
-        pendingPurchases,
-        pendingWarranties
+        cashAccounts,
+        recentSales,
+        recentCustomers
       ] = await Promise.all([
-        prisma.product.count(),
-        prisma.product.count({
-          where: {
-            stockQuantity: {
-              lte: LOW_STOCK_THRESHOLD
-            }
-          }
+        prisma.product.findMany({
+          select: { id: true, minStock: true, stockQuantity: true }
+        }),
+        // Real sellable qty lives on BranchStock (product.stockQuantity is often stale)
+        prisma.branchStock.groupBy({
+          by: ["productId"],
+          where: branchId ? { branchId } : undefined,
+          _sum: { quantity: true }
         }),
         prisma.sale.aggregate({
           where: {
-            saleDate: {
-              gte: thirtyDaysAgo
-            }
+            saleDate: { gte: startOfToday },
+            ...(branchId ? { branchId } : {})
           },
-          _sum: {
-            payableAmount: true,
-            discountAmount: true,
-            taxAmount: true
+          _sum: { payableAmount: true },
+          _count: { id: true }
+        }),
+        prisma.sale.aggregate({
+          where: {
+            saleDate: { gte: startOfMonth },
+            ...(branchId ? { branchId } : {})
           },
-          _count: {
-            id: true
-          }
+          _sum: { payableAmount: true },
+          _count: { id: true }
         }),
         prisma.expense.aggregate({
+          where: { date: { gte: startOfMonth } },
+          _sum: { amount: true }
+        }),
+        prisma.sale.aggregate({
           where: {
-            date: {
-              gte: thirtyDaysAgo
-            }
+            saleDate: { gte: thirtyDaysAgo },
+            ...(branchId ? { branchId } : {})
           },
-          _sum: {
-            amount: true
-          }
+          _sum: { payableAmount: true },
+          _count: { id: true }
+        }),
+        prisma.expense.aggregate({
+          where: { date: { gte: thirtyDaysAgo } },
+          _sum: { amount: true }
         }),
         prisma.customer.count(),
-        prisma.purchaseOrder.count({
-          where: {
-            status: "PENDING"
+        prisma.bankAccount.findMany({
+          where: { isActive: true },
+          select: { type: true, balance: true, name: true }
+        }),
+        prisma.sale.findMany({
+          take: 8,
+          orderBy: { saleDate: "desc" },
+          where: branchId ? { branchId } : undefined,
+          select: {
+            id: true,
+            saleDate: true,
+            payableAmount: true,
+            paidAmount: true,
+            paymentMethod: true,
+            paymentStatus: true,
+            returnStatus: true,
+            customer: { select: { id: true, name: true, phone: true } },
+            cashier: { select: { name: true } },
+            _count: { select: { items: true } }
           }
         }),
-        prisma.warrantyClaim.count({
-          where: {
-            status: "PENDING"
+        prisma.customer.findMany({
+          take: 8,
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            email: true,
+            creditBalance: true,
+            rewardPoints: true,
+            createdAt: true
           }
         })
       ]);
 
-      const revenue = salesAgg._sum.payableAmount || 0;
-      const expenses = expensesAgg._sum.amount || 0;
-      const profit = Math.max(0, revenue - expenses);
+      // Map productId -> available qty for selected branch (or all branches summed)
+      const branchQtyByProduct = new Map(
+        branchStockGroups.map((row) => [row.productId, row._sum.quantity || 0])
+      );
+
+      let totalUnitsInStock = 0;
+      let lowStockCount = 0;
+      let outOfStockCount = 0;
+
+      for (const product of productsForStock) {
+        // When filtering by branch: missing branch row = 0 available at that shop
+        // When all branches: missing any branch stock rows → fall back to product field
+        let qty: number;
+        if (branchId) {
+          qty = branchQtyByProduct.get(product.id) ?? 0;
+        } else if (branchQtyByProduct.has(product.id)) {
+          qty = branchQtyByProduct.get(product.id) || 0;
+        } else {
+          qty = product.stockQuantity || 0;
+        }
+
+        totalUnitsInStock += qty;
+
+        // Same rule as Inventory page low-stock filter: qty <= 3
+        if (qty <= LOW_STOCK_THRESHOLD) {
+          lowStockCount += 1;
+        }
+        if (qty <= 0) {
+          outOfStockCount += 1;
+        }
+      }
+
+      const totalProducts = productsForStock.length;
+
+      const todaySales = todaySalesAgg._sum.payableAmount || 0;
+      const monthlySales = monthSalesAgg._sum.payableAmount || 0;
+      const monthlyExpenses = monthExpensesAgg._sum.amount || 0;
+      const monthlyProfit = monthlySales - monthlyExpenses;
+
+      const totalRevenue = last30SalesAgg._sum.payableAmount || 0;
+      const totalExpenses = last30ExpensesAgg._sum.amount || 0;
+      const netProfit = totalRevenue - totalExpenses;
+
+      const cashBalance = cashAccounts
+        .filter((a) => a.type === "CASH")
+        .reduce((s, a) => s + (a.balance || 0), 0);
+      const bankBalance = cashAccounts
+        .filter((a) => a.type === "BANK")
+        .reduce((s, a) => s + (a.balance || 0), 0);
+      const walletBalance = cashAccounts
+        .filter((a) => a.type === "MOBILE_WALLET")
+        .reduce((s, a) => s + (a.balance || 0), 0);
+      const totalBalance = cashAccounts.reduce((s, a) => s + (a.balance || 0), 0);
 
       return {
+        // KPIs
+        todaySales,
+        todaySalesCount: todaySalesAgg._count.id || 0,
+        monthlySales,
+        monthlySalesCount: monthSalesAgg._count.id || 0,
+        monthlyExpenses,
+        monthlyProfit,
+        // legacy / 30-day
         totalProducts,
+        totalUnitsInStock,
         lowStockCount,
-        totalSalesCount: salesAgg._count.id || 0,
-        totalRevenue: revenue,
-        totalExpenses: expenses,
-        netProfit: profit,
+        outOfStockCount,
+        totalSalesCount: last30SalesAgg._count.id || 0,
+        totalRevenue,
+        totalExpenses,
+        netProfit,
         totalCustomers,
-        pendingPurchases,
-        pendingWarranties
+        cashBalance,
+        bankBalance,
+        walletBalance,
+        totalBalance,
+        // feeds
+        recentSales,
+        recentCustomers
       };
     });
 
@@ -108,95 +220,101 @@ router.get("/charts", protect, restrictTo("OWNER", "MANAGER"), async (req, res) 
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       thirtyDaysAgo.setHours(0, 0, 0, 0);
 
-      const [sales, categoryDistribution, categories, saleItemRevenue] = await Promise.all([
+      const [sales, expenses, saleItems] = await Promise.all([
         prisma.sale.findMany({
-          where: {
-            saleDate: {
-              gte: thirtyDaysAgo
+          where: { saleDate: { gte: thirtyDaysAgo } },
+          select: { saleDate: true, payableAmount: true }
+        }),
+        prisma.expense.findMany({
+          where: { date: { gte: thirtyDaysAgo } },
+          select: { date: true, amount: true }
+        }),
+        prisma.saleItem.findMany({
+          where: { sale: { saleDate: { gte: thirtyDaysAgo } } },
+          select: {
+            totalPrice: true,
+            product: {
+              select: {
+                category: { select: { name: true } },
+                brand: { select: { name: true } }
+              }
             }
-          },
-          select: {
-            saleDate: true,
-            payableAmount: true
-          }
-        }),
-        prisma.product.groupBy({
-          by: ["categoryId"],
-          _count: {
-            id: true
-          }
-        }),
-        prisma.category.findMany({
-          select: {
-            id: true,
-            name: true
-          }
-        }),
-        prisma.saleItem.groupBy({
-          by: ["productId"],
-          _sum: {
-            totalPrice: true
           }
         })
       ]);
 
-      const trendMap: Record<string, number> = {};
+      const revenueMap: Record<string, number> = {};
+      const expenseMap: Record<string, number> = {};
       for (let i = 0; i < 30; i++) {
         const d = new Date();
         d.setDate(d.getDate() - i);
-        trendMap[d.toISOString().split("T")[0]] = 0;
+        const key = d.toISOString().split("T")[0];
+        revenueMap[key] = 0;
+        expenseMap[key] = 0;
       }
 
       for (const sale of sales) {
         const dayLabel = sale.saleDate.toISOString().split("T")[0];
-        if (trendMap[dayLabel] !== undefined) {
-          trendMap[dayLabel] += sale.payableAmount;
+        if (revenueMap[dayLabel] !== undefined) {
+          revenueMap[dayLabel] += sale.payableAmount;
+        }
+      }
+      for (const exp of expenses) {
+        const dayLabel = exp.date.toISOString().split("T")[0];
+        if (expenseMap[dayLabel] !== undefined) {
+          expenseMap[dayLabel] += exp.amount;
         }
       }
 
-      const salesTrend = Object.keys(trendMap)
+      const salesTrend = Object.keys(revenueMap)
         .sort()
         .map((date) => ({
-          date,
-          revenue: trendMap[date]
+          date: date.slice(5), // MM-DD for chart axis
+          fullDate: date,
+          revenue: Math.round((revenueMap[date] + Number.EPSILON) * 100) / 100
         }));
 
-      const categoriesById = new Map(categories.map((category) => [category.id, category.name]));
-      const categoryChartData = categoryDistribution.map((item) => ({
-        name: categoriesById.get(item.categoryId || "") || "Uncategorized",
-        value: item._count.id
-      }));
+      // Daily revenue alias (same series, clearer name for UI)
+      const dailyRevenue = salesTrend;
 
-      const productIds = saleItemRevenue.map((row) => row.productId);
-      const products = productIds.length
-        ? await prisma.product.findMany({
-            where: {
-              id: { in: productIds }
-            },
-            select: {
-              id: true,
-              brand: {
-                select: {
-                  name: true
-                }
-              }
-            }
-          })
-        : [];
+      const profitTrend = Object.keys(revenueMap)
+        .sort()
+        .map((date) => {
+          const revenue = revenueMap[date];
+          const expense = expenseMap[date] || 0;
+          return {
+            date: date.slice(5),
+            fullDate: date,
+            revenue: Math.round((revenue + Number.EPSILON) * 100) / 100,
+            expenses: Math.round((expense + Number.EPSILON) * 100) / 100,
+            profit: Math.round((revenue - expense + Number.EPSILON) * 100) / 100
+          };
+        });
 
-      const brandByProductId = new Map(products.map((product) => [product.id, product.brand?.name || "Generic"]));
+      // Best categories / brands by sales revenue (last 30 days)
+      const categoryRevenueMap = new Map<string, number>();
       const brandRevenueMap = new Map<string, number>();
-      for (const row of saleItemRevenue) {
-        const brandName = brandByProductId.get(row.productId) || "Generic";
-        brandRevenueMap.set(brandName, (brandRevenueMap.get(brandName) || 0) + (row._sum.totalPrice || 0));
+      for (const row of saleItems) {
+        const cat = row.product?.category?.name || "Uncategorized";
+        const brand = row.product?.brand?.name || "Generic";
+        categoryRevenueMap.set(cat, (categoryRevenueMap.get(cat) || 0) + (row.totalPrice || 0));
+        brandRevenueMap.set(brand, (brandRevenueMap.get(brand) || 0) + (row.totalPrice || 0));
       }
 
-      const brandChartData = Array.from(brandRevenueMap.entries()).map(([brand, revenue]) => ({
-        brand,
-        revenue
-      }));
+      const categoryChartData = Array.from(categoryRevenueMap.entries())
+        .map(([name, value]) => ({ name, value: Math.round((value + Number.EPSILON) * 100) / 100 }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 8);
 
-      return { salesTrend, categoryChartData, brandChartData };
+      const brandChartData = Array.from(brandRevenueMap.entries())
+        .map(([brand, revenue]) => ({
+          brand,
+          revenue: Math.round((revenue + Number.EPSILON) * 100) / 100
+        }))
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 8);
+
+      return { salesTrend, dailyRevenue, profitTrend, categoryChartData, brandChartData };
     });
 
     return res.json({
