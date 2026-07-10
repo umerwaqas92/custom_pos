@@ -44,6 +44,11 @@ export default function Layout() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
+  // Collapse sidebar on POS for maximum catalog/cart space
+  useEffect(() => {
+    setSidebarOpen(location.pathname !== "/pos");
+  }, [location.pathname]);
+
   // Check low stock on mount and every 5 minutes
   useEffect(() => {
     checkLowStock();
