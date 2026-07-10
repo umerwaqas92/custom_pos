@@ -262,7 +262,10 @@ export default function Installments() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-foreground flex items-center gap-2">
-            <CreditCard className="w-6 h-6 text-primary" /> Installments Manager
+            <span className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center p-1 ring-1 ring-primary/15">
+              <img src="/icons/installments/header.png?v=1" alt="" className="w-full h-full object-contain" draggable={false} />
+            </span>
+            Installments Manager
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
             Underwrite active credit agreements, process CNIC identity records, and collect installment payments.
@@ -282,7 +285,10 @@ export default function Installments() {
         <div className="bg-card border border-border rounded-2xl p-4 flex flex-col max-h-[220px] min-h-0 space-y-2">
           <div className="flex items-center justify-between border-b border-border pb-1">
             <h3 className="font-bold text-xs text-foreground uppercase tracking-wider flex items-center gap-1.5 text-amber-500">
-              <AlertCircle className="w-4 h-4" /> Pending EMI Contracts ({pendingEmiSales.length})
+              <span className="w-5 h-5 rounded-md bg-amber-500/15 p-0.5 ring-1 ring-amber-500/25 flex items-center justify-center">
+                <img src="/icons/installments/pending.png?v=1" alt="" className="w-full h-full object-contain" draggable={false} />
+              </span>
+              Pending EMI Contracts ({pendingEmiSales.length})
             </h3>
             <span className="text-[10px] text-muted-foreground font-bold">Needs CNIC/Cheque Upload & Guarantor Details</span>
           </div>
@@ -333,7 +339,10 @@ export default function Installments() {
       <div className="flex-1 flex flex-col min-h-0 bg-card border border-border rounded-2xl p-4 space-y-4">
         <div className="flex items-center justify-between border-b border-border pb-2">
           <h3 className="font-bold text-xs text-foreground uppercase tracking-wider flex items-center gap-1.5 text-primary">
-            <CreditCard className="w-4 h-4" /> Active Installment Accounts ({activeEmiContracts.length})
+            <span className="w-5 h-5 rounded-md bg-primary/10 p-0.5 ring-1 ring-primary/20 flex items-center justify-center">
+              <img src="/icons/installments/active.png?v=1" alt="" className="w-full h-full object-contain" draggable={false} />
+            </span>
+            Active Installment Accounts ({activeEmiContracts.length})
           </h3>
           <span className="text-[10px] text-muted-foreground font-bold">Monthly Repayments Schedule & Audits</span>
         </div>
@@ -365,7 +374,7 @@ export default function Installments() {
             <div className="py-20 text-center text-xs text-muted-foreground">Loading accounts...</div>
           ) : filteredActiveContracts.length === 0 ? (
             <div className="py-20 text-center text-xs text-muted-foreground flex flex-col items-center justify-center space-y-2">
-              <CreditCard className="w-10 h-10 opacity-20" />
+              <img src="/icons/installments/active.png?v=1" alt="" className="w-12 h-12 object-contain opacity-40" draggable={false} />
               <p>No active installment accounts found.</p>
             </div>
           ) : (
@@ -463,7 +472,10 @@ export default function Installments() {
 
             <div>
               <h2 className="text-base font-extrabold text-foreground flex items-center gap-1.5">
-                <FileText className="w-5 h-5 text-primary" /> Configure Installment Agreement
+                <span className="w-6 h-6 rounded-lg bg-primary/10 p-0.5 ring-1 ring-primary/15 flex items-center justify-center">
+                  <img src="/icons/installments/configure.png?v=1" alt="" className="w-full h-full object-contain" draggable={false} />
+                </span>
+                Configure Installment Agreement
               </h2>
               <p className="text-[11px] text-muted-foreground">
                 Agreement details for invoice reference #<strong>{selectedSale.id.substring(0, 8)}</strong> (Customer: {selectedSale.customer?.name || "Walk-in"})
@@ -474,7 +486,10 @@ export default function Installments() {
               {/* Left Column: Underwriting inputs */}
               <div className="space-y-4">
                 <h3 className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1">
-                  <User className="w-3.5 h-3.5" /> Guarantor / Reference Details
+                  <span className="w-4 h-4 rounded bg-primary/10 p-0.5 ring-1 ring-primary/15 inline-flex items-center justify-center">
+                    <img src="/icons/installments/guarantor.png?v=1" alt="" className="w-full h-full object-contain" draggable={false} />
+                  </span>
+                  Guarantor / Reference Details
                 </h3>
                 <div className="space-y-3">
                   <div className="space-y-1">
@@ -513,7 +528,10 @@ export default function Installments() {
                 </div>
 
                 <h3 className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1 pt-2">
-                  <Upload className="w-3.5 h-3.5" /> File Scans Upload (CNIC & Bank Cheque)
+                  <span className="w-4 h-4 rounded bg-primary/10 p-0.5 ring-1 ring-primary/15 inline-flex items-center justify-center">
+                    <img src="/icons/installments/documents.png?v=1" alt="" className="w-full h-full object-contain" draggable={false} />
+                  </span>
+                  File Scans Upload (CNIC & Bank Cheque)
                 </h3>
                 <div className="grid grid-cols-3 gap-2">
                   <div className="space-y-1">
@@ -959,8 +977,9 @@ export default function Installments() {
                             {!isPaid && (
                               <button
                                 onClick={() => handlePayInstallment(activeContract.id, inst.id)}
-                                className="bg-primary hover:bg-primary/90 text-white font-bold px-3 py-1.5 rounded-lg text-[10px] shadow-sm hover:shadow-md transition-all duration-200 active:scale-95 cursor-pointer"
+                                className="bg-primary hover:bg-primary/90 text-white font-bold px-3 py-1.5 rounded-lg text-[10px] shadow-sm hover:shadow-md transition-all duration-200 active:scale-95 cursor-pointer inline-flex items-center gap-1"
                               >
+                                <img src="/icons/installments/collect.png?v=1" alt="" className="w-3.5 h-3.5 object-contain brightness-0 invert" draggable={false} />
                                 Collect
                               </button>
                             )}
