@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useStore } from "../store/useStore";
+import PortalModal from "../components/PortalModal";
 import {
   Plus,
   Coins,
@@ -724,9 +725,8 @@ export default function Accounting() {
       {/* ========== MODALS ========== */}
 
       {/* Log Expense Modal */}
-      {expenseOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 px-4">
-          <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
+      <PortalModal isOpen={expenseOpen} onClose={() => setExpenseOpen(false)} backdropClass="bg-black/60 backdrop-blur-sm px-4">
+        <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
             <h3 className="font-bold text-sm text-foreground mb-4">Log Storefront Expense</h3>
             <form onSubmit={handleCreateExpense} className="space-y-4">
               <div className="space-y-1">
@@ -761,13 +761,11 @@ export default function Accounting() {
               </div>
             </form>
           </div>
-        </div>
-      )}
+      </PortalModal>
 
       {/* Place Purchase Order Modal */}
-      {purchaseOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 px-4 overflow-y-auto">
-          <div className="bg-card border border-border w-full max-w-md p-6 rounded-2xl shadow-2xl relative my-8">
+      <PortalModal isOpen={purchaseOpen} onClose={() => setPurchaseOpen(false)} backdropClass="bg-black/60 backdrop-blur-sm px-4 overflow-y-auto">
+        <div className="bg-card border border-border w-full max-w-md p-6 rounded-2xl shadow-2xl relative my-8">
             <h3 className="font-bold text-sm text-foreground mb-4">Place Supplier Restock Order</h3>
             <form onSubmit={handleCreatePurchase} className="space-y-4">
               <div className="space-y-1">
@@ -811,12 +809,11 @@ export default function Accounting() {
               </div>
             </form>
           </div>
-        </div>
-      )}
+      </PortalModal>
 
       {/* Receive Purchase Order Modal */}
-      {receiveOpen && selectedPurchase && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 px-4">
+      {selectedPurchase && (
+        <PortalModal isOpen={receiveOpen && !!selectedPurchase} onClose={() => { setReceiveOpen(false); setSelectedPurchase(null); }} backdropClass="bg-black/60 backdrop-blur-sm px-4">
           <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
             <h3 className="font-bold text-sm text-foreground mb-1">Receive Purchase Order</h3>
             <p className="text-xs text-muted-foreground mb-4">Supplier: <strong>{selectedPurchase.supplier.company}</strong></p>
@@ -839,13 +836,12 @@ export default function Accounting() {
               </div>
             </form>
           </div>
-        </div>
+        </PortalModal>
       )}
 
       {/* Create Bank Account Modal */}
-      {bankModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 px-4">
-          <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
+      <PortalModal isOpen={bankModalOpen} onClose={() => setBankModalOpen(false)} backdropClass="bg-black/60 backdrop-blur-sm px-4">
+        <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
             <h3 className="font-bold text-sm text-foreground mb-4">Add Bank Account</h3>
             <form onSubmit={handleCreateBank} className="space-y-4">
               <div className="space-y-1">
@@ -874,13 +870,11 @@ export default function Accounting() {
               </div>
             </form>
           </div>
-        </div>
-      )}
+      </PortalModal>
 
       {/* Record Transaction Modal */}
-      {txModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 px-4">
-          <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
+      <PortalModal isOpen={txModalOpen} onClose={() => setTxModalOpen(false)} backdropClass="bg-black/60 backdrop-blur-sm px-4">
+        <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
             <h3 className="font-bold text-sm text-foreground mb-4">Record Transaction</h3>
             <form onSubmit={handleCreateTransaction} className="space-y-4">
               <div className="space-y-1">
@@ -922,13 +916,11 @@ export default function Accounting() {
               </div>
             </form>
           </div>
-        </div>
-      )}
+      </PortalModal>
 
-      {/* Transfer Modal */}
-      {transferModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 px-4">
-          <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
+      {/* Transfer Funds Modal */}
+      <PortalModal isOpen={transferModalOpen} onClose={() => setTransferModalOpen(false)} backdropClass="bg-black/60 backdrop-blur-sm px-4">
+        <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
             <h3 className="font-bold text-sm text-foreground mb-4 flex items-center gap-2"><ArrowRightLeft className="w-4 h-4" /> Transfer Funds</h3>
             <form onSubmit={handleTransfer} className="space-y-4">
               <div className="space-y-1">
@@ -959,13 +951,11 @@ export default function Accounting() {
               </div>
             </form>
           </div>
-        </div>
-      )}
+      </PortalModal>
 
       {/* Daily Closing Modal */}
-      {closingModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 px-4">
-          <div className="bg-card border border-border w-full max-w-md p-6 rounded-2xl shadow-2xl relative">
+      <PortalModal isOpen={closingModalOpen} onClose={() => { setClosingModalOpen(false); setClosingPreview(null); }} backdropClass="bg-black/60 backdrop-blur-sm px-4">
+        <div className="bg-card border border-border w-full max-w-md p-6 rounded-2xl shadow-2xl relative">
             <h3 className="font-bold text-sm text-foreground mb-4 flex items-center gap-2"><CalendarCheck className="w-4 h-4" /> Daily Closing</h3>
             <form onSubmit={handleCreateClosing} className="space-y-4">
               <div className="space-y-1">
@@ -1029,8 +1019,7 @@ export default function Accounting() {
               </div>
             </form>
           </div>
-        </div>
-      )}
+      </PortalModal>
 
     </div>
   );

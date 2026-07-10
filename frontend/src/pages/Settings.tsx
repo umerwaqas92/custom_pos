@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useStore } from "../store/useStore";
+import PortalModal from "../components/PortalModal";
 import {
   Settings as SettingsIcon,
   Store,
@@ -262,7 +263,7 @@ export default function Settings() {
     title: string; onClose: () => void; onSubmit: (e: React.FormEvent) => void;
     children: React.ReactNode; submitLabel?: string;
   }) => (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-50 px-4">
+    <PortalModal isOpen={true} onClose={onClose} backdropClass="bg-black/70 backdrop-blur-sm px-4">
       <div className="bg-card border border-border w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h3 className="font-extrabold text-sm text-foreground">{title}</h3>
@@ -284,7 +285,7 @@ export default function Settings() {
           </div>
         </form>
       </div>
-    </div>
+    </PortalModal>
   );
 
   // ─── Tab content renderers ────────────────────────────────────────────────

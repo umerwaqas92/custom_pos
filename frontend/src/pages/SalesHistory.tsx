@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useStore } from "../store/useStore";
+import PortalModal from "../components/PortalModal";
 import {
   Search,
   Calendar,
@@ -360,117 +361,117 @@ export default function SalesHistory() {
       </div>
 
       {/* Invoice Receipt Modal */}
-      {receiptOpen && activeSale && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/75 backdrop-blur-sm z-50 px-4 overflow-y-auto">
-          <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl space-y-6 my-8 relative">
-            <button
-              onClick={() => setReceiptOpen(false)}
-              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition"
-              title="Close Dialog"
-            >
-              <X className="w-4 h-4" />
-            </button>
-            <div className="text-center space-y-1">
-              <CheckCircle className="w-12 h-12 text-green-400 mx-auto" />
-              <h3 className="text-lg font-black tracking-tight text-foreground">Invoice Voucher Details</h3>
-              <p className="text-xs text-muted-foreground">Invoice reference: {activeSale.id.substring(0, 8)}</p>
-            </div>
+      {activeSale && (
+      <PortalModal isOpen={receiptOpen && !!activeSale} onClose={() => { setReceiptOpen(false); setActiveSale(null); }}>
+        <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl space-y-6 my-8 relative">
+          <button
+            onClick={() => setReceiptOpen(false)}
+            className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition"
+            title="Close Dialog"
+          >
+            <X className="w-4 h-4" />
+          </button>
+          <div className="text-center space-y-1">
+            <CheckCircle className="w-12 h-12 text-green-400 mx-auto" />
+            <h3 className="text-lg font-black tracking-tight text-foreground">Invoice Voucher Details</h3>
+            <p className="text-xs text-muted-foreground">Invoice reference: {activeSale.id.substring(0, 8)}</p>
+          </div>
 
-            {/* Receipt layout */}
-            <div id="printable-receipt" className="bg-secondary/30 p-4 border border-dashed border-border rounded-xl text-xs space-y-4">
-              <div className="text-center border-b border-border pb-3">
-                <h4 className="font-extrabold text-foreground tracking-widest uppercase">
-                  {activeSale.branch?.name || " ELECTRONICS"}
-                </h4>
-                {activeSale.branch?.address && (
-                  <p className="text-[9px] text-muted-foreground mt-0.5">{activeSale.branch.address}</p>
-                )}
-                {activeSale.branch?.phone && (
-                  <p className="text-[9px] text-muted-foreground">{activeSale.branch.phone}</p>
-                )}
-                <p className="text-[10px] text-muted-foreground mt-1">Invoice Receipt Slip</p>
-                <p className="text-[9px] text-muted-foreground mt-1">Date: {new Date(activeSale.saleDate).toLocaleString()}</p>
-                <p className="text-[9px] text-muted-foreground">Cashier: {activeSale.cashier?.name}</p>
-              </div>
-
-              <div className="space-y-2">
-                {activeSale.items.map((item: any) => (
-                  <div key={item.id} className="flex justify-between items-start">
-                    <div>
-                      <p className="font-semibold text-foreground">{item.product.name}</p>
-                      <p className="text-[9px] text-muted-foreground">
-                        Qty: {item.quantity} @ Rs. {item.unitPrice}
-                      </p>
-                      {(item.serialNumber || item.imei) && (
-                        <p className="text-[9px] text-primary/80 font-bold mt-0.5">
-                          {item.serialNumber && `S/N: ${item.serialNumber}`}
-                          {item.serialNumber && item.imei && " | "}
-                          {item.imei && `IMEI: ${item.imei}`}
-                        </p>
-                      )}
-                    </div>
-                    <span className="font-bold text-foreground">Rs. {item.totalPrice.toFixed(2)}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="border-t border-border pt-3 space-y-1 text-[11px]">
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Subtotal:</span>
-                  <span>Rs. {activeSale.totalAmount.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Discount:</span>
-                  <span>-Rs. {activeSale.discountAmount.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Sales Tax ({activeSale.items[0]?.tax || 0}%):</span>
-                  <span>+Rs. {activeSale.taxAmount.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between font-black text-foreground text-xs pt-1 border-t border-border/40">
-                  <span>Total Paid ({paymentMethodNames[activeSale.paymentMethod] || activeSale.paymentMethod}):</span>
-                  <span>Rs. {activeSale.paidAmount.toFixed(2)}</span>
-                </div>
-              </div>
-
-              {activeSale.customer && (
-                <div className="bg-secondary/60 p-2 rounded text-[10px] text-muted-foreground">
-                  <p>Customer: <strong>{activeSale.customer.name}</strong></p>
-                  {activeSale.paymentMethod === "EMI" ? (
-                    <p>Financed Balance: <strong>Rs. {Math.max(0, activeSale.payableAmount - activeSale.paidAmount).toFixed(2)}</strong></p>
-                  ) : activeSale.paymentMethod === "CREDIT" ? (
-                    <p>Outstanding on Invoice: <strong>Rs. {Math.max(0, activeSale.payableAmount - activeSale.paidAmount).toFixed(2)}</strong></p>
-                  ) : null}
-                </div>
+          {/* Receipt layout */}
+          <div id="printable-receipt" className="bg-secondary/30 p-4 border border-dashed border-border rounded-xl text-xs space-y-4">
+            <div className="text-center border-b border-border pb-3">
+              <h4 className="font-extrabold text-foreground tracking-widest uppercase">
+                {activeSale.branch?.name || " ELECTRONICS"}
+              </h4>
+              {activeSale.branch?.address && (
+                <p className="text-[9px] text-muted-foreground mt-0.5">{activeSale.branch.address}</p>
               )}
+              {activeSale.branch?.phone && (
+                <p className="text-[9px] text-muted-foreground">{activeSale.branch.phone}</p>
+              )}
+              <p className="text-[10px] text-muted-foreground mt-1">Invoice Receipt Slip</p>
+              <p className="text-[9px] text-muted-foreground mt-1">Date: {new Date(activeSale.saleDate).toLocaleString()}</p>
+              <p className="text-[9px] text-muted-foreground">Cashier: {activeSale.cashier?.name}</p>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <div className="flex gap-3">
-                <button
-                  onClick={handlePrint}
-                  className="flex-1 border border-border hover:bg-secondary text-foreground text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer"
-                >
-                  <Receipt className="w-4 h-4" />
-                  Print Slip
-                </button>
-                <button
-                  onClick={downloadPdf}
-                  className="flex-1 border border-border hover:bg-secondary text-foreground text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer"
-                >
-                  <FileText className="w-4 h-4 text-primary" />
-                  Download PDF
-                </button>
+            <div className="space-y-2">
+              {activeSale.items.map((item: any) => (
+                <div key={item.id} className="flex justify-between items-start">
+                  <div>
+                    <p className="font-semibold text-foreground">{item.product.name}</p>
+                    <p className="text-[9px] text-muted-foreground">
+                      Qty: {item.quantity} @ Rs. {item.unitPrice}
+                    </p>
+                    {(item.serialNumber || item.imei) && (
+                      <p className="text-[9px] text-primary/80 font-bold mt-0.5">
+                        {item.serialNumber && `S/N: ${item.serialNumber}`}
+                        {item.serialNumber && item.imei && " | "}
+                        {item.imei && `IMEI: ${item.imei}`}
+                      </p>
+                    )}
+                  </div>
+                  <span className="font-bold text-foreground">Rs. {item.totalPrice.toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="border-t border-border pt-3 space-y-1 text-[11px]">
+              <div className="flex justify-between text-muted-foreground">
+                <span>Subtotal:</span>
+                <span>Rs. {activeSale.totalAmount.toFixed(2)}</span>
               </div>
+              <div className="flex justify-between text-muted-foreground">
+                <span>Discount:</span>
+                <span>-Rs. {activeSale.discountAmount.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground">
+                <span>Sales Tax ({activeSale.items[0]?.tax || 0}%):</span>
+                <span>+Rs. {activeSale.taxAmount.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between font-black text-foreground text-xs pt-1 border-t border-border/40">
+                <span>Total Paid ({paymentMethodNames[activeSale.paymentMethod] || activeSale.paymentMethod}):</span>
+                <span>Rs. {activeSale.paidAmount.toFixed(2)}</span>
+              </div>
+            </div>
+
+            {activeSale.customer && (
+              <div className="bg-secondary/60 p-2 rounded text-[10px] text-muted-foreground">
+                <p>Customer: <strong>{activeSale.customer.name}</strong></p>
+                {activeSale.paymentMethod === "EMI" ? (
+                  <p>Financed Balance: <strong>Rs. {Math.max(0, activeSale.payableAmount - activeSale.paidAmount).toFixed(2)}</strong></p>
+                ) : activeSale.paymentMethod === "CREDIT" ? (
+                  <p>Outstanding on Invoice: <strong>Rs. {Math.max(0, activeSale.payableAmount - activeSale.paidAmount).toFixed(2)}</strong></p>
+                ) : null}
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-3">
               <button
-                onClick={() => { setReceiptOpen(false); setActiveSale(null); }}
-                className="w-full bg-primary hover:bg-primary/95 text-white text-xs font-bold py-2.5 rounded-xl transition cursor-pointer text-center"
+                onClick={handlePrint}
+                className="flex-1 border border-border hover:bg-secondary text-foreground text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer"
               >
-                Dismiss Window
+                <Receipt className="w-4 h-4" />
+                Print Slip
+              </button>
+              <button
+                onClick={downloadPdf}
+                className="flex-1 border border-border hover:bg-secondary text-foreground text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer"
+              >
+                <FileText className="w-4 h-4 text-primary" />
+                Download PDF
               </button>
             </div>
+            <button
+              onClick={() => { setReceiptOpen(false); setActiveSale(null); }}
+              className="w-full bg-primary hover:bg-primary/95 text-white text-xs font-bold py-2.5 rounded-xl transition cursor-pointer text-center"
+            >
+              Dismiss Window
+            </button>
           </div>
         </div>
+      </PortalModal>
       )}
     </div>
   );

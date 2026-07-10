@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useStore } from "../store/useStore";
+import PortalModal from "../components/PortalModal";
 import {
   Plus,
   Wrench,
@@ -227,9 +228,8 @@ export default function Repairs() {
       </div>
 
       {/* Create Ticket Modal */}
-      {createOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 px-4 overflow-y-auto">
-          <div className="bg-card border border-border w-full max-w-md p-6 rounded-2xl shadow-2xl relative my-8">
+      <PortalModal isOpen={createOpen} onClose={() => setCreateOpen(false)} backdropClass="bg-black/60 backdrop-blur-sm px-4 overflow-y-auto">
+        <div className="bg-card border border-border w-full max-w-md p-6 rounded-2xl shadow-2xl relative my-8">
             <h3 className="text-base font-bold text-foreground mb-4">Create Repair Ticket</h3>
             <form onSubmit={handleCreateJob} className="space-y-4">
               <div className="space-y-1">
@@ -329,13 +329,12 @@ export default function Repairs() {
               </div>
             </form>
           </div>
-        </div>
-      )}
+      </PortalModal>
 
       {/* Edit Ticket Modal */}
-      {editOpen && selectedJob && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 px-4 overflow-y-auto">
-          <div className="bg-card border border-border w-full max-w-md p-6 rounded-2xl shadow-2xl relative my-8">
+      {selectedJob && (
+      <PortalModal isOpen={editOpen && !!selectedJob} onClose={() => { setEditOpen(false); setSelectedJob(null); }} backdropClass="bg-black/60 backdrop-blur-sm px-4 overflow-y-auto">
+        <div className="bg-card border border-border w-full max-w-md p-6 rounded-2xl shadow-2xl relative my-8">
             <h3 className="text-base font-bold text-foreground mb-4">Edit Repair Ticket ({selectedJob.deviceName})</h3>
             <form onSubmit={handleUpdateJob} className="space-y-4">
               
@@ -473,7 +472,7 @@ export default function Repairs() {
               </div>
             </form>
           </div>
-        </div>
+      </PortalModal>
       )}
     </div>
   );

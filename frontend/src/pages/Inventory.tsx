@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { useStore } from "../store/useStore";
+import PortalModal from "../components/PortalModal";
 import {
   Plus,
   ArrowRightLeft,
@@ -628,9 +629,8 @@ export default function Inventory() {
       </div>
 
       {/* Add Product Dialog Modal */}
-      {addOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 px-4 overflow-y-auto">
-          <div className="bg-card border border-border w-full max-w-lg p-6 rounded-2xl shadow-2xl relative my-8">
+      <PortalModal isOpen={addOpen} onClose={() => setAddOpen(false)} backdropClass="bg-black/60 backdrop-blur-sm px-4 overflow-y-auto">
+        <div className="bg-card border border-border w-full max-w-lg p-6 rounded-2xl shadow-2xl relative my-8">
             <h3 className="text-base font-bold text-foreground mb-4">Add New Catalog Product</h3>
             <form onSubmit={handleAddProduct} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -734,13 +734,11 @@ export default function Inventory() {
               </div>
             </form>
           </div>
-        </div>
-      )}
+      </PortalModal>
 
       {/* Edit Product Dialog Modal */}
-      {editOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 px-4 overflow-y-auto">
-          <div className="bg-card border border-border w-full max-w-lg p-6 rounded-2xl shadow-2xl relative my-8">
+      <PortalModal isOpen={editOpen} onClose={() => setEditOpen(false)} backdropClass="bg-black/60 backdrop-blur-sm px-4 overflow-y-auto">
+        <div className="bg-card border border-border w-full max-w-lg p-6 rounded-2xl shadow-2xl relative my-8">
             <h3 className="text-base font-bold text-foreground mb-4">Edit Catalog Product</h3>
             <form onSubmit={handleEditProduct} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -887,13 +885,11 @@ export default function Inventory() {
               </div>
             </form>
           </div>
-        </div>
-      )}
+      </PortalModal>
 
       {/* Stock Adjustment Modal */}
-      {adjustOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 px-4">
-          <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
+      <PortalModal isOpen={adjustOpen} onClose={() => setAdjustOpen(false)} backdropClass="bg-black/60 backdrop-blur-sm px-4">
+        <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
             <h3 className="font-bold text-sm text-foreground mb-4">Manual Inventory Adjustment</h3>
             <form onSubmit={handleAdjustStock} className="space-y-4">
               <div className="space-y-1">
@@ -959,13 +955,11 @@ export default function Inventory() {
               </div>
             </form>
           </div>
-        </div>
-      )}
+      </PortalModal>
 
       {/* Stock Transfer Modal */}
-      {transferOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 px-4">
-          <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
+      <PortalModal isOpen={transferOpen} onClose={() => setTransferOpen(false)} backdropClass="bg-black/60 backdrop-blur-sm px-4">
+        <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
             <h3 className="font-bold text-sm text-foreground mb-4">Branch Stock Transfer</h3>
             <form onSubmit={handleTransferStock} className="space-y-4">
               <div className="space-y-1">
@@ -1045,13 +1039,11 @@ export default function Inventory() {
               </div>
             </form>
           </div>
-        </div>
-      )}
+      </PortalModal>
 
       {/* Movement History Log Modal */}
-      {historyOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 px-4">
-          <div className="bg-card border border-border w-full max-w-xl p-6 rounded-2xl shadow-2xl relative h-[500px] flex flex-col justify-between">
+      <PortalModal isOpen={historyOpen} onClose={() => setHistoryOpen(false)} backdropClass="bg-black/60 backdrop-blur-sm px-4">
+        <div className="bg-card border border-border w-full max-w-xl p-6 rounded-2xl shadow-2xl relative h-[500px] flex flex-col justify-between">
             <h3 className="font-bold text-sm text-foreground mb-3">Inventory Movement History</h3>
             
             <div className="flex-1 overflow-y-auto space-y-2 pr-1">
@@ -1087,8 +1079,7 @@ export default function Inventory() {
               </button>
             </div>
           </div>
-        </div>
-      )}
+      </PortalModal>
     </div>
   );
 }

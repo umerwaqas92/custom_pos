@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import PortalModal from "../components/PortalModal";
 import { useStore, CartItem } from "../store/useStore";
 import {
   Search,
@@ -780,192 +781,186 @@ export default function POS() {
 
       {/* Invoice Receipt Modal */}
       {receiptResult && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/75 backdrop-blur-sm z-50 px-4 overflow-y-auto">
-          <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl space-y-6 my-8 relative">
-            <button
-              onClick={() => setReceiptResult(null)}
-              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition"
-              title="Close Dialog"
-            >
-              <X className="w-4 h-4" />
-            </button>
-            <div className="text-center space-y-1">
-              <CheckCircle className="w-12 h-12 text-green-400 mx-auto" />
-              <h3 className="text-lg font-black tracking-tight text-foreground">Transaction Complete</h3>
-              <p className="text-xs text-muted-foreground">Invoice reference: {receiptResult.id.substring(0, 8)}</p>
+      <PortalModal isOpen={!!receiptResult} onClose={() => setReceiptResult(null)}>
+        <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl space-y-6 my-8 relative">
+          <button
+            onClick={() => setReceiptResult(null)}
+            className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition"
+            title="Close Dialog"
+          >
+            <X className="w-4 h-4" />
+          </button>
+          <div className="text-center space-y-1">
+            <CheckCircle className="w-12 h-12 text-green-400 mx-auto" />
+            <h3 className="text-lg font-black tracking-tight text-foreground">Transaction Complete</h3>
+            <p className="text-xs text-muted-foreground">Invoice reference: {receiptResult?.id.substring(0, 8)}</p>
+          </div>
+
+          {/* Receipt layout */}
+          <div id="printable-receipt" className="bg-secondary/30 p-4 border border-dashed border-border rounded-xl text-xs space-y-4">
+            <div className="text-center border-b border-border pb-3">
+              <h4 className="font-extrabold text-foreground tracking-widest uppercase">
+                {receiptResult?.branch?.name || " ELECTRONICS"}
+              </h4>
+              {receiptResult?.branch?.address && (
+                <p className="text-[9px] text-muted-foreground mt-0.5">{receiptResult.branch.address}</p>
+              )}
+              {receiptResult?.branch?.phone && (
+                <p className="text-[9px] text-muted-foreground">{receiptResult.branch.phone}</p>
+              )}
+              <p className="text-[10px] text-muted-foreground mt-1">Invoice Receipt Slip</p>
+              <p className="text-[9px] text-muted-foreground mt-1">Date: {new Date(receiptResult?.saleDate).toLocaleString()}</p>
+              <p className="text-[9px] text-muted-foreground">Cashier: {receiptResult?.cashier?.name}</p>
             </div>
 
-            {/* Receipt layout */}
-            <div id="printable-receipt" className="bg-secondary/30 p-4 border border-dashed border-border rounded-xl text-xs space-y-4">
-              <div className="text-center border-b border-border pb-3">
-                <h4 className="font-extrabold text-foreground tracking-widest uppercase">
-                  {receiptResult.branch?.name || " ELECTRONICS"}
-                </h4>
-                {receiptResult.branch?.address && (
-                  <p className="text-[9px] text-muted-foreground mt-0.5">{receiptResult.branch.address}</p>
-                )}
-                {receiptResult.branch?.phone && (
-                  <p className="text-[9px] text-muted-foreground">{receiptResult.branch.phone}</p>
-                )}
-                <p className="text-[10px] text-muted-foreground mt-1">Invoice Receipt Slip</p>
-                <p className="text-[9px] text-muted-foreground mt-1">Date: {new Date(receiptResult.saleDate).toLocaleString()}</p>
-              </div>
-
-              <div className="space-y-2">
-                {receiptResult.items.map((item: any) => (
-                  <div key={item.id} className="flex justify-between items-start">
-                    <div>
-                      <p className="font-semibold text-foreground">{item.product.name}</p>
-                      <p className="text-[9px] text-muted-foreground">
-                        Qty: {item.quantity} @ Rs. {item.unitPrice}
+            <div className="space-y-2">
+              {receiptResult?.items.map((item: any) => (
+                <div key={item.id} className="flex justify-between items-start">
+                  <div>
+                    <p className="font-semibold text-foreground">{item.product.name}</p>
+                    <p className="text-[9px] text-muted-foreground">
+                      Qty: {item.quantity} @ Rs. {item.unitPrice}
+                    </p>
+                    {(item.serialNumber || item.imei) && (
+                      <p className="text-[9px] text-primary/80 font-bold mt-0.5">
+                        {item.serialNumber && `S/N: ${item.serialNumber}`}
+                        {item.serialNumber && item.imei && " | "}
+                        {item.imei && `IMEI: ${item.imei}`}
                       </p>
-                      {(item.serialNumber || item.imei) && (
-                        <p className="text-[9px] text-primary/80 font-bold mt-0.5">
-                          {item.serialNumber && `S/N: ${item.serialNumber}`}
-                          {item.serialNumber && item.imei && " | "}
-                          {item.imei && `IMEI: ${item.imei}`}
-                        </p>
-                      )}
-                    </div>
-                    <span className="font-bold text-foreground">Rs. {item.totalPrice.toFixed(2)}</span>
+                    )}
                   </div>
-                ))}
-              </div>
-
-              <div className="border-t border-border pt-3 space-y-1 text-[11px]">
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Subtotal:</span>
-                  <span>Rs. {receiptResult.totalAmount.toFixed(2)}</span>
+                  <span className="font-bold text-foreground">Rs. {item.totalPrice.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Discount:</span>
-                  <span>-Rs. {receiptResult.discountAmount.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Sales Tax ({receiptResult.items[0]?.tax || 0}%):</span>
-                  <span>+Rs. {receiptResult.taxAmount.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between font-black text-foreground text-xs pt-1 border-t border-border/40">
-                  <p className="font-bold text-foreground">
-                    {receiptResult.paymentMethod === "CASH" ? "Cash" :
-                      receiptResult.paymentMethod === "CARD" ? "Bank" :
-                        receiptResult.paymentMethod === "MOBILE" ? "Wallet" :
-                          receiptResult.paymentMethod === "EMI" ? "EMI Installment" : "Credit"}
-                  </p>
-                  <span>Rs. {receiptResult.paidAmount.toFixed(2)}</span>
-                </div>
-              </div>
-
-              {receiptResult.customer && (
-                <div className="bg-secondary/60 p-2 rounded text-[10px] text-muted-foreground space-y-0.5">
-                  <p>Customer: <strong>{receiptResult.customer.name}</strong></p>
-                  {receiptResult.paymentMethod === "EMI" ? (
-                    <p className="text-primary font-bold">Financed Balance: <strong>Rs. {receiptResult.payableAmount.toFixed(2)}</strong></p>
-                  ) : (
-                    <p>Repayment Balance: <strong>Rs. {receiptResult.customer.creditBalance}</strong></p>
-                  )}
-                </div>
-              )}
+              ))}
             </div>
 
-            <div className="flex flex-col gap-2">
-              <div className="flex gap-3">
-                <button
-                  onClick={handlePrint}
-                  className="flex-1 border border-border hover:bg-secondary text-foreground text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer"
-                >
-                  <Receipt className="w-4 h-4" />
-                  Print Slip
-                </button>
-                <button
-                  onClick={downloadPdf}
-                  className="flex-1 border border-border hover:bg-secondary text-foreground text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer"
-                >
-                  <FileText className="w-4 h-4 text-primary" />
-                  Download PDF
-                </button>
+            <div className="border-t border-border pt-3 space-y-1 text-[11px]">
+              <div className="flex justify-between text-muted-foreground">
+                <span>Subtotal:</span>
+                <span>Rs. {receiptResult?.totalAmount.toFixed(2)}</span>
               </div>
-              {receiptResult.paymentMethod === "EMI" ? (
-                <button
-                  onClick={() => {
-                    setReceiptResult(null);
-                    navigate("/installments");
-                  }}
-                  className="w-full bg-primary hover:bg-primary/95 text-white text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1 transition shadow-md shadow-primary/10 cursor-pointer"
-                >
-                  Setup Installments Plan ➔
-                </button>
-              ) : (
-                <button
-                  onClick={() => setReceiptResult(null)}
-                  className="w-full bg-primary hover:bg-primary/95 text-white text-xs font-bold py-2.5 rounded-xl transition cursor-pointer"
-                >
-                  Dismiss Window
-                </button>
-              )}
+              <div className="flex justify-between text-muted-foreground">
+                <span>Discount:</span>
+                <span>-Rs. {receiptResult?.discountAmount.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground">
+                <span>Sales Tax ({receiptResult?.items[0]?.tax || 0}%):</span>
+                <span>+Rs. {receiptResult?.taxAmount.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between font-black text-foreground text-xs pt-1 border-t border-border/40">
+                <span>Total Paid ({receiptResult?.paymentMethod}):</span>
+                <span>Rs. {receiptResult?.paidAmount.toFixed(2)}</span>
+              </div>
             </div>
+
+            {receiptResult?.customer && (
+              <div className="bg-secondary/60 p-2 rounded text-[10px] text-muted-foreground">
+                <p>Customer: <strong>{receiptResult.customer.name}</strong></p>
+                {receiptResult.paymentMethod === "EMI" ? (
+                  <p>Financed Balance: <strong>Rs. {Math.max(0, receiptResult.payableAmount - receiptResult.paidAmount).toFixed(2)}</strong></p>
+                ) : receiptResult.paymentMethod === "CREDIT" ? (
+                  <p>Outstanding on Invoice: <strong>Rs. {Math.max(0, receiptResult.payableAmount - receiptResult.paidAmount).toFixed(2)}</strong></p>
+                ) : null}
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-3">
+              <button
+                onClick={handlePrint}
+                className="flex-1 border border-border hover:bg-secondary text-foreground text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer"
+              >
+                <Receipt className="w-4 h-4" />
+                Print Slip
+              </button>
+              <button
+                onClick={downloadPdf}
+                className="flex-1 border border-border hover:bg-secondary text-foreground text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer"
+              >
+                <FileText className="w-4 h-4 text-primary" />
+                Download PDF
+              </button>
+            </div>
+            {receiptResult?.paymentMethod === "EMI" ? (
+              <button
+                onClick={() => {
+                  setReceiptResult(null);
+                  navigate("/installments");
+                }}
+                className="w-full bg-primary hover:bg-primary/95 text-white text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1 transition shadow-md shadow-primary/10 cursor-pointer"
+              >
+                Setup Installments Plan ➔
+              </button>
+            ) : (
+              <button
+                onClick={() => setReceiptResult(null)}
+                className="w-full bg-primary hover:bg-primary/95 text-white text-xs font-bold py-2.5 rounded-xl transition cursor-pointer"
+              >
+                Dismiss Window
+              </button>
+            )}
           </div>
         </div>
+      </PortalModal>
       )}
 
       {/* Add Customer Modal dialog */}
-      {custModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 px-4">
-          <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative animate-fade-in">
-            <button
-              onClick={() => setCustModalOpen(false)}
-              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition"
-              title="Close Dialog"
-            >
-              <X className="w-4 h-4" />
-            </button>
-            <h3 className="font-bold text-sm text-foreground mb-4">Register New Customer</h3>
-            <form onSubmit={handleCreateCustomer} className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase">Customer Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={newCust.name}
-                  onChange={(e) => setNewCust({ ...newCust, name: e.target.value })}
-                  placeholder="e.g. Asif Khan"
-                  className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
-                />
-              </div>
+      <PortalModal isOpen={custModalOpen} onClose={() => setCustModalOpen(false)} backdropClass="bg-black/60 backdrop-blur-sm px-4">
+        <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative animate-fade-in">
+          <button
+            onClick={() => setCustModalOpen(false)}
+            className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition"
+            title="Close Dialog"
+          >
+            <X className="w-4 h-4" />
+          </button>
+          <h3 className="font-bold text-sm text-foreground mb-4">Register New Customer</h3>
+          <form onSubmit={handleCreateCustomer} className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase">Customer Name *</label>
+              <input
+                type="text"
+                required
+                value={newCust.name}
+                onChange={(e) => setNewCust({ ...newCust, name: e.target.value })}
+                placeholder="e.g. Asif Khan"
+                className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
+              />
+            </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase">Phone Number *</label>
-                <input
-                  type="text"
-                  required
-                  value={newCust.phone}
-                  onChange={(e) => setNewCust({ ...newCust, phone: e.target.value })}
-                  placeholder="e.g. 0300-1234567"
-                  className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
-                />
-              </div>
-
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase">Phone Number *</label>
+              <input
+                type="text"
+                required
+                value={newCust.phone}
+                onChange={(e) => setNewCust({ ...newCust, phone: e.target.value })}
+                placeholder="e.g. 0300-1234567"
+                className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
+              />
+            </div>
 
 
-              <div className="flex gap-3 justify-end pt-4">
-                <button
-                  type="button"
-                  onClick={() => setCustModalOpen(false)}
-                  className="px-4 py-2 border border-border text-xs rounded hover:bg-secondary transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-primary text-white text-xs rounded hover:bg-primary/95 transition"
-                >
-                  Add Customer
-                </button>
-              </div>
-            </form>
-          </div>
+
+            <div className="flex gap-3 justify-end pt-4">
+              <button
+                type="button"
+                onClick={() => setCustModalOpen(false)}
+                className="px-4 py-2 border border-border text-xs rounded hover:bg-secondary transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-primary text-white text-xs rounded hover:bg-primary/95 transition"
+              >
+                Add Customer
+              </button>
+            </div>
+          </form>
         </div>
-      )}
+      </PortalModal>
     </div>
   );
 }

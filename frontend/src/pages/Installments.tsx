@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useStore } from "../store/useStore";
+import PortalModal from "../components/PortalModal";
 import {
   CreditCard,
   User,
@@ -451,7 +452,7 @@ export default function Installments() {
 
       {/* AGREEMENT CONFIGURATION FORM MODAL */}
       {selectedSale && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/75 backdrop-blur-sm z-50 px-4 overflow-y-auto">
+        <PortalModal isOpen={!!selectedSale} onClose={() => setSelectedSale(null)}>
           <div className="bg-card border border-border w-full max-w-4xl p-6 rounded-2xl shadow-2xl space-y-6 my-8 relative">
             <button
               onClick={() => setSelectedSale(null)}
@@ -666,7 +667,7 @@ export default function Installments() {
               </div>
             </form>
           </div>
-        </div>
+        </PortalModal>
       )}
 
       {/* DETAILED ACTIVE CONTRACT MODAL SCHEDULER */}
@@ -677,7 +678,7 @@ export default function Installments() {
         const remainingAmount = emi.totalPrincipal - emi.downPayment - paidAmount;
         
         return (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
+          <PortalModal isOpen={!!activeContract} onClose={() => setActiveContract(null)} backdropClass="bg-black/60 backdrop-blur-md p-4 animate-fade-in">
             <div className="bg-card border border-border/80 w-full max-w-5xl rounded-2xl shadow-2xl flex flex-col md:grid md:grid-cols-12 gap-6 md:gap-8 p-6 md:p-8 relative max-h-[90vh] overflow-y-auto">
               <button
                 onClick={() => setActiveContract(null)}
@@ -971,13 +972,13 @@ export default function Installments() {
                 </div>
               </div>
             </div>
-          </div>
+          </PortalModal>
         );
       })()}
 
       {/* Document scan lightbox preview Modal */}
       {previewImage && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/90 z-50 p-4">
+        <PortalModal isOpen={!!previewImage} onClose={() => setPreviewImage(null)} backdropClass="bg-black/90 p-4">
           <div className="relative max-w-4xl max-h-[90vh]">
             <button
               onClick={() => setPreviewImage(null)}
@@ -992,7 +993,7 @@ export default function Installments() {
               className="max-w-full max-h-[80vh] rounded-2xl border border-white/10 shadow-2xl object-contain"
             />
           </div>
-        </div>
+        </PortalModal>
       )}
 
       {/* Hidden print slip for EMI Installments plan status */}

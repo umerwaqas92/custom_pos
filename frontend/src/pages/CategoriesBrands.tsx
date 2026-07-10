@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { useStore } from "../store/useStore";
+import PortalModal from "../components/PortalModal";
 import {
   Plus,
   Tag,
@@ -434,9 +435,8 @@ export default function CategoriesBrands() {
       </div>
 
       {/* Add Category Dialog Modal */}
-      {catOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 px-4">
-          <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
+      <PortalModal isOpen={catOpen} onClose={() => setCatOpen(false)} backdropClass="bg-black/60 backdrop-blur-sm px-4">
+        <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
             <h3 className="font-bold text-sm text-foreground mb-4">Add Product Category</h3>
             <form onSubmit={handleCreateCategory} className="space-y-4">
               <div className="space-y-1">
@@ -468,13 +468,11 @@ export default function CategoriesBrands() {
               </div>
             </form>
           </div>
-        </div>
-      )}
+      </PortalModal>
 
       {/* Add Brand Dialog Modal */}
-      {brandOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 px-4">
-          <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
+      <PortalModal isOpen={brandOpen} onClose={() => setBrandOpen(false)} backdropClass="bg-black/60 backdrop-blur-sm px-4">
+        <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
             <h3 className="font-bold text-sm text-foreground mb-4">Add Product Brand</h3>
             <form onSubmit={handleCreateBrand} className="space-y-4">
               <div className="space-y-1">
@@ -506,13 +504,11 @@ export default function CategoriesBrands() {
               </div>
             </form>
           </div>
-        </div>
-      )}
+      </PortalModal>
 
       {/* Edit Category/Brand Dialog Modal */}
-      {editOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 px-4">
-          <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
+      <PortalModal isOpen={editOpen} onClose={() => { setEditOpen(false); setEditType(null); }} backdropClass="bg-black/60 backdrop-blur-sm px-4">
+        <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
             <h3 className="font-bold text-sm text-foreground mb-4">Edit {editType === "CATEGORY" ? "Category" : "Brand"}</h3>
             <form onSubmit={handleEditSubmit} className="space-y-4">
               <div className="space-y-1">
@@ -543,8 +539,7 @@ export default function CategoriesBrands() {
               </div>
             </form>
           </div>
-        </div>
-      )}
+      </PortalModal>
     </div>
   );
 }

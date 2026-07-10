@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { useStore } from "../store/useStore";
+import PortalModal from "../components/PortalModal";
 import {
   Plus,
   UserCheck,
@@ -572,9 +573,8 @@ export default function Contacts() {
       </div>
 
       {/* Create Customer Modal */}
-      {custOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 px-4">
-          <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
+      <PortalModal isOpen={custOpen} onClose={() => setCustOpen(false)} backdropClass="bg-black/60 backdrop-blur-sm px-4">
+        <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
             <h3 className="font-bold text-sm text-foreground mb-4">Add Customer Profile</h3>
             <form onSubmit={handleCreateCustomer} className="space-y-4">
               <div className="space-y-1">
@@ -618,13 +618,11 @@ export default function Contacts() {
               </div>
             </form>
           </div>
-        </div>
-      )}
+      </PortalModal>
 
       {/* Create Supplier Modal */}
-      {suppOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 px-4">
-          <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
+      <PortalModal isOpen={suppOpen} onClose={() => setSuppOpen(false)} backdropClass="bg-black/60 backdrop-blur-sm px-4">
+        <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
             <h3 className="font-bold text-sm text-foreground mb-4">Add Supplier Profile</h3>
             <form onSubmit={handleCreateSupplier} className="space-y-4">
               <div className="space-y-1">
@@ -696,13 +694,11 @@ export default function Contacts() {
               </div>
             </form>
           </div>
-        </div>
-      )}
+      </PortalModal>
 
       {/* Edit Customer/Supplier Modal */}
-      {editOpen && editType && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 px-4">
-          <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
+      <PortalModal isOpen={editOpen && !!editType} onClose={() => { setEditOpen(false); setEditType(null); }} backdropClass="bg-black/60 backdrop-blur-sm px-4">
+        <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
             <h3 className="font-bold text-sm text-foreground mb-4">Edit {editType === "CUSTOMER" ? "Customer" : "Supplier"}</h3>
             <form onSubmit={handleEditSubmit} className="space-y-4">
               {editType === "CUSTOMER" ? (
@@ -749,12 +745,11 @@ export default function Contacts() {
               </div>
             </form>
           </div>
-        </div>
-      )}
+      </PortalModal>
 
       {/* Credit Repayment Modal */}
-      {repayOpen && selectedCust && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 px-4">
+      {selectedCust && (
+        <PortalModal isOpen={repayOpen && !!selectedCust} onClose={() => { setRepayOpen(false); setSelectedCust(null); }} backdropClass="bg-black/60 backdrop-blur-sm px-4">
           <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
             <h3 className="font-bold text-sm text-foreground mb-1">Receive Credit Repayment</h3>
             <p className="text-xs text-muted-foreground mb-4">Customer: <strong>{selectedCust.name}</strong></p>
@@ -820,7 +815,7 @@ export default function Contacts() {
               </div>
             </form>
           </div>
-        </div>
+        </PortalModal>
       )}
     </div>
   );
