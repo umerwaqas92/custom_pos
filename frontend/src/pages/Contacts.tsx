@@ -304,7 +304,10 @@ export default function Contacts() {
               activeTab === "CUSTOMERS" ? "bg-primary text-white shadow" : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <UserCheck className="w-4 h-4" /> Customer Registry
+            <span className={`w-4 h-4 rounded flex items-center justify-center p-0.5 ${activeTab === "CUSTOMERS" ? "bg-white/20" : "bg-card/60"}`}>
+              <img src="/icons/contacts/customers.png?v=1" alt="" className="w-full h-full object-contain" draggable={false} />
+            </span>
+            Customer Registry
           </button>
           <button
             onClick={() => { setActiveTab("SUPPLIERS"); setSearch(""); }}
@@ -312,7 +315,10 @@ export default function Contacts() {
               activeTab === "SUPPLIERS" ? "bg-primary text-white shadow" : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Building className="w-4 h-4" /> Supplier Directory
+            <span className={`w-4 h-4 rounded flex items-center justify-center p-0.5 ${activeTab === "SUPPLIERS" ? "bg-white/20" : "bg-card/60"}`}>
+              <img src="/icons/contacts/suppliers.png?v=1" alt="" className="w-full h-full object-contain" draggable={false} />
+            </span>
+            Supplier Directory
           </button>
         </div>
 
@@ -322,14 +328,14 @@ export default function Contacts() {
               onClick={() => setCustOpen(true)}
               className="bg-primary hover:bg-primary/95 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition"
             >
-              <Plus className="w-4 h-4" /> Add Customer
+              <img src="/icons/contacts/add.png?v=1" alt="" className="w-4 h-4 object-contain brightness-0 invert" draggable={false} /> Add Customer
             </button>
           ) : (
             <button
               onClick={() => setSuppOpen(true)}
               className="bg-primary hover:bg-primary/95 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition"
             >
-              <Plus className="w-4 h-4" /> Add Supplier
+              <img src="/icons/contacts/add.png?v=1" alt="" className="w-4 h-4 object-contain brightness-0 invert" draggable={false} /> Add Supplier
             </button>
           )}
           <button
@@ -345,13 +351,16 @@ export default function Contacts() {
       <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
 
         {/* Search */}
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder={`Search ${activeTab === "CUSTOMERS" ? "customers" : "suppliers"} by name or phone...`}
-          className="w-full bg-secondary text-foreground text-sm border border-border px-4 py-2.5 rounded-xl focus:outline-none"
-        />
+        <div className="relative">
+          <img src="/icons/contacts/search.png?v=1" alt="" className="w-4 h-4 object-contain absolute left-3 top-3 opacity-70" draggable={false} />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={`Search ${activeTab === "CUSTOMERS" ? "customers" : "suppliers"} by name or phone...`}
+            className="w-full bg-secondary text-foreground text-sm border border-border pl-9 pr-4 py-2.5 rounded-xl focus:outline-none"
+          />
+        </div>
 
         {/* Bulk action bar */}
         {selectedIds.size > 0 && (
@@ -361,7 +370,7 @@ export default function Contacts() {
               onClick={handleBulkDelete}
               className="bg-red-500 hover:bg-red-600 text-white text-xs font-bold px-4 py-1.5 rounded-lg flex items-center gap-1 transition"
             >
-              <Trash2 className="w-3.5 h-3.5" /> Delete Selected
+              <img src="/icons/contacts/delete.png?v=1" alt="" className="w-3.5 h-3.5 object-contain brightness-0 invert" draggable={false} /> Delete Selected
             </button>
             <button
               onClick={() => setSelectedIds(new Set())}
@@ -424,13 +433,14 @@ export default function Contacts() {
                             className="p-1 text-muted-foreground hover:text-primary transition"
                             title="Edit"
                           >
-                            <Edit className="w-4 h-4" />
+                            <img src="/icons/contacts/edit.png?v=1" alt="" className="w-4 h-4 object-contain" draggable={false} />
                           </button>
                           {c.creditBalance > 0 && (
                             <button
                               onClick={() => handleOpenRepay(c)}
-                              className="bg-secondary border border-border hover:bg-secondary/80 text-[10px] font-bold px-3 py-1.5 rounded-lg transition"
+                              className="bg-secondary border border-border hover:bg-secondary/80 text-[10px] font-bold px-3 py-1.5 rounded-lg transition inline-flex items-center gap-1"
                             >
+                              <img src="/icons/contacts/payment.png?v=1" alt="" className="w-3.5 h-3.5 object-contain" draggable={false} />
                               Receive Payment
                             </button>
                           )}
@@ -439,7 +449,7 @@ export default function Contacts() {
                             className="p-1 text-muted-foreground hover:text-destructive transition"
                             title="Delete"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <img src="/icons/contacts/delete.png?v=1" alt="" className="w-4 h-4 object-contain" draggable={false} />
                           </button>
                         </div>
                       </td>
@@ -503,14 +513,14 @@ export default function Contacts() {
                             className="p-1 text-muted-foreground hover:text-primary transition"
                             title="Edit"
                           >
-                            <Edit className="w-4 h-4" />
+                            <img src="/icons/contacts/edit.png?v=1" alt="" className="w-4 h-4 object-contain" draggable={false} />
                           </button>
                           <button
                             onClick={() => handleDelete("SUPPLIER", s.id, s.company)}
                             className="p-1 text-muted-foreground hover:text-destructive transition"
                             title="Delete"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <img src="/icons/contacts/delete.png?v=1" alt="" className="w-4 h-4 object-contain" draggable={false} />
                           </button>
                         </div>
                       </td>
