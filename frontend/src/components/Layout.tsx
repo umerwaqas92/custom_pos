@@ -99,8 +99,8 @@ export default function Layout() {
       >
         <div>
           {/* Logo Section */}
-          <div className="h-16 flex items-center px-5 justify-between border-b border-border">
-            <div className="flex items-center gap-2 overflow-hidden">
+          <div className={`h-16 flex items-center border-b border-border relative ${sidebarOpen ? "px-5" : "justify-center"}`}>
+            <div className="flex items-center gap-2">
               <div className="p-2 rounded-xl bg-primary text-white flex-shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
@@ -114,9 +114,9 @@ export default function Layout() {
             </div>
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-1 rounded-lg hover:bg-secondary text-muted-foreground transition"
+              className="absolute -right-3 top-5 bg-card border border-border p-1 rounded-full text-muted-foreground hover:text-foreground shadow-md z-50 transition"
             >
-              <ChevronRight className={`w-5 h-5 transition-transform duration-300 ${sidebarOpen ? "rotate-180" : ""}`} />
+              <ChevronRight className={`w-4 h-4 transition-transform duration-300 ${sidebarOpen ? "rotate-180" : ""}`} />
             </button>
           </div>
 
@@ -145,7 +145,7 @@ export default function Layout() {
         </div>
 
         {/* User Card & Settings */}
-        <div className="p-4 border-t border-border space-y-4">
+        <div className={`border-t border-border space-y-4 ${sidebarOpen ? "p-4" : "p-2"}`}>
           {sidebarOpen && user && (
             <div className="flex items-center gap-3 p-2 bg-secondary/50 rounded-xl border border-border">
               <div className="w-9 h-9 rounded-lg bg-primary/20 text-primary flex items-center justify-center font-bold">
@@ -165,7 +165,7 @@ export default function Layout() {
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
-              className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-muted-foreground hover:bg-secondary hover:text-foreground transition"
+              className={`flex items-center gap-3 py-2.5 rounded-xl text-muted-foreground hover:bg-secondary hover:text-foreground transition ${sidebarOpen ? "px-4" : "justify-center"}`}
             >
               {theme === "dark" ? (
                 <>
@@ -183,7 +183,7 @@ export default function Layout() {
             {/* Logout */}
             <button
               onClick={handleLogout}
-              className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-destructive hover:bg-destructive/10 transition"
+              className={`flex items-center gap-3 py-2.5 rounded-xl text-destructive hover:bg-destructive/10 transition ${sidebarOpen ? "px-4" : "justify-center"}`}
             >
               <LogOut className="w-5 h-5" />
               {sidebarOpen && <span className="text-sm font-medium">Logout</span>}
