@@ -186,7 +186,7 @@ export default function Layout() {
                         }`}
                       >
                         <img
-                          src={`${item.iconSrc}?v=1`}
+                          src={`${item.iconSrc}?v=2`}
                           alt=""
                           className="w-full h-full object-contain"
                           draggable={false}

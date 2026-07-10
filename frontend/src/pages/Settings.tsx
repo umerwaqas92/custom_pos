@@ -3,7 +3,6 @@ import axios from "axios";
 import { useStore } from "../store/useStore";
 import PortalModal from "../components/PortalModal";
 import {
-  Settings as SettingsIcon,
   Store,
   MapPin,
   Phone,
@@ -12,11 +11,8 @@ import {
   Trash2,
   X,
   Info,
-  ShieldAlert,
   Download,
-  Percent,
   Building2,
-  Database,
   ToggleLeft,
   ToggleRight,
   RotateCcw,
@@ -31,11 +27,11 @@ import {
 
 type TabId = "shops" | "tax" | "backup" | "danger";
 
-const TABS: { id: TabId; label: string; icon: React.ReactNode; accent: string }[] = [
-  { id: "shops",  label: "Shop Branches", icon: <Building2 className="w-4 h-4" />, accent: "text-primary" },
-  { id: "tax",    label: "GST / Tax",     icon: <Percent className="w-4 h-4" />,   accent: "text-emerald-500" },
-  { id: "backup", label: "Backup & Restore", icon: <Database className="w-4 h-4" />, accent: "text-blue-500" },
-  { id: "danger", label: "Danger Zone",   icon: <ShieldAlert className="w-4 h-4" />, accent: "text-red-400" },
+const TABS: { id: TabId; label: string; iconSrc: string; accent: string }[] = [
+  { id: "shops",  label: "Shop Branches", iconSrc: "/icons/settings/shops.png", accent: "text-primary" },
+  { id: "tax",    label: "GST / Tax",     iconSrc: "/icons/settings/tax.png", accent: "text-emerald-500" },
+  { id: "backup", label: "Backup & Restore", iconSrc: "/icons/settings/backup.png", accent: "text-blue-500" },
+  { id: "danger", label: "Danger Zone",   iconSrc: "/icons/settings/danger.png", accent: "text-red-400" },
 ];
 
 export default function Settings() {
@@ -739,7 +735,10 @@ export default function Settings() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="space-y-1">
           <h1 className="text-xl font-black text-foreground tracking-tight flex items-center gap-2">
-            <SettingsIcon className="w-5 h-5 text-primary" /> Settings
+            <span className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center p-1">
+              <img src="/icons/settings/gear.png?v=1" alt="" className="w-full h-full object-contain" draggable={false} />
+            </span>
+            Settings
           </h1>
           <p className="text-xs text-muted-foreground">Manage your shop, tax rules, backups, and system configuration.</p>
         </div>
@@ -763,7 +762,18 @@ export default function Settings() {
                 : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
             }`}
           >
-            {tab.icon}
+            <span
+              className={`w-5 h-5 rounded-md flex items-center justify-center p-0.5 ${
+                activeTab === tab.id ? "bg-white/20" : "bg-secondary"
+              }`}
+            >
+              <img
+                src={`${tab.iconSrc}?v=1`}
+                alt=""
+                className="w-full h-full object-contain"
+                draggable={false}
+              />
+            </span>
             {tab.label}
           </button>
         ))}
