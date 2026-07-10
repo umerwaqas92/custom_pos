@@ -300,8 +300,12 @@ router.get("/", protect, async (req, res) => {
       orderBy: { saleDate: "desc" }
     });
     return res.json(sales);
-  } catch (error) {
-    return res.status(500).json({ error: "Failed to load sales list." });
+  } catch (error: any) {
+    console.error("Failed to load sales list:", error);
+    return res.status(500).json({
+      error: "Failed to load sales list.",
+      detail: error?.message || String(error)
+    });
   }
 });
 

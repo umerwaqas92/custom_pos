@@ -1,5 +1,6 @@
 import path from "path";
 import fs from "fs";
+import { execFileSync } from "child_process";
 import prisma from "./db";
 const AdmZip = require("adm-zip");
 
@@ -199,6 +200,49 @@ export async function restoreFromZipFile(zipPath: string): Promise<void> {
     } catch (err) {
       console.error("[Backup] Failed to reconnect after restore:", err);
       throw new Error("Restore wrote files but database reconnect failed. Restart the server.");
+    }
+  }
+
+  // Older backups may predate newer Prisma migrations (e.g. SaleReturn).
+  // Apply pending migrations so the app schema matches the restored DB.
+  await applyPendingMigrations();
+}
+
+/**
+ * Run `prisma migrate deploy` against the restored database.
+ * Safe if already up to date; required when restoring older backups.
+ */
+export async function applyPendingMigrations(): Promise<void> {
+  const backendRoot = BACKEND_ROOT;
+  const prismaBin = path.join(backendRoot, "node_modules", ".bin", "prisma");
+  if (!fs.existsSync(prismaBin)) {
+    console.warn("[Backup] prisma binary not found; skip migrate deploy");
+    return;
+  }
+
+  try {
+    await prisma.$disconnect();
+  } catch {
+    /* ignore */
+  }
+
+  try {
+    const out = execFileSync(prismaBin, ["migrate", "deploy"], {
+      cwd: backendRoot,
+      encoding: "utf8",
+      env: process.env,
+      timeout: 120000
+    });
+    console.log("[Backup] migrate deploy after restore:\n", out);
+  } catch (err: any) {
+    console.error("[Backup] migrate deploy failed after restore:", err?.message || err);
+    // Reconnect even if migrate failed so API still responds
+  } finally {
+    try {
+      await prisma.$connect();
+      await prisma.$queryRawUnsafe("SELECT 1");
+    } catch (err) {
+      console.error("[Backup] reconnect after migrate failed:", err);
     }
   }
 }
