@@ -5,10 +5,7 @@ import PortalModal from "../components/PortalModal";
 import {
   Plus,
   Coins,
-  Truck,
-  Wallet,
   ArrowRightLeft,
-  BarChart3,
   CalendarCheck,
   TrendingUp,
   TrendingDown,
@@ -297,13 +294,13 @@ export default function Accounting() {
     }
   };
 
-  const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
-    { key: "EXPENSES", label: "Expenses", icon: <Coins className="w-4 h-4" /> },
-    { key: "PURCHASES", label: "Purchases", icon: <Truck className="w-4 h-4" /> },
-    { key: "BANKS", label: "Bank Accounts", icon: <Landmark className="w-4 h-4" /> },
-    { key: "CASHBOOK", label: "Cash Book", icon: <CircleDollarSign className="w-4 h-4" /> },
-    { key: "PNL", label: "Profit & Loss", icon: <BarChart3 className="w-4 h-4" /> },
-    { key: "DAILY_CLOSING", label: "Daily Closing", icon: <CalendarCheck className="w-4 h-4" /> },
+  const tabs: { key: Tab; label: string; iconSrc: string }[] = [
+    { key: "EXPENSES", label: "Expenses", iconSrc: "/icons/accounting/expenses.png" },
+    { key: "PURCHASES", label: "Purchases", iconSrc: "/icons/accounting/purchases.png" },
+    { key: "BANKS", label: "Bank Accounts", iconSrc: "/icons/accounting/banks.png" },
+    { key: "CASHBOOK", label: "Cash Book", iconSrc: "/icons/accounting/cashbook.png" },
+    { key: "PNL", label: "Profit & Loss", iconSrc: "/icons/accounting/pnl.png" },
+    { key: "DAILY_CLOSING", label: "Daily Closing", iconSrc: "/icons/accounting/daily-closing.png" },
   ];
 
   return (
@@ -320,7 +317,19 @@ export default function Accounting() {
                 activeTab === t.key ? "bg-primary text-white shadow" : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {t.icon} {t.label}
+              <span
+                className={`w-5 h-5 rounded-md flex items-center justify-center p-0.5 ${
+                  activeTab === t.key ? "bg-white/20" : "bg-card/80"
+                }`}
+              >
+                <img
+                  src={`${t.iconSrc}?v=1`}
+                  alt=""
+                  className="w-full h-full object-contain"
+                  draggable={false}
+                />
+              </span>
+              {t.label}
             </button>
           ))}
         </div>
