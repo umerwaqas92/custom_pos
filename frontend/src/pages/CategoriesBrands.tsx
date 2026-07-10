@@ -251,7 +251,10 @@ export default function CategoriesBrands() {
               activeTab === "CATEGORIES" ? "bg-primary text-white shadow" : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Grid className="w-4 h-4" /> Product Categories
+            <span className={`w-4 h-4 rounded flex items-center justify-center p-0.5 ${activeTab === "CATEGORIES" ? "bg-white/20" : "bg-card/60"}`}>
+              <img src="/icons/categories-brands/categories.png?v=1" alt="" className="w-full h-full object-contain" draggable={false} />
+            </span>
+            Product Categories
           </button>
           <button
             onClick={() => { setActiveTab("BRANDS"); setSearch(""); }}
@@ -259,7 +262,10 @@ export default function CategoriesBrands() {
               activeTab === "BRANDS" ? "bg-primary text-white shadow" : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Tag className="w-4 h-4" /> Product Brands
+            <span className={`w-4 h-4 rounded flex items-center justify-center p-0.5 ${activeTab === "BRANDS" ? "bg-white/20" : "bg-card/60"}`}>
+              <img src="/icons/categories-brands/brands.png?v=1" alt="" className="w-full h-full object-contain" draggable={false} />
+            </span>
+            Product Brands
           </button>
         </div>
 
@@ -269,14 +275,14 @@ export default function CategoriesBrands() {
               onClick={() => setCatOpen(true)}
               className="bg-primary hover:bg-primary/95 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition"
             >
-              <Plus className="w-4 h-4" /> Add Category
+              <img src="/icons/categories-brands/add.png?v=1" alt="" className="w-4 h-4 object-contain brightness-0 invert" draggable={false} /> Add Category
             </button>
           ) : (
             <button
               onClick={() => setBrandOpen(true)}
               className="bg-primary hover:bg-primary/95 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition"
             >
-              <Plus className="w-4 h-4" /> Add Brand
+              <img src="/icons/categories-brands/add.png?v=1" alt="" className="w-4 h-4 object-contain brightness-0 invert" draggable={false} /> Add Brand
             </button>
           )}
           <button
@@ -292,13 +298,16 @@ export default function CategoriesBrands() {
       <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
 
         {/* Search */}
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder={`Search active ${activeTab === "CATEGORIES" ? "categories" : "brands"}...`}
-          className="w-full bg-secondary text-foreground text-sm border border-border px-4 py-2.5 rounded-xl focus:outline-none"
-        />
+        <div className="relative">
+          <img src="/icons/categories-brands/search.png?v=1" alt="" className="w-4 h-4 object-contain absolute left-3 top-3 opacity-70" draggable={false} />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={`Search active ${activeTab === "CATEGORIES" ? "categories" : "brands"}...`}
+            className="w-full bg-secondary text-foreground text-sm border border-border pl-9 pr-4 py-2.5 rounded-xl focus:outline-none"
+          />
+        </div>
 
         {/* Bulk action bar */}
         {selectedIds.size > 0 && (
@@ -308,7 +317,7 @@ export default function CategoriesBrands() {
               onClick={handleBulkDelete}
               className="bg-red-500 hover:bg-red-600 text-white text-xs font-bold px-4 py-1.5 rounded-lg flex items-center gap-1 transition"
             >
-              <Trash2 className="w-3.5 h-3.5" /> Delete Selected
+              <img src="/icons/categories-brands/delete.png?v=1" alt="" className="w-3.5 h-3.5 object-contain brightness-0 invert" draggable={false} /> Delete Selected
             </button>
             <button
               onClick={() => setSelectedIds(new Set())}
@@ -366,14 +375,14 @@ export default function CategoriesBrands() {
                           className="p-1 text-muted-foreground hover:text-primary transition"
                           title="Edit"
                         >
-                          <Edit className="w-4 h-4" />
+                          <img src="/icons/categories-brands/edit.png?v=1" alt="" className="w-4 h-4 object-contain" draggable={false} />
                         </button>
                         <button
                           onClick={() => handleDelete(activeTab === "CATEGORIES" ? "CATEGORY" : "BRAND", item.id, item.name)}
                           className="p-1 text-muted-foreground hover:text-destructive transition"
                           title="Delete"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <img src="/icons/categories-brands/delete.png?v=1" alt="" className="w-4 h-4 object-contain" draggable={false} />
                         </button>
                       </div>
                     </td>
