@@ -643,10 +643,19 @@ router.post("/daily-closings", protect, restrictTo("OWNER", "MANAGER"), async (r
       _sum: { amount: true }
     });
 
-    // Fetch returns for the day (sales with paymentStatus UNPAID that were returns)
+    // Fetch returns/refunds for the day
+    const returnsAgg = await prisma.saleReturn.aggregate({
+      where: {
+        status: "COMPLETED",
+        returnDate: { gte: startOfDay, lte: endOfDay },
+        ...(branchId ? { sale: { branchId: String(branchId) } } : {})
+      },
+      _sum: { refundAmount: true }
+    });
+
     const totalSales = salesAgg._sum.paidAmount || 0;
     const totalExpenses = expenseAgg._sum.amount || 0;
-    const totalReturns = 0; // Returns tracking can be enhanced later
+    const totalReturns = returnsAgg._sum.refundAmount || 0;
 
     const ob = Number(openingBalance) || 0;
     const ci = Number(cashIn) || 0;
@@ -706,6 +715,16 @@ router.get("/daily-closings/preview", protect, restrictTo("OWNER", "MANAGER"), a
       _sum: { amount: true }
     });
 
+    const returnsAgg = await prisma.saleReturn.aggregate({
+      where: {
+        status: "COMPLETED",
+        returnDate: { gte: startOfDay, lte: endOfDay },
+        ...(branchFilter ? { sale: { branchId: branchFilter } } : {})
+      },
+      _sum: { refundAmount: true },
+      _count: { id: true }
+    });
+
     // Previous closing's closing date to determine opening balance
     const prevClosing = await prisma.dailyClosing.findFirst({
       where: { closingDate: { lt: startOfDay } },
@@ -720,7 +739,8 @@ router.get("/daily-closings/preview", protect, restrictTo("OWNER", "MANAGER"), a
       totalSales: salesAgg._sum.paidAmount || 0,
       totalSalesCount: salesAgg._count.id || 0,
       totalExpenses: expenseAgg._sum.amount || 0,
-      totalReturns: 0
+      totalReturns: returnsAgg._sum.refundAmount || 0,
+      totalReturnsCount: returnsAgg._count.id || 0
     });
   } catch (error) {
     return res.status(500).json({ error: "Failed to generate closing preview." });

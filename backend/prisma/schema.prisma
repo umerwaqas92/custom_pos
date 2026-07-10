@@ -21,6 +21,7 @@ model User {
   sales        Sale[]
   repairJobs   RepairJob[]
   activities   ActivityLog[]
+  saleReturns  SaleReturn[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 }
@@ -73,6 +74,7 @@ model Product {
   purchaseItems  PurchaseItem[]
   saleItems      SaleItem[]
   stockMovements StockMovement[]
+  returnItems    SaleReturnItem[]
 
   @@index([categoryId])
   @@index([brandId])
@@ -192,14 +194,17 @@ model Sale {
   paidAmount     Float
   paymentMethod  String          // 'CASH', 'CARD', 'MOBILE', 'SPLIT', 'CREDIT'
   paymentStatus  String          // 'PAID', 'PARTIAL', 'UNPAID'
+  returnStatus   String          @default("NONE") // 'NONE', 'PARTIAL', 'FULL'
   notes          String?
   items          SaleItem[]
   warrantyClaims WarrantyClaim[]
+  returns        SaleReturn[]
 
   @@index([customerId])
   @@index([cashierId])
   @@index([branchId])
   @@index([saleDate])
+  @@index([returnStatus])
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   emiDetails     SaleEmi?
@@ -438,4 +443,43 @@ model SystemSetting {
   value     String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model SaleReturn {
+  id            String           @id @default(uuid())
+  saleId        String
+  sale          Sale             @relation(fields: [saleId], references: [id])
+  processedById String
+  processedBy   User             @relation(fields: [processedById], references: [id])
+  returnDate    DateTime         @default(now())
+  refundAmount  Float
+  refundMethod  String           // 'CASH', 'CARD', 'MOBILE', 'CREDIT_ADJUST'
+  reason        String?
+  notes         String?
+  status        String           @default("COMPLETED") // 'COMPLETED', 'CANCELLED'
+  items         SaleReturnItem[]
+
+  @@index([saleId])
+  @@index([processedById])
+  @@index([returnDate])
+  @@index([status])
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+}
+
+model SaleReturnItem {
+  id           String     @id @default(uuid())
+  saleReturnId String
+  saleReturn   SaleReturn @relation(fields: [saleReturnId], references: [id], onDelete: Cascade)
+  saleItemId   String?
+  productId    String
+  product      Product    @relation(fields: [productId], references: [id])
+  quantity     Int
+  unitRefund   Float
+  totalRefund  Float
+  reason       String?
+
+  @@index([saleReturnId])
+  @@index([productId])
+  @@index([saleItemId])
 }

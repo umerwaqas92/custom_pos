@@ -291,13 +291,443 @@ router.get("/", protect, async (req, res) => {
         customer: true,
         cashier: true,
         items: { include: { product: true } },
-        emiDetails: { include: { installments: true } }
+        emiDetails: { include: { installments: true } },
+        returns: {
+          where: { status: "COMPLETED" },
+          include: { items: true }
+        }
       },
       orderBy: { saleDate: "desc" }
     });
     return res.json(sales);
   } catch (error) {
     return res.status(500).json({ error: "Failed to load sales list." });
+  }
+});
+
+// Map bank account type for refund method
+const refundMethodToAccountType: Record<string, string> = {
+  CASH: "CASH",
+  CARD: "BANK",
+  MOBILE: "MOBILE_WALLET"
+};
+
+// List all completed returns (must be before /:id)
+router.get("/returns", protect, async (req, res) => {
+  const { branchId, saleId } = req.query;
+  try {
+    const where: any = { status: "COMPLETED" };
+    if (saleId) where.saleId = String(saleId);
+    if (branchId) where.sale = { branchId: String(branchId) };
+
+    const returns = await prisma.saleReturn.findMany({
+      where,
+      include: {
+        processedBy: { select: { id: true, name: true, username: true } },
+        items: { include: { product: { select: { id: true, name: true, sku: true } } } },
+        sale: {
+          include: {
+            customer: true,
+            branch: true,
+            cashier: { select: { id: true, name: true } }
+          }
+        }
+      },
+      orderBy: { returnDate: "desc" }
+    });
+    return res.json(returns);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Failed to load returns list." });
+  }
+});
+
+// Get single return voucher
+router.get("/returns/:returnId", protect, async (req, res) => {
+  try {
+    const saleReturn = await prisma.saleReturn.findUnique({
+      where: { id: req.params.returnId },
+      include: {
+        processedBy: { select: { id: true, name: true, username: true } },
+        items: { include: { product: true } },
+        sale: {
+          include: {
+            customer: true,
+            branch: true,
+            cashier: { select: { id: true, name: true } },
+            items: { include: { product: true } }
+          }
+        }
+      }
+    });
+    if (!saleReturn) return res.status(404).json({ error: "Return record not found." });
+    return res.json(saleReturn);
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to load return detail." });
+  }
+});
+
+// Sale return eligibility preview (returnable qty remaining per line)
+router.get("/:id/returnable", protect, async (req, res) => {
+  try {
+    const sale = await prisma.sale.findUnique({
+      where: { id: req.params.id },
+      include: {
+        customer: true,
+        branch: true,
+        cashier: { select: { id: true, name: true } },
+        items: { include: { product: true } },
+        returns: {
+          where: { status: "COMPLETED" },
+          include: { items: true }
+        },
+        emiDetails: { include: { installments: true } }
+      }
+    });
+    if (!sale) return res.status(404).json({ error: "Sale not found." });
+
+    const returnedByProduct = new Map<string, number>();
+    let alreadyRefunded = 0;
+    for (const ret of sale.returns) {
+      alreadyRefunded += ret.refundAmount;
+      for (const ri of ret.items) {
+        returnedByProduct.set(ri.productId, (returnedByProduct.get(ri.productId) || 0) + ri.quantity);
+      }
+    }
+
+    const itemsSum = sale.items.reduce((s, i) => s + i.totalPrice, 0) || 1;
+    const lines = sale.items.map((item) => {
+      const alreadyReturned = returnedByProduct.get(item.productId) || 0;
+      const remainingQty = Math.max(0, item.quantity - alreadyReturned);
+      const lineShareOfPayable = (item.totalPrice / itemsSum) * sale.payableAmount;
+      const unitRefund = item.quantity > 0 ? lineShareOfPayable / item.quantity : 0;
+      return {
+        saleItemId: item.id,
+        productId: item.productId,
+        product: item.product,
+        originalQty: item.quantity,
+        alreadyReturned,
+        remainingQty,
+        unitPrice: item.unitPrice,
+        unitRefund: roundMoney(unitRefund),
+        lineTotal: item.totalPrice,
+        serialNumber: item.serialNumber,
+        imei: item.imei
+      };
+    });
+
+    return res.json({
+      sale: {
+        id: sale.id,
+        saleDate: sale.saleDate,
+        payableAmount: sale.payableAmount,
+        paidAmount: sale.paidAmount,
+        paymentMethod: sale.paymentMethod,
+        paymentStatus: sale.paymentStatus,
+        returnStatus: sale.returnStatus,
+        discountAmount: sale.discountAmount,
+        taxAmount: sale.taxAmount,
+        totalAmount: sale.totalAmount,
+        customer: sale.customer,
+        branch: sale.branch,
+        cashier: sale.cashier,
+        emiDetails: sale.emiDetails
+      },
+      alreadyRefunded: roundMoney(alreadyRefunded),
+      maxRefundable: roundMoney(Math.max(0, sale.payableAmount - alreadyRefunded)),
+      lines
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Failed to load returnable items." });
+  }
+});
+
+// Process Returns & Refund
+router.post("/returns", protect, async (req: AuthenticatedRequest, res: Response) => {
+  const {
+    saleId,
+    items, // [{ saleItemId?, productId, quantity, reason? }]
+    refundMethod, // CASH | CARD | MOBILE | CREDIT_ADJUST
+    reason,
+    notes
+  } = req.body;
+
+  if (!saleId || !items || !Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: "Missing refund parameters (saleId and items required)." });
+  }
+
+  const processedById = req.user?.id;
+  if (!processedById) {
+    return res.status(401).json({ error: "Authenticated staff session required." });
+  }
+
+  const allowedMethods = ["CASH", "CARD", "MOBILE", "CREDIT_ADJUST"];
+  const method = String(refundMethod || "CASH").toUpperCase();
+  if (!allowedMethods.includes(method)) {
+    return res.status(400).json({ error: "Invalid refund method." });
+  }
+
+  try {
+    const refundResult = await prisma.$transaction(async (tx) => {
+      const sale = await tx.sale.findUnique({
+        where: { id: saleId },
+        include: {
+          items: { include: { product: true } },
+          customer: true,
+          returns: {
+            where: { status: "COMPLETED" },
+            include: { items: true }
+          },
+          emiDetails: { include: { installments: true } }
+        }
+      });
+
+      if (!sale) throw new Error("Original sale record not found.");
+      if (sale.returnStatus === "FULL") throw new Error("This invoice has already been fully returned.");
+
+      // Aggregate previously returned quantities per product
+      const returnedByProduct = new Map<string, number>();
+      let alreadyRefunded = 0;
+      for (const ret of sale.returns) {
+        alreadyRefunded += ret.refundAmount;
+        for (const ri of ret.items) {
+          returnedByProduct.set(ri.productId, (returnedByProduct.get(ri.productId) || 0) + ri.quantity);
+        }
+      }
+
+      const itemsSum = sale.items.reduce((s, i) => s + i.totalPrice, 0) || 1;
+      const returnItemsToCreate: {
+        saleItemId: string | null;
+        productId: string;
+        quantity: number;
+        unitRefund: number;
+        totalRefund: number;
+        reason: string | null;
+      }[] = [];
+
+      let refundValue = 0;
+
+      for (const item of items) {
+        const qty = Number(item.quantity);
+        if (!item.productId || !Number.isFinite(qty) || qty <= 0) {
+          throw new Error("Each return line needs a valid productId and quantity.");
+        }
+
+        const originalItem = sale.items.find(
+          (si) => si.productId === item.productId || (item.saleItemId && si.id === item.saleItemId)
+        );
+        if (!originalItem) {
+          throw new Error(`Product was not part of this sale.`);
+        }
+
+        const alreadyReturned = returnedByProduct.get(originalItem.productId) || 0;
+        const remainingQty = originalItem.quantity - alreadyReturned;
+        if (qty > remainingQty) {
+          throw new Error(
+            `Cannot return ${qty} of ${originalItem.product?.name || originalItem.productId}. Only ${remainingQty} remaining.`
+          );
+        }
+
+        const lineShareOfPayable = (originalItem.totalPrice / itemsSum) * sale.payableAmount;
+        const unitRefund = originalItem.quantity > 0 ? lineShareOfPayable / originalItem.quantity : 0;
+        const lineRefund = roundMoney(unitRefund * qty);
+
+        refundValue += lineRefund;
+        returnedByProduct.set(originalItem.productId, alreadyReturned + qty);
+
+        returnItemsToCreate.push({
+          saleItemId: originalItem.id,
+          productId: originalItem.productId,
+          quantity: qty,
+          unitRefund: roundMoney(unitRefund),
+          totalRefund: lineRefund,
+          reason: item.reason || reason || null
+        });
+
+        // Restore stock (upsert branch stock if missing)
+        const branchStock = await tx.branchStock.findUnique({
+          where: { branchId_productId: { branchId: sale.branchId, productId: originalItem.productId } }
+        });
+        if (branchStock) {
+          await tx.branchStock.update({
+            where: { branchId_productId: { branchId: sale.branchId, productId: originalItem.productId } },
+            data: { quantity: { increment: qty } }
+          });
+        } else {
+          await tx.branchStock.create({
+            data: { branchId: sale.branchId, productId: originalItem.productId, quantity: qty }
+          });
+        }
+
+        await tx.product.update({
+          where: { id: originalItem.productId },
+          data: { stockQuantity: { increment: qty } }
+        });
+
+        await tx.stockMovement.create({
+          data: {
+            productId: originalItem.productId,
+            quantity: qty,
+            type: "RETURN",
+            branchId: sale.branchId,
+            referenceId: saleId,
+            notes: `Customer return: ${item.reason || reason || "No reason provided"}`
+          }
+        });
+      }
+
+      refundValue = roundMoney(refundValue);
+      const maxRefundable = roundMoney(Math.max(0, sale.payableAmount - alreadyRefunded));
+      if (refundValue > maxRefundable + 0.01) {
+        throw new Error(`Refund amount exceeds remaining refundable balance (Rs. ${maxRefundable.toFixed(2)}).`);
+      }
+
+      // Credit still owed on this invoice (unpaid portion)
+      const priorDebt = roundMoney(Math.max(0, sale.payableAmount - sale.paidAmount));
+      // Portion of this return that clears unpaid balance first
+      const creditPortion = roundMoney(Math.min(refundValue, priorDebt));
+      const cashPortion = roundMoney(Math.max(0, refundValue - creditPortion));
+
+      // Customer credit balance: reduce debt for unpaid portion; CREDIT_ADJUST can also cover cash portion
+      if (sale.customerId && (creditPortion > 0 || method === "CREDIT_ADJUST")) {
+        const creditReduce =
+          method === "CREDIT_ADJUST" ? refundValue : creditPortion;
+        if (creditReduce > 0) {
+          const customer = await tx.customer.findUnique({ where: { id: sale.customerId } });
+          if (customer) {
+            await tx.customer.update({
+              where: { id: sale.customerId },
+              data: {
+                creditBalance: Math.max(0, roundMoney(customer.creditBalance - creditReduce))
+              }
+            });
+          }
+        }
+      }
+
+      // Cash / card / mobile refund out of till or bank (only the paid portion)
+      const cashOutAmount = method === "CREDIT_ADJUST" ? 0 : cashPortion;
+      if (cashOutAmount > 0) {
+        const accountType = refundMethodToAccountType[method] || "CASH";
+        let bankAccount = await tx.bankAccount.findFirst({
+          where: { type: accountType, isActive: true }
+        });
+        if (!bankAccount && accountType !== "CASH") {
+          bankAccount = await tx.bankAccount.findFirst({
+            where: { type: "CASH", isActive: true }
+          });
+        }
+        if (bankAccount) {
+          await tx.transaction.create({
+            data: {
+              bankAccountId: bankAccount.id,
+              type: "EXPENSE",
+              category: "SALE",
+              amount: cashOutAmount,
+              referenceType: "SALE",
+              referenceId: saleId,
+              description: `Refund for return on Invoice #${saleId.substring(0, 8)}`,
+              branchId: sale.branchId,
+              createdBy: processedById
+            }
+          });
+          await tx.bankAccount.update({
+            where: { id: bankAccount.id },
+            data: { balance: { decrement: cashOutAmount } }
+          });
+        }
+      }
+
+      // Create return voucher
+      const saleReturn = await tx.saleReturn.create({
+        data: {
+          saleId,
+          processedById,
+          refundAmount: refundValue,
+          refundMethod: method,
+          reason: reason || null,
+          notes: notes || null,
+          status: "COMPLETED",
+          items: { create: returnItemsToCreate }
+        },
+        include: {
+          items: { include: { product: true } },
+          processedBy: { select: { id: true, name: true } },
+          sale: {
+            include: {
+              customer: true,
+              branch: true
+            }
+          }
+        }
+      });
+
+      // Update return status on sale
+      const allFullyReturned = sale.items.every((si) => {
+        const retQty = returnedByProduct.get(si.productId) || 0;
+        return retQty >= si.quantity;
+      });
+      const anyReturned = [...returnedByProduct.values()].some((q) => q > 0);
+      const newReturnStatus = allFullyReturned ? "FULL" : anyReturned ? "PARTIAL" : "NONE";
+
+      // Adjust paidAmount downward for cash refunded portion so history stays coherent
+      const newPaidAmount = roundMoney(Math.max(0, sale.paidAmount - cashOutAmount));
+      let newPaymentStatus = sale.paymentStatus;
+      if (newReturnStatus === "FULL") {
+        newPaymentStatus = "PAID"; // fully settled via return
+      } else if (newPaidAmount <= 0 && priorDebt - creditPortion > 0) {
+        newPaymentStatus = "UNPAID";
+      } else if (newPaidAmount < sale.payableAmount - alreadyRefunded - refundValue) {
+        newPaymentStatus = "PARTIAL";
+      }
+
+      await tx.sale.update({
+        where: { id: saleId },
+        data: {
+          returnStatus: newReturnStatus,
+          paidAmount: newPaidAmount,
+          paymentStatus: newPaymentStatus,
+          notes: sale.notes
+            ? `${sale.notes}\n[Return ${saleReturn.id.substring(0, 8)}] Rs.${refundValue.toFixed(2)} via ${method}`
+            : `[Return ${saleReturn.id.substring(0, 8)}] Rs.${refundValue.toFixed(2)} via ${method}`
+        }
+      });
+
+      // Full return on EMI: cancel remaining unpaid installments
+      if (newReturnStatus === "FULL" && sale.emiDetails) {
+        await tx.emiInstallment.updateMany({
+          where: { saleEmiId: sale.emiDetails.id, status: { not: "PAID" } },
+          data: { status: "PAID", amountPaid: 0, paidDate: new Date() }
+        });
+        // Mark cancelled-style via COMPLETED after full return
+        await tx.saleEmi.update({
+          where: { id: sale.emiDetails.id },
+          data: { status: "COMPLETED" }
+        });
+      }
+
+      // Activity log
+      await tx.activityLog.create({
+        data: {
+          userId: processedById,
+          action: "SALE_RETURN",
+          details: `Processed return Rs.${refundValue.toFixed(2)} on sale ${saleId.substring(0, 8)} via ${method}`
+        }
+      });
+
+      return {
+        ...saleReturn,
+        cashRefunded: cashOutAmount,
+        creditAdjusted: method === "CREDIT_ADJUST" ? refundValue : creditPortion
+      };
+    });
+
+    invalidateCache("reports:");
+    return res.status(201).json(refundResult);
+  } catch (error: any) {
+    console.error(error);
+    return res.status(400).json({ error: error.message || "Failed to process return." });
   }
 });
 
@@ -316,7 +746,15 @@ router.get("/:id", protect, async (req, res) => {
             product: { include: { category: true, brand: true } }
           }
         },
-        emiDetails: { include: { installments: true } }
+        emiDetails: { include: { installments: true } },
+        returns: {
+          where: { status: "COMPLETED" },
+          include: {
+            items: { include: { product: true } },
+            processedBy: { select: { id: true, name: true } }
+          },
+          orderBy: { returnDate: "desc" }
+        }
       }
     });
 
@@ -324,86 +762,6 @@ router.get("/:id", protect, async (req, res) => {
     return res.json(sale);
   } catch (error) {
     return res.status(500).json({ error: "Failed to load sale receipt." });
-  }
-});
-
-// Process Returns & Refund
-router.post("/returns", protect, async (req, res) => {
-  const { saleId, items } = req.body; // items: array of { productId, quantity, reason }
-
-  if (!saleId || !items || items.length === 0) {
-    return res.status(400).json({ error: "Missing refund parameters." });
-  }
-
-  try {
-    const refundResult = await prisma.$transaction(async (tx) => {
-      const sale = await tx.sale.findUnique({
-        where: { id: saleId },
-        include: { items: true, customer: true }
-      });
-
-      if (!sale) throw new Error("Original sale record not found.");
-
-      let refundValue = 0;
-
-      for (const item of items) {
-        const originalItem = sale.items.find(si => si.productId === item.productId);
-        if (!originalItem) throw new Error(`Product ${item.productId} was not part of this sale.`);
-
-        if (originalItem.quantity < item.quantity) {
-          throw new Error("Cannot return more quantity than originally purchased.");
-        }
-
-        // Calculate proportional refund amount
-        const itemRefundPrice = (originalItem.totalPrice / originalItem.quantity) * item.quantity;
-        refundValue += itemRefundPrice;
-
-        // Restore stock to branch
-        await tx.branchStock.update({
-          where: { branchId_productId: { branchId: sale.branchId, productId: item.productId } },
-          data: { quantity: { increment: item.quantity } }
-        });
-
-        // Restore aggregated stock
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stockQuantity: { increment: item.quantity } }
-        });
-
-        // Log movement
-        await tx.stockMovement.create({
-          data: {
-            productId: item.productId,
-            quantity: item.quantity,
-            type: "RETURN",
-            branchId: sale.branchId,
-            referenceId: saleId,
-            notes: `Customer return: ${item.reason || "No reason provided"}`
-          }
-        });
-      }
-
-      // Adjust customer credit if purchased on credit or reduce paid amount
-      if (sale.customerId && sale.paymentMethod === "CREDIT") {
-        const customer = await tx.customer.findUnique({ where: { id: sale.customerId } });
-        if (customer) {
-          const newCreditBal = Math.max(0, customer.creditBalance - refundValue);
-          await tx.customer.update({
-            where: { id: sale.customerId },
-            data: { creditBalance: newCreditBal }
-          });
-        }
-      }
-
-      // Log activity
-      return { success: true, refundedAmount: refundValue };
-    });
-
-    invalidateCache("reports:");
-    return res.json(refundResult);
-  } catch (error: any) {
-    console.error(error);
-    return res.status(400).json({ error: error.message || "Failed to process return." });
   }
 });
 

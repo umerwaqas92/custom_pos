@@ -1,36 +1,82 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { useStore } from "../store/useStore";
 import PortalModal from "../components/PortalModal";
 import {
   Search,
   Calendar,
-  Filter,
   Eye,
   RefreshCw,
   X,
   CheckCircle,
   Receipt,
-  FileText
+  FileText,
+  Undo2,
+  AlertTriangle
 } from "lucide-react";
+
+type ReturnLine = {
+  saleItemId: string;
+  productId: string;
+  product: { id: string; name: string; sku?: string };
+  originalQty: number;
+  alreadyReturned: number;
+  remainingQty: number;
+  unitPrice: number;
+  unitRefund: number;
+  lineTotal: number;
+  serialNumber?: string | null;
+  imei?: string | null;
+};
+
+type ReturnablePreview = {
+  sale: any;
+  alreadyRefunded: number;
+  maxRefundable: number;
+  lines: ReturnLine[];
+};
+
+const REFUND_METHODS = [
+  { id: "CASH", label: "Cash" },
+  { id: "CARD", label: "Bank / Card" },
+  { id: "MOBILE", label: "Mobile Wallet" },
+  { id: "CREDIT_ADJUST", label: "Credit Adjust" }
+];
 
 export default function SalesHistory() {
   const { addNotification } = useStore();
+  const [tab, setTab] = useState<"sales" | "returns">("sales");
   const [sales, setSales] = useState<any[]>([]);
+  const [returns, setReturns] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // Filters state
+  // Filters
   const [search, setSearch] = useState("");
+  const [returnSearch, setReturnSearch] = useState("");
   const [selectedBranch, setSelectedBranch] = useState("ALL");
   const [selectedCustomer, setSelectedCustomer] = useState("ALL");
-  const [dateFilter, setDateFilter] = useState("ALL"); // ALL, TODAY, 7_DAYS, 30_DAYS
+  const [dateFilter, setDateFilter] = useState("ALL");
 
-  // Selected sale for receipt display
+  // Receipt
   const [activeSale, setActiveSale] = useState<any | null>(null);
   const [receiptOpen, setReceiptOpen] = useState(false);
 
+  // Return dialog — tick items only (full remaining qty, no count steppers)
+  const [returnOpen, setReturnOpen] = useState(false);
+  const [preview, setPreview] = useState<ReturnablePreview | null>(null);
+  const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
+  const [refundMethod, setRefundMethod] = useState("CASH");
+  const [reason, setReason] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  // Return voucher detail
+  const [activeReturn, setActiveReturn] = useState<any | null>(null);
+  const [returnDetailOpen, setReturnDetailOpen] = useState(false);
+
   const loadData = async () => {
+    setLoading(true);
     try {
       const [salesRes, branchRes, custRes] = await Promise.all([
         axios.get("/api/sales"),
@@ -40,22 +86,145 @@ export default function SalesHistory() {
       setSales(salesRes.data);
       setBranches(branchRes.data);
       setCustomers(custRes.data);
-    } catch (err) {
+    } catch {
       addNotification("Failed to load sales history records.", "warning");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadReturns = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get("/api/sales/returns");
+      setReturns(res.data);
+    } catch {
+      addNotification("Failed to load return history.", "warning");
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (tab === "sales") loadData();
+    else loadReturns();
+  }, [tab]);
 
   const handleOpenReceipt = async (saleId: string) => {
     try {
       const res = await axios.get(`/api/sales/${saleId}`);
       setActiveSale(res.data);
       setReceiptOpen(true);
-    } catch (err) {
+    } catch {
       addNotification("Failed to load invoice receipt detail.", "warning");
+    }
+  };
+
+  const openReturnDialog = async (saleId: string) => {
+    try {
+      const res = await axios.get(`/api/sales/${saleId}/returnable`);
+      const data: ReturnablePreview = res.data;
+      const returnable = data.lines.filter((l) => l.remainingQty > 0);
+      if (returnable.length === 0) {
+        addNotification("Nothing left to return on this invoice.", "warning");
+        return;
+      }
+      // Default: select all returnable lines
+      setSelectedProductIds(new Set(returnable.map((l) => l.productId)));
+      setPreview(data);
+      setRefundMethod(
+        data.sale.paymentMethod === "CREDIT" || data.sale.paymentMethod === "EMI"
+          ? "CREDIT_ADJUST"
+          : data.sale.paymentMethod === "CARD"
+            ? "CARD"
+            : data.sale.paymentMethod === "MOBILE"
+              ? "MOBILE"
+              : "CASH"
+      );
+      setReason("");
+      setReceiptOpen(false);
+      setReturnOpen(true);
+    } catch (err: any) {
+      addNotification(err.response?.data?.error || "Failed to open return.", "warning");
+    }
+  };
+
+  const toggleLine = (productId: string) => {
+    setSelectedProductIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(productId)) next.delete(productId);
+      else next.add(productId);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (!preview) return;
+    const returnable = preview.lines.filter((l) => l.remainingQty > 0);
+    if (selectedProductIds.size === returnable.length) {
+      setSelectedProductIds(new Set());
+    } else {
+      setSelectedProductIds(new Set(returnable.map((l) => l.productId)));
+    }
+  };
+
+  const estimatedRefund = useMemo(() => {
+    if (!preview) return 0;
+    return preview.lines.reduce((sum, line) => {
+      if (!selectedProductIds.has(line.productId) || line.remainingQty <= 0) return sum;
+      return sum + line.unitRefund * line.remainingQty;
+    }, 0);
+  }, [preview, selectedProductIds]);
+
+  const handleSubmitReturn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!preview) return;
+
+    // Return full remaining qty for every ticked line — no manual count
+    const items = preview.lines
+      .filter((l) => selectedProductIds.has(l.productId) && l.remainingQty > 0)
+      .map((l) => ({
+        saleItemId: l.saleItemId,
+        productId: l.productId,
+        quantity: l.remainingQty,
+        reason: reason || undefined
+      }));
+
+    if (items.length === 0) {
+      addNotification("Select at least one item to return.", "warning");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await axios.post("/api/sales/returns", {
+        saleId: preview.sale.id,
+        items,
+        refundMethod,
+        reason: reason || undefined
+      });
+      addNotification(
+        `Return processed — refund Rs. ${Number(res.data.refundAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+        "success"
+      );
+      setReturnOpen(false);
+      setPreview(null);
+      loadData();
+      loadReturns();
+    } catch (err: any) {
+      addNotification(err.response?.data?.error || "Failed to process return.", "warning");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const openReturnDetail = async (returnId: string) => {
+    try {
+      const res = await axios.get(`/api/sales/returns/${returnId}`);
+      setActiveReturn(res.data);
+      setReturnDetailOpen(true);
+    } catch {
+      addNotification("Failed to load return voucher.", "warning");
     }
   };
 
@@ -78,7 +247,6 @@ export default function SalesHistory() {
       // @ts-ignore
       const html2pdf = window.html2pdf;
       if (html2pdf) {
-        // Temporarily style for pdf contrast
         const oldStyle = element.style.cssText;
         element.style.display = "block";
         element.style.backgroundColor = "#ffffff";
@@ -117,9 +285,7 @@ export default function SalesHistory() {
     if (!receiptEl) return;
 
     let iframe = document.getElementById("receipt-print-iframe") as HTMLIFrameElement;
-    if (iframe) {
-      iframe.remove();
-    }
+    if (iframe) iframe.remove();
 
     iframe = document.createElement("iframe");
     iframe.id = "receipt-print-iframe";
@@ -134,7 +300,6 @@ export default function SalesHistory() {
     const doc = iframe.contentDocument || iframe.contentWindow?.document;
     if (!doc) return;
 
-    // Copy stylesheet links and styles to keep identical styles
     const styles = document.querySelectorAll("link[rel='stylesheet'], style");
     styles.forEach((s) => {
       doc.head.appendChild(s.cloneNode(true));
@@ -145,13 +310,9 @@ export default function SalesHistory() {
     doc.open();
     doc.write(`
       <html>
-        <head>
-          <title>Receipt</title>
-        </head>
+        <head><title>Receipt</title></head>
         <body style="background: white; color: black; font-family: monospace; padding: 10px; margin: 0;">
-          <div class="space-y-4">
-            ${content}
-          </div>
+          <div class="space-y-4">${content}</div>
           <script>
             window.focus();
             setTimeout(() => {
@@ -176,7 +337,6 @@ export default function SalesHistory() {
     const matchesBranch = selectedBranch === "ALL" || s.branchId === selectedBranch;
     const matchesCustomer = selectedCustomer === "ALL" || s.customerId === selectedCustomer;
 
-    // Date range filtering
     let matchesDate = true;
     const saleDate = new Date(s.saleDate);
     const now = new Date();
@@ -207,25 +367,74 @@ export default function SalesHistory() {
     EMI: "EMI Installment"
   };
 
+  const money = (n: number) =>
+    `Rs. ${Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  const returnableLines = preview?.lines.filter((l) => l.remainingQty > 0) || [];
+
+  const filteredReturns = useMemo(() => {
+    const q = returnSearch.toLowerCase().trim();
+    if (!q) return returns;
+    return returns.filter((r) => {
+      return (
+        r.id.toLowerCase().includes(q) ||
+        r.saleId.toLowerCase().includes(q) ||
+        (r.sale?.customer?.name || "").toLowerCase().includes(q) ||
+        (r.processedBy?.name || "").toLowerCase().includes(q) ||
+        (r.refundMethod || "").toLowerCase().includes(q) ||
+        (r.reason || "").toLowerCase().includes(q)
+      );
+    });
+  }, [returns, returnSearch]);
+
+  const refundMethodNames: Record<string, string> = {
+    CASH: "Cash",
+    CARD: "Bank / Card",
+    MOBILE: "Mobile Wallet",
+    CREDIT_ADJUST: "Credit Adjust"
+  };
+
   return (
     <div className="space-y-6 flex-1">
-      {/* Header Tabs */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card border border-border p-5 rounded-2xl">
         <div className="space-y-1">
           <h2 className="text-lg font-black text-foreground tracking-tight flex items-center gap-2">
             <FileText className="w-5 h-5 text-primary" /> Sales Transaction Log
           </h2>
-          <p className="text-xs text-muted-foreground">Search and review completed store invoices and checkout histories.</p>
+          <p className="text-xs text-muted-foreground">
+            Search invoices, print receipts, and process returns & refunds from here.
+          </p>
         </div>
         <button
-          onClick={loadData}
+          onClick={() => (tab === "sales" ? loadData() : loadReturns())}
           className="bg-secondary border border-border hover:bg-secondary/80 text-foreground text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-1.5 transition"
         >
-          <RefreshCw className="w-4 h-4" /> Refresh List
+          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Refresh List
         </button>
       </div>
 
-      {/* Filters and Search Bar */}
+      {/* Tabs */}
+      <div className="flex gap-2 bg-card border border-border p-1.5 rounded-2xl w-fit">
+        <button
+          onClick={() => setTab("sales")}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+            tab === "sales" ? "bg-primary text-white" : "text-muted-foreground hover:bg-secondary"
+          }`}
+        >
+          <Receipt className="w-3.5 h-3.5" /> Sales Invoices
+        </button>
+        <button
+          onClick={() => setTab("returns")}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+            tab === "returns" ? "bg-primary text-white" : "text-muted-foreground hover:bg-secondary"
+          }`}
+        >
+          <Undo2 className="w-3.5 h-3.5" /> Return History
+        </button>
+      </div>
+
+      {tab === "sales" ? (
+      <>
       <div className="bg-card border border-border rounded-2xl p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="relative col-span-1 sm:col-span-2 lg:col-span-1">
           <Search className="w-4 h-4 absolute left-3 top-3.5 text-muted-foreground" />
@@ -239,32 +448,40 @@ export default function SalesHistory() {
         </div>
 
         <div className="flex items-center gap-2 bg-secondary/50 border border-border p-2.5 rounded-xl">
-          <span className="text-[10px] font-bold uppercase text-muted-foreground pl-1.5">Branch Location:</span>
+          <span className="text-[10px] font-bold uppercase text-muted-foreground pl-1.5">Branch:</span>
           <select
             value={selectedBranch}
             onChange={(e) => setSelectedBranch(e.target.value)}
             className="flex-1 bg-transparent text-xs text-foreground focus:outline-none cursor-pointer"
           >
             <option value="ALL">All Branches</option>
-            {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+            {branches.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
           </select>
         </div>
 
         <div className="flex items-center gap-2 bg-secondary/50 border border-border p-2.5 rounded-xl">
-          <span className="text-[10px] font-bold uppercase text-muted-foreground pl-1.5">Customer Profile:</span>
+          <span className="text-[10px] font-bold uppercase text-muted-foreground pl-1.5">Customer:</span>
           <select
             value={selectedCustomer}
             onChange={(e) => setSelectedCustomer(e.target.value)}
             className="flex-1 bg-transparent text-xs text-foreground focus:outline-none cursor-pointer"
           >
             <option value="ALL">All Profiles</option>
-            {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            {customers.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
           </select>
         </div>
 
         <div className="flex items-center gap-2 bg-secondary/50 border border-border p-2.5 rounded-xl">
-          <Calendar className="w-3.5 h-3.5 text-muted-foreground pl-1.5" />
-          <span className="text-[10px] font-bold uppercase text-muted-foreground pl-1">Date Range:</span>
+          <Calendar className="w-3.5 h-3.5 text-muted-foreground ml-1.5" />
+          <span className="text-[10px] font-bold uppercase text-muted-foreground">Date:</span>
           <select
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
@@ -278,34 +495,32 @@ export default function SalesHistory() {
         </div>
       </div>
 
-      {/* Metrics Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-card border border-border rounded-2xl p-5 flex flex-col justify-between">
           <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Total Sales Sum</span>
           <span className="text-lg font-black text-foreground mt-1">
-            Rs. {filteredSales.reduce((acc, curr) => acc + curr.payableAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            Rs.{" "}
+            {filteredSales
+              .reduce((acc, curr) => acc + curr.payableAmount, 0)
+              .toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </span>
         </div>
         <div className="bg-card border border-border rounded-2xl p-5 flex flex-col justify-between">
           <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Total Orders Count</span>
-          <span className="text-lg font-black text-foreground mt-1">
-            {filteredSales.length} Invoices
-          </span>
+          <span className="text-lg font-black text-foreground mt-1">{filteredSales.length} Invoices</span>
         </div>
         <div className="bg-card border border-border rounded-2xl p-5 flex flex-col justify-between">
           <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Average Sale Value</span>
           <span className="text-lg font-black text-foreground mt-1">
-            Rs. {
-              (filteredSales.length > 0
-                ? (filteredSales.reduce((acc, curr) => acc + curr.payableAmount, 0) / filteredSales.length)
-                : 0
-              ).toLocaleString(undefined, { minimumFractionDigits: 2 })
-            }
+            Rs.{" "}
+            {(filteredSales.length > 0
+              ? filteredSales.reduce((acc, curr) => acc + curr.payableAmount, 0) / filteredSales.length
+              : 0
+            ).toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </span>
         </div>
       </div>
 
-      {/* Main Table */}
       <div className="bg-card border border-border rounded-2xl p-5">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
@@ -317,13 +532,14 @@ export default function SalesHistory() {
                 <th className="pb-3">Cashier</th>
                 <th className="pb-3 text-center">Payment Method</th>
                 <th className="pb-3 text-right">Grand Total</th>
+                <th className="pb-3 text-center">Return</th>
                 <th className="pb-3 text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/50">
               {filteredSales.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={8} className="py-8 text-center text-muted-foreground">
                     No sales matching filters or transactions logged yet.
                   </td>
                 </tr>
@@ -333,7 +549,11 @@ export default function SalesHistory() {
                     <td className="py-4 pl-2 font-mono text-muted-foreground truncate max-w-[120px]">{s.id}</td>
                     <td className="py-4 text-muted-foreground">{new Date(s.saleDate).toLocaleString()}</td>
                     <td className="py-4 font-semibold text-foreground">
-                      {s.customer ? s.customer.name : <span className="text-muted-foreground italic">Walk-in Customer</span>}
+                      {s.customer ? (
+                        s.customer.name
+                      ) : (
+                        <span className="text-muted-foreground italic">Walk-in Customer</span>
+                      )}
                     </td>
                     <td className="py-4 text-foreground">{s.cashier?.name || "-"}</td>
                     <td className="py-4 text-center">
@@ -345,11 +565,135 @@ export default function SalesHistory() {
                       Rs. {s.payableAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </td>
                     <td className="py-4 text-center">
+                      {s.returnStatus === "FULL" ? (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-rose-500/15 text-rose-400">
+                          Full
+                        </span>
+                      ) : s.returnStatus === "PARTIAL" ? (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-amber-500/15 text-amber-400">
+                          Partial
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-secondary text-muted-foreground">
+                          —
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-4 text-center">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          onClick={() => handleOpenReceipt(s.id)}
+                          className="bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition"
+                        >
+                          <Eye className="w-3.5 h-3.5" /> Details
+                        </button>
+                        {s.returnStatus !== "FULL" && (
+                          <button
+                            onClick={() => openReturnDialog(s.id)}
+                            className="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-[10px] font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition"
+                            title="Process return & refund"
+                          >
+                            <Undo2 className="w-3.5 h-3.5" /> Return
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      </>
+      ) : (
+      <>
+      {/* Return history filters + summary */}
+      <div className="bg-card border border-border rounded-2xl p-4">
+        <div className="relative">
+          <Search className="w-4 h-4 absolute left-3 top-3.5 text-muted-foreground" />
+          <input
+            type="text"
+            value={returnSearch}
+            onChange={(e) => setReturnSearch(e.target.value)}
+            placeholder="Search return ID, invoice, customer, staff, reason..."
+            className="w-full bg-secondary text-foreground text-xs border border-border pl-9 pr-4 py-3 rounded-xl focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-card border border-border rounded-2xl p-5">
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Returns Count</span>
+          <p className="text-lg font-black text-foreground mt-1">{filteredReturns.length}</p>
+        </div>
+        <div className="bg-card border border-border rounded-2xl p-5">
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Total Refunded</span>
+          <p className="text-lg font-black text-rose-400 mt-1">
+            {money(filteredReturns.reduce((a, r) => a + (r.refundAmount || 0), 0))}
+          </p>
+        </div>
+        <div className="bg-card border border-border rounded-2xl p-5">
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Items Returned</span>
+          <p className="text-lg font-black text-foreground mt-1">
+            {filteredReturns.reduce(
+              (a, r) => a + (r.items || []).reduce((b: number, i: any) => b + (i.quantity || 0), 0),
+              0
+            )}
+          </p>
+        </div>
+      </div>
+
+      <div className="bg-card border border-border rounded-2xl p-5">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr className="border-b border-border text-muted-foreground font-semibold">
+                <th className="pb-3 pl-2">Return ID</th>
+                <th className="pb-3">Date</th>
+                <th className="pb-3">Invoice</th>
+                <th className="pb-3">Customer</th>
+                <th className="pb-3">Staff</th>
+                <th className="pb-3 text-center">Method</th>
+                <th className="pb-3">Reason</th>
+                <th className="pb-3 text-right">Refund</th>
+                <th className="pb-3 text-center">Details</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/50">
+              {filteredReturns.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="py-10 text-center text-muted-foreground">
+                    {loading ? "Loading return history..." : "No returns recorded yet."}
+                  </td>
+                </tr>
+              ) : (
+                filteredReturns.map((r) => (
+                  <tr key={r.id} className="hover:bg-secondary/20 transition">
+                    <td className="py-4 pl-2 font-mono text-muted-foreground">{r.id.substring(0, 8)}</td>
+                    <td className="py-4 text-muted-foreground">{new Date(r.returnDate).toLocaleString()}</td>
+                    <td className="py-4 font-mono text-foreground">{r.saleId?.substring(0, 8)}</td>
+                    <td className="py-4 font-semibold text-foreground">
+                      {r.sale?.customer?.name || (
+                        <span className="italic text-muted-foreground">Walk-in</span>
+                      )}
+                    </td>
+                    <td className="py-4 text-foreground">{r.processedBy?.name || "—"}</td>
+                    <td className="py-4 text-center">
+                      <span className="bg-secondary px-2 py-0.5 rounded font-black text-[10px]">
+                        {refundMethodNames[r.refundMethod] || r.refundMethod}
+                      </span>
+                    </td>
+                    <td className="py-4 text-muted-foreground max-w-[140px] truncate">
+                      {r.reason || "—"}
+                    </td>
+                    <td className="py-4 text-right font-black text-rose-400">{money(r.refundAmount)}</td>
+                    <td className="py-4 text-center">
                       <button
-                        onClick={() => handleOpenReceipt(s.id)}
-                        className="bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 mx-auto transition"
+                        onClick={() => openReturnDetail(r.id)}
+                        className="bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold px-2.5 py-1.5 rounded-lg inline-flex items-center gap-1 transition"
                       >
-                        <Eye className="w-3.5 h-3.5" /> Details
+                        <Eye className="w-3.5 h-3.5" /> View
                       </button>
                     </td>
                   </tr>
@@ -359,120 +703,407 @@ export default function SalesHistory() {
           </table>
         </div>
       </div>
+      </>
+      )}
 
       {/* Invoice Receipt Modal */}
       {activeSale && (
-      <PortalModal isOpen={receiptOpen && !!activeSale} onClose={() => { setReceiptOpen(false); setActiveSale(null); }}>
-        <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl space-y-6 my-8 relative">
-          <button
-            onClick={() => setReceiptOpen(false)}
-            className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition"
-            title="Close Dialog"
-          >
-            <X className="w-4 h-4" />
-          </button>
-          <div className="text-center space-y-1">
-            <CheckCircle className="w-12 h-12 text-green-400 mx-auto" />
-            <h3 className="text-lg font-black tracking-tight text-foreground">Invoice Voucher Details</h3>
-            <p className="text-xs text-muted-foreground">Invoice reference: {activeSale.id.substring(0, 8)}</p>
-          </div>
-
-          {/* Receipt layout */}
-          <div id="printable-receipt" className="bg-secondary/30 p-4 border border-dashed border-border rounded-xl text-xs space-y-4">
-            <div className="text-center border-b border-border pb-3">
-              <h4 className="font-extrabold text-foreground tracking-widest uppercase">
-                {activeSale.branch?.name || " ELECTRONICS"}
-              </h4>
-              {activeSale.branch?.address && (
-                <p className="text-[9px] text-muted-foreground mt-0.5">{activeSale.branch.address}</p>
-              )}
-              {activeSale.branch?.phone && (
-                <p className="text-[9px] text-muted-foreground">{activeSale.branch.phone}</p>
-              )}
-              <p className="text-[10px] text-muted-foreground mt-1">Invoice Receipt Slip</p>
-              <p className="text-[9px] text-muted-foreground mt-1">Date: {new Date(activeSale.saleDate).toLocaleString()}</p>
-              <p className="text-[9px] text-muted-foreground">Cashier: {activeSale.cashier?.name}</p>
+        <PortalModal
+          isOpen={receiptOpen && !!activeSale}
+          onClose={() => {
+            setReceiptOpen(false);
+            setActiveSale(null);
+          }}
+        >
+          <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl space-y-6 my-8 relative">
+            <button
+              onClick={() => setReceiptOpen(false)}
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition"
+              title="Close Dialog"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="text-center space-y-1">
+              <CheckCircle className="w-12 h-12 text-green-400 mx-auto" />
+              <h3 className="text-lg font-black tracking-tight text-foreground">Invoice Voucher Details</h3>
+              <p className="text-xs text-muted-foreground">Invoice reference: {activeSale.id.substring(0, 8)}</p>
             </div>
 
-            <div className="space-y-2">
-              {activeSale.items.map((item: any) => (
-                <div key={item.id} className="flex justify-between items-start">
-                  <div>
-                    <p className="font-semibold text-foreground">{item.product.name}</p>
-                    <p className="text-[9px] text-muted-foreground">
-                      Qty: {item.quantity} @ Rs. {item.unitPrice}
-                    </p>
-                    {(item.serialNumber || item.imei) && (
-                      <p className="text-[9px] text-primary/80 font-bold mt-0.5">
-                        {item.serialNumber && `S/N: ${item.serialNumber}`}
-                        {item.serialNumber && item.imei && " | "}
-                        {item.imei && `IMEI: ${item.imei}`}
+            <div id="printable-receipt" className="bg-secondary/30 p-4 border border-dashed border-border rounded-xl text-xs space-y-4">
+              <div className="text-center border-b border-border pb-3">
+                <h4 className="font-extrabold text-foreground tracking-widest uppercase">
+                  {activeSale.branch?.name || " ELECTRONICS"}
+                </h4>
+                {activeSale.branch?.address && (
+                  <p className="text-[9px] text-muted-foreground mt-0.5">{activeSale.branch.address}</p>
+                )}
+                {activeSale.branch?.phone && (
+                  <p className="text-[9px] text-muted-foreground">{activeSale.branch.phone}</p>
+                )}
+                <p className="text-[10px] text-muted-foreground mt-1">Invoice Receipt Slip</p>
+                <p className="text-[9px] text-muted-foreground mt-1">
+                  Date: {new Date(activeSale.saleDate).toLocaleString()}
+                </p>
+                <p className="text-[9px] text-muted-foreground">Cashier: {activeSale.cashier?.name}</p>
+              </div>
+
+              <div className="space-y-2">
+                {activeSale.items.map((item: any) => (
+                  <div key={item.id} className="flex justify-between items-start">
+                    <div>
+                      <p className="font-semibold text-foreground">{item.product.name}</p>
+                      <p className="text-[9px] text-muted-foreground">
+                        Qty: {item.quantity} @ Rs. {item.unitPrice}
                       </p>
-                    )}
+                      {(item.serialNumber || item.imei) && (
+                        <p className="text-[9px] text-primary/80 font-bold mt-0.5">
+                          {item.serialNumber && `S/N: ${item.serialNumber}`}
+                          {item.serialNumber && item.imei && " | "}
+                          {item.imei && `IMEI: ${item.imei}`}
+                        </p>
+                      )}
+                    </div>
+                    <span className="font-bold text-foreground">Rs. {item.totalPrice.toFixed(2)}</span>
                   </div>
-                  <span className="font-bold text-foreground">Rs. {item.totalPrice.toFixed(2)}</span>
+                ))}
+              </div>
+
+              <div className="border-t border-border pt-3 space-y-1 text-[11px]">
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Subtotal:</span>
+                  <span>Rs. {activeSale.totalAmount.toFixed(2)}</span>
                 </div>
-              ))}
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Discount:</span>
+                  <span>-Rs. {activeSale.discountAmount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Sales Tax ({activeSale.items[0]?.tax || 0}%):</span>
+                  <span>+Rs. {activeSale.taxAmount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between font-black text-foreground text-xs pt-1 border-t border-border/40">
+                  <span>
+                    Total Paid ({paymentMethodNames[activeSale.paymentMethod] || activeSale.paymentMethod}):
+                  </span>
+                  <span>Rs. {activeSale.paidAmount.toFixed(2)}</span>
+                </div>
+              </div>
+
+              {activeSale.customer && (
+                <div className="bg-secondary/60 p-2 rounded text-[10px] text-muted-foreground">
+                  <p>
+                    Customer: <strong>{activeSale.customer.name}</strong>
+                  </p>
+                  {activeSale.paymentMethod === "EMI" ? (
+                    <p>
+                      Financed Balance:{" "}
+                      <strong>Rs. {Math.max(0, activeSale.payableAmount - activeSale.paidAmount).toFixed(2)}</strong>
+                    </p>
+                  ) : activeSale.paymentMethod === "CREDIT" ? (
+                    <p>
+                      Outstanding on Invoice:{" "}
+                      <strong>Rs. {Math.max(0, activeSale.payableAmount - activeSale.paidAmount).toFixed(2)}</strong>
+                    </p>
+                  ) : null}
+                </div>
+              )}
+
+              {activeSale.returns?.length > 0 && (
+                <div className="border-t border-border pt-3 space-y-2">
+                  <p className="text-[10px] font-bold uppercase text-rose-400">Returns on this invoice</p>
+                  {activeSale.returns.map((r: any) => (
+                    <div key={r.id} className="text-[10px] flex justify-between text-muted-foreground">
+                      <span>
+                        {new Date(r.returnDate).toLocaleDateString()} · {r.refundMethod}
+                      </span>
+                      <span className="font-bold text-rose-400">-{money(r.refundAmount)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
-            <div className="border-t border-border pt-3 space-y-1 text-[11px]">
-              <div className="flex justify-between text-muted-foreground">
-                <span>Subtotal:</span>
-                <span>Rs. {activeSale.totalAmount.toFixed(2)}</span>
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-3">
+                <button
+                  onClick={handlePrint}
+                  className="flex-1 border border-border hover:bg-secondary text-foreground text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer"
+                >
+                  <Receipt className="w-4 h-4" />
+                  Print Slip
+                </button>
+                <button
+                  onClick={downloadPdf}
+                  className="flex-1 border border-border hover:bg-secondary text-foreground text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer"
+                >
+                  <FileText className="w-4 h-4 text-primary" />
+                  Download PDF
+                </button>
               </div>
-              <div className="flex justify-between text-muted-foreground">
-                <span>Discount:</span>
-                <span>-Rs. {activeSale.discountAmount.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-muted-foreground">
-                <span>Sales Tax ({activeSale.items[0]?.tax || 0}%):</span>
-                <span>+Rs. {activeSale.taxAmount.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between font-black text-foreground text-xs pt-1 border-t border-border/40">
-                <span>Total Paid ({paymentMethodNames[activeSale.paymentMethod] || activeSale.paymentMethod}):</span>
-                <span>Rs. {activeSale.paidAmount.toFixed(2)}</span>
-              </div>
+              {activeSale.returnStatus !== "FULL" && (
+                <button
+                  onClick={() => openReturnDialog(activeSale.id)}
+                  className="w-full bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 text-xs font-bold py-2.5 rounded-xl transition flex items-center justify-center gap-1.5"
+                >
+                  <Undo2 className="w-4 h-4" /> Process Return & Refund
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  setReceiptOpen(false);
+                  setActiveSale(null);
+                }}
+                className="w-full bg-primary hover:bg-primary/95 text-white text-xs font-bold py-2.5 rounded-xl transition cursor-pointer text-center"
+              >
+                Dismiss Window
+              </button>
+            </div>
+          </div>
+        </PortalModal>
+      )}
+
+      {/* Return dialog — tick items only */}
+      <PortalModal
+        isOpen={returnOpen && !!preview}
+        onClose={() => {
+          if (!submitting) {
+            setReturnOpen(false);
+            setPreview(null);
+          }
+        }}
+      >
+        {preview && (
+          <div className="bg-card border border-border w-full max-w-lg p-6 rounded-2xl shadow-2xl space-y-5 my-8 relative max-h-[90vh] overflow-y-auto">
+            <button
+              type="button"
+              disabled={submitting}
+              onClick={() => {
+                setReturnOpen(false);
+                setPreview(null);
+              }}
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="space-y-1 pr-8">
+              <h3 className="text-lg font-black text-foreground flex items-center gap-2">
+                <Undo2 className="w-5 h-5 text-rose-400" /> Return & Refund
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Invoice <span className="font-mono text-foreground">{preview.sale.id.substring(0, 8)}</span>
+                {" · "}
+                {preview.sale.customer?.name || "Walk-in"}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                Tick items to return. Each selected line is refunded for its full remaining quantity.
+              </p>
             </div>
 
-            {activeSale.customer && (
-              <div className="bg-secondary/60 p-2 rounded text-[10px] text-muted-foreground">
-                <p>Customer: <strong>{activeSale.customer.name}</strong></p>
-                {activeSale.paymentMethod === "EMI" ? (
-                  <p>Financed Balance: <strong>Rs. {Math.max(0, activeSale.payableAmount - activeSale.paidAmount).toFixed(2)}</strong></p>
-                ) : activeSale.paymentMethod === "CREDIT" ? (
-                  <p>Outstanding on Invoice: <strong>Rs. {Math.max(0, activeSale.payableAmount - activeSale.paidAmount).toFixed(2)}</strong></p>
-                ) : null}
+            {preview.alreadyRefunded > 0 && (
+              <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs rounded-xl p-3">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>
+                  Already refunded {money(preview.alreadyRefunded)}. Remaining up to{" "}
+                  <strong>{money(preview.maxRefundable)}</strong>.
+                </span>
               </div>
             )}
-          </div>
 
-          <div className="flex flex-col gap-2">
-            <div className="flex gap-3">
-              <button
-                onClick={handlePrint}
-                className="flex-1 border border-border hover:bg-secondary text-foreground text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer"
-              >
-                <Receipt className="w-4 h-4" />
-                Print Slip
-              </button>
-              <button
-                onClick={downloadPdf}
-                className="flex-1 border border-border hover:bg-secondary text-foreground text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer"
-              >
-                <FileText className="w-4 h-4 text-primary" />
-                Download PDF
-              </button>
-            </div>
+            <form onSubmit={handleSubmitReturn} className="space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Items</p>
+                <button
+                  type="button"
+                  onClick={toggleAll}
+                  className="text-[10px] font-bold text-primary hover:underline"
+                >
+                  {selectedProductIds.size === returnableLines.length ? "Deselect all" : "Select all"}
+                </button>
+              </div>
+
+              <div className="border border-border rounded-xl divide-y divide-border overflow-hidden">
+                {returnableLines.map((line) => {
+                  const checked = selectedProductIds.has(line.productId);
+                  const lineRefund = line.unitRefund * line.remainingQty;
+                  return (
+                    <label
+                      key={line.saleItemId}
+                      className={`flex items-center gap-3 p-3 cursor-pointer transition ${
+                        checked ? "bg-primary/5" : "hover:bg-secondary/30"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleLine(line.productId)}
+                        className="w-4 h-4 rounded border-border accent-primary shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-foreground truncate">{line.product.name}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          Qty {line.remainingQty}
+                          {line.alreadyReturned > 0 && ` (${line.alreadyReturned} already returned)`}
+                          {(line.serialNumber || line.imei) && (
+                            <>
+                              {" · "}
+                              {line.serialNumber && `S/N ${line.serialNumber}`}
+                              {line.serialNumber && line.imei && " · "}
+                              {line.imei && `IMEI ${line.imei}`}
+                            </>
+                          )}
+                        </p>
+                      </div>
+                      <span className="text-xs font-black text-foreground shrink-0">{money(lineRefund)}</span>
+                    </label>
+                  );
+                })}
+              </div>
+
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
+                  Refund method
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {REFUND_METHODS.map((m) => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => setRefundMethod(m.id)}
+                      className={`px-3 py-2.5 rounded-xl border text-xs font-bold transition ${
+                        refundMethod === m.id
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border bg-secondary/40 text-muted-foreground hover:border-primary/40"
+                      }`}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+                  Reason (optional)
+                </label>
+                <input
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder="e.g. Defective, wrong item, customer change of mind"
+                  className="w-full bg-secondary border border-border rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+
+              <div className="bg-secondary/40 border border-border rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-bold uppercase text-muted-foreground">Refund total</p>
+                  <p className="text-xl font-black text-rose-400">{money(estimatedRefund)}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Stock restored · till / credit adjusted</p>
+                </div>
+                <button
+                  type="submit"
+                  disabled={submitting || estimatedRefund <= 0}
+                  className="bg-primary hover:bg-primary/95 text-white text-xs font-bold px-5 py-3 rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 min-w-[150px]"
+                >
+                  {submitting ? (
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4" /> Confirm Return
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+      </PortalModal>
+
+      {/* Return voucher detail */}
+      <PortalModal
+        isOpen={returnDetailOpen && !!activeReturn}
+        onClose={() => {
+          setReturnDetailOpen(false);
+          setActiveReturn(null);
+        }}
+      >
+        {activeReturn && (
+          <div className="bg-card border border-border w-full max-w-md p-6 rounded-2xl shadow-2xl space-y-5 my-8 relative">
             <button
-              onClick={() => { setReceiptOpen(false); setActiveSale(null); }}
-              className="w-full bg-primary hover:bg-primary/95 text-white text-xs font-bold py-2.5 rounded-xl transition cursor-pointer text-center"
+              onClick={() => {
+                setReturnDetailOpen(false);
+                setActiveReturn(null);
+              }}
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
             >
-              Dismiss Window
+              <X className="w-4 h-4" />
+            </button>
+            <div className="text-center space-y-1">
+              <Undo2 className="w-10 h-10 text-rose-400 mx-auto" />
+              <h3 className="text-lg font-black text-foreground">Return Voucher</h3>
+              <p className="text-xs text-muted-foreground font-mono">{activeReturn.id.substring(0, 8)}</p>
+            </div>
+
+            <div className="bg-secondary/30 border border-dashed border-border rounded-xl p-4 text-xs space-y-3">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Date</span>
+                <span className="font-semibold">{new Date(activeReturn.returnDate).toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Invoice</span>
+                <span className="font-mono font-semibold">{activeReturn.saleId?.substring(0, 8)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Customer</span>
+                <span className="font-semibold">{activeReturn.sale?.customer?.name || "Walk-in"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Processed by</span>
+                <span className="font-semibold">{activeReturn.processedBy?.name || "—"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Method</span>
+                <span className="font-bold">
+                  {refundMethodNames[activeReturn.refundMethod] || activeReturn.refundMethod}
+                </span>
+              </div>
+              {activeReturn.reason && (
+                <div className="flex justify-between gap-4">
+                  <span className="text-muted-foreground shrink-0">Reason</span>
+                  <span className="font-semibold text-right">{activeReturn.reason}</span>
+                </div>
+              )}
+
+              <div className="border-t border-border pt-3 space-y-2">
+                {(activeReturn.items || []).map((item: any) => (
+                  <div key={item.id} className="flex justify-between items-start">
+                    <div>
+                      <p className="font-semibold text-foreground">{item.product?.name || "Product"}</p>
+                      <p className="text-[10px] text-muted-foreground">Qty: {item.quantity}</p>
+                    </div>
+                    <span className="font-bold">{money(item.totalRefund)}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="border-t border-border pt-3 flex justify-between font-black text-sm">
+                <span>Total Refund</span>
+                <span className="text-rose-400">{money(activeReturn.refundAmount)}</span>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                setReturnDetailOpen(false);
+                setActiveReturn(null);
+              }}
+              className="w-full bg-primary text-white text-xs font-bold py-2.5 rounded-xl"
+            >
+              Close
             </button>
           </div>
-        </div>
+        )}
       </PortalModal>
-      )}
     </div>
   );
 }

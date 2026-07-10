@@ -271,10 +271,11 @@ router.post("/reset-transactions", protect, restrictTo("OWNER"), async (req, res
       prisma.activityLog.deleteMany({}),
       prisma.emiInstallment.deleteMany({}),
       prisma.saleEmi.deleteMany({}),
+      prisma.saleReturnItem.deleteMany({}),
+      prisma.saleReturn.deleteMany({}),
+      prisma.warrantyClaim.deleteMany({}),
       prisma.saleItem.deleteMany({}),
       prisma.sale.deleteMany({}),
-      
-      prisma.warrantyClaim.deleteMany({}),
       prisma.repairJob.deleteMany({}),
       
       prisma.purchaseItem.deleteMany({}),
