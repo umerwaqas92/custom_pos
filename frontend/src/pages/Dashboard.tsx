@@ -131,7 +131,9 @@ export default function Dashboard() {
       value: money(stats?.todaySales),
       description: `${stats?.todaySalesCount || 0} invoices today`,
       icon: Calendar,
+      iconSrc: "/icons/dashboard/today-sales.png",
       color: "bg-sky-500/10 text-sky-400 border-sky-500/20",
+      iconBg: "bg-sky-500/15 ring-sky-500/25",
       to: "/sales-history"
     },
     {
@@ -139,7 +141,9 @@ export default function Dashboard() {
       value: money(stats?.monthlySales),
       description: `${stats?.monthlySalesCount || 0} invoices this month`,
       icon: DollarSign,
+      iconSrc: "/icons/dashboard/monthly-sales.png",
       color: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+      iconBg: "bg-blue-500/15 ring-blue-500/25",
       to: "/sales-history"
     },
     {
@@ -147,7 +151,9 @@ export default function Dashboard() {
       value: money(stats?.monthlyProfit),
       description: "Sales − expenses (this month)",
       icon: TrendingUp,
+      iconSrc: "/icons/dashboard/monthly-profit.png",
       color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+      iconBg: "bg-emerald-500/15 ring-emerald-500/25",
       to: "/accounting"
     },
     {
@@ -155,7 +161,9 @@ export default function Dashboard() {
       value: money(stats?.monthlyExpenses),
       description: "Operating costs this month",
       icon: TrendingDown,
+      iconSrc: "/icons/dashboard/monthly-expenses.png",
       color: "bg-rose-500/10 text-rose-400 border-rose-500/20",
+      iconBg: "bg-rose-500/15 ring-rose-500/25",
       to: "/accounting"
     },
     {
@@ -163,7 +171,9 @@ export default function Dashboard() {
       value: money(stats?.cashBalance),
       description: `All accounts: ${money(stats?.totalBalance)}`,
       icon: Banknote,
+      iconSrc: "/icons/dashboard/cash-balance.png",
       color: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+      iconBg: "bg-amber-500/15 ring-amber-500/25",
       to: "/accounting"
     },
     {
@@ -171,7 +181,9 @@ export default function Dashboard() {
       value: stats?.totalProducts || 0,
       description: `${(stats?.totalUnitsInStock || 0).toLocaleString()} total units`,
       icon: Package2,
+      iconSrc: "/icons/dashboard/products-stock.png",
       color: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20",
+      iconBg: "bg-indigo-500/15 ring-indigo-500/25",
       to: "/inventory"
     },
     {
@@ -179,19 +191,42 @@ export default function Dashboard() {
       value: stats?.lowStockCount || 0,
       description: `Qty ≤ ${LOW_STOCK_THRESHOLD} (branch stock)`,
       icon: AlertTriangle,
+      iconSrc: "/icons/dashboard/low-stock.png",
       color: "bg-orange-500/10 text-orange-400 border-orange-500/20",
+      iconBg: "bg-orange-500/15 ring-orange-500/25",
       to: "/inventory"
     }
   ];
 
   const stripCards = [
-    { title: "30-Day Revenue", value: money(stats?.totalRevenue), to: "/sales-history" },
-    { title: "30-Day Profit", value: money(stats?.netProfit), to: "/reports", accent: "text-emerald-400" },
-    { title: "Bank Balance", value: money(stats?.bankBalance), to: "/accounting" },
+    {
+      title: "30-Day Revenue",
+      value: money(stats?.totalRevenue),
+      to: "/sales-history",
+      iconSrc: "/icons/dashboard/monthly-sales.png",
+      iconBg: "bg-blue-500/15 ring-blue-500/25"
+    },
+    {
+      title: "30-Day Profit",
+      value: money(stats?.netProfit),
+      to: "/reports",
+      accent: "text-emerald-400",
+      iconSrc: "/icons/dashboard/monthly-profit.png",
+      iconBg: "bg-emerald-500/15 ring-emerald-500/25"
+    },
+    {
+      title: "Bank Balance",
+      value: money(stats?.bankBalance),
+      to: "/accounting",
+      iconSrc: "/icons/dashboard/bank-balance.png",
+      iconBg: "bg-teal-500/15 ring-teal-500/25"
+    },
     {
       title: "Wallet + Customers",
       value: `${money(stats?.walletBalance)} · ${stats?.totalCustomers || 0} cust.`,
-      to: "/contacts"
+      to: "/contacts",
+      iconSrc: "/icons/dashboard/cash-balance.png",
+      iconBg: "bg-amber-500/15 ring-amber-500/25"
     }
   ];
 
@@ -244,8 +279,19 @@ export default function Dashboard() {
                 <h3 className="text-2xl font-extrabold tracking-tight text-foreground truncate">{card.value}</h3>
                 <p className="text-[11px] text-muted-foreground truncate">{card.description}</p>
               </div>
-              <div className="p-3 bg-secondary rounded-xl shrink-0 ml-2 group-hover:bg-secondary/80 transition">
-                <Icon className="w-5 h-5" />
+              <div
+                className={`shrink-0 ml-2 w-14 h-14 rounded-2xl overflow-hidden flex items-center justify-center p-2 group-hover:scale-105 transition ring-1 ${card.iconBg}`}
+              >
+                {card.iconSrc ? (
+                  <img
+                    src={`${card.iconSrc}?v=4`}
+                    alt={card.title}
+                    className="w-full h-full object-contain"
+                    draggable={false}
+                  />
+                ) : (
+                  <Icon className="w-6 h-6" />
+                )}
               </div>
             </Link>
           );
@@ -258,13 +304,22 @@ export default function Dashboard() {
           <Link
             key={card.title}
             to={card.to}
-            className="bg-card border border-border rounded-xl px-4 py-3 hover:bg-secondary/40 hover:border-primary/30 transition cursor-pointer group"
+            className="bg-card border border-border rounded-xl px-4 py-3 hover:bg-secondary/40 hover:border-primary/30 transition cursor-pointer group flex items-center gap-3"
           >
-            <p className="text-[10px] font-bold uppercase text-muted-foreground flex items-center gap-1">
-              {card.title}
-              <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-70 transition" />
-            </p>
-            <p className={`text-sm font-black mt-0.5 ${card.accent || "text-foreground"}`}>{card.value}</p>
+            {card.iconSrc && (
+              <div
+                className={`w-10 h-10 rounded-xl overflow-hidden shrink-0 flex items-center justify-center p-1.5 ring-1 ${card.iconBg || "bg-primary/10 ring-primary/20"}`}
+              >
+                <img src={`${card.iconSrc}?v=4`} alt={card.title} className="w-full h-full object-contain" draggable={false} />
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold uppercase text-muted-foreground flex items-center gap-1">
+                {card.title}
+                <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-70 transition" />
+              </p>
+              <p className={`text-sm font-black mt-0.5 truncate ${card.accent || "text-foreground"}`}>{card.value}</p>
+            </div>
           </Link>
         ))}
       </div>
