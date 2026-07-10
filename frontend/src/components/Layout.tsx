@@ -75,17 +75,6 @@ export default function Layout() {
     return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
   }, []);
 
-  // Auto-enter fullscreen on POS; exit when leaving
-  useEffect(() => {
-    if (isPosRoute) {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(() => {});
-      }
-    } else if (document.fullscreenElement) {
-      document.exitFullscreen().catch(() => {});
-    }
-  }, [isPosRoute]);
-
   // Ctrl/Cmd+Shift+F toggles fullscreen
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -249,8 +238,7 @@ export default function Layout() {
       {/* Main Workspace */}
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
 
-        {/* Top Header — hidden on POS for maximum workspace */}
-        {!isPosRoute && (
+        {/* Top Header */}
         <header className="h-16 border-b border-border bg-card flex items-center justify-between px-6 z-20 relative">
 
           {/* Active Branch Display */}
@@ -356,21 +344,9 @@ export default function Layout() {
             )}
           </div>
         </header>
-        )}
-
-        {/* POS fullscreen toggle (header is hidden on POS) */}
-        {isPosRoute && (
-          <button
-            onClick={toggleFullscreen}
-            className="fixed top-3 right-3 z-50 p-2 rounded-xl bg-card hover:bg-secondary border border-border text-foreground shadow-lg transition"
-            title={isFullscreen ? "Exit fullscreen (Ctrl/Cmd+Shift+F)" : "Enter fullscreen (Ctrl/Cmd+Shift+F)"}
-          >
-            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-          </button>
-        )}
 
         {/* Dynamic Route Pages Content */}
-        <main className={`flex-1 overflow-y-auto flex flex-col ${isPosRoute ? "p-3" : "p-6"}`}>
+        <main className="flex-1 overflow-y-auto p-6 flex flex-col">
           <Outlet />
         </main>
       </div>
