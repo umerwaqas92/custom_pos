@@ -431,17 +431,20 @@ export default function POS() {
               placeholder="Scan Barcode or Type SKU (F2 or Ctrl/Cmd+B)..."
               className="w-full bg-secondary text-foreground border border-border pl-10 pr-4 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary placeholder-muted-foreground"
             />
-            <Search className="w-5 h-5 text-muted-foreground absolute left-3 top-3" />
+            <img src="/icons/pos/barcode.png?v=1" alt="" className="w-5 h-5 object-contain absolute left-3 top-2.5 opacity-80" draggable={false} />
           </form>
 
-          <input
-            ref={searchInputRef}
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search items by name (Ctrl/Cmd+K)..."
-            className="w-48 bg-secondary border border-border px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-          />
+          <div className="relative w-48">
+            <img src="/icons/pos/search.png?v=1" alt="" className="w-4 h-4 object-contain absolute left-3 top-3 opacity-80" draggable={false} />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search items by name (Ctrl/Cmd+K)..."
+              className="w-full bg-secondary border border-border pl-9 pr-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
 
           <button
             onClick={loadData}
@@ -535,7 +538,9 @@ export default function POS() {
         {/* Cart Header */}
         <div className="flex items-center justify-between border-b border-border pb-3">
           <div className="flex items-center gap-2">
-            <ShoppingCart className="w-5 h-5 text-primary" />
+            <span className="w-7 h-7 rounded-lg bg-primary/10 p-1 ring-1 ring-primary/15 flex items-center justify-center">
+              <img src="/icons/pos/cart.png?v=1" alt="" className="w-full h-full object-contain" draggable={false} />
+            </span>
             <h3 className="font-bold text-sm">Shopping Cart ({cart.length})</h3>
           </div>
           {cart.length > 0 && (
@@ -549,7 +554,7 @@ export default function POS() {
         <div className="flex-1 overflow-y-auto divide-y divide-border/60 py-2 pr-1 space-y-4 min-h-0">
           {cart.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full py-16 text-center text-muted-foreground space-y-2">
-              <ShoppingCart className="w-10 h-10 opacity-30" />
+              <img src="/icons/pos/cart.png?v=1" alt="" className="w-12 h-12 object-contain opacity-40" draggable={false} />
               <p className="text-xs">Your shopping cart is empty.</p>
             </div>
           ) : (
@@ -628,7 +633,7 @@ export default function POS() {
           {/* Customer Selection */}
           <div className="flex items-center gap-1.5">
             <div className="flex-1 flex items-center gap-2 bg-secondary/50 border border-border p-2 rounded-xl">
-              <User className="w-4 h-4 text-muted-foreground" />
+              <img src="/icons/pos/customer.png?v=1" alt="" className="w-4 h-4 object-contain opacity-80" draggable={false} />
               <select
                 value={selectedCustId}
                 onChange={(e) => setSelectedCustId(e.target.value)}
@@ -662,7 +667,7 @@ export default function POS() {
             {/* Cart overall discount */}
             <div className="flex justify-between text-muted-foreground items-center">
               <span className="flex items-center gap-1">
-                <Percent className="w-3.5 h-3.5 text-indigo-400" />
+                <img src="/icons/pos/discount.png?v=1" alt="" className="w-3.5 h-3.5 object-contain" draggable={false} />
                 Cart Discount (Rs.):
               </span>
               <input
@@ -694,7 +699,7 @@ export default function POS() {
                     : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                   }`}
               >
-                <Banknote className="w-3.5 h-3.5 flex-shrink-0" />
+                <img src="/icons/pos/cash.png?v=1" alt="" className="w-3.5 h-3.5 object-contain flex-shrink-0" draggable={false} />
                 <span className="text-[10px] font-extrabold font-black">Cash</span>
               </button>
 
@@ -706,7 +711,7 @@ export default function POS() {
                     : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                   }`}
               >
-                <Landmark className="w-3.5 h-3.5 flex-shrink-0" />
+                <img src="/icons/pos/bank.png?v=1" alt="" className="w-3.5 h-3.5 object-contain flex-shrink-0" draggable={false} />
                 <span className="text-[10px] font-extrabold font-black">Bank</span>
               </button>
 
@@ -718,7 +723,7 @@ export default function POS() {
                     : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                   }`}
               >
-                <Wallet className="w-3.5 h-3.5 flex-shrink-0" />
+                <img src="/icons/pos/wallet.png?v=1" alt="" className="w-3.5 h-3.5 object-contain flex-shrink-0" draggable={false} />
                 <span className="text-[10px] font-extrabold font-black">Wallet</span>
               </button>
 
@@ -730,7 +735,7 @@ export default function POS() {
                     : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                   }`}
               >
-                <BookOpen className="w-3.5 h-3.5 flex-shrink-0" />
+                <img src="/icons/pos/credit.png?v=1" alt="" className="w-3.5 h-3.5 object-contain flex-shrink-0" draggable={false} />
                 <span className="text-[10px] font-extrabold font-black">Credit</span>
               </button>
 
@@ -742,7 +747,7 @@ export default function POS() {
                     : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                   }`}
               >
-                <CreditCard className="w-3.5 h-3.5 flex-shrink-0" />
+                <img src="/icons/pos/emi.png?v=1" alt="" className="w-3.5 h-3.5 object-contain flex-shrink-0" draggable={false} />
                 <span className="text-[10px] font-extrabold font-black">EMI</span>
               </button>
             </div>
@@ -772,7 +777,7 @@ export default function POS() {
             disabled={cart.length === 0}
             className="w-full bg-primary hover:bg-primary/95 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition disabled:opacity-50 text-xs shadow-md shadow-primary/10"
           >
-            <CheckCircle className="w-4 h-4" />
+            <img src="/icons/pos/checkout.png?v=1" alt="" className="w-4 h-4 object-contain brightness-0 invert" draggable={false} />
             Complete Sale & Invoice
           </button>
         </div>
