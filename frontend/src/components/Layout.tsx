@@ -266,10 +266,10 @@ export default function Layout() {
                       <div
                         key={n.id}
                         className={`p-2.5 rounded-lg border text-xs flex justify-between gap-2 ${n.type === "warning"
-                            ? "bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-500/10 dark:border-amber-500/20 dark:text-amber-300"
+                            ? "bg-amber-300 border-amber-400 text-amber-900 dark:bg-amber-900/50 dark:border-amber-500 dark:text-amber-300"
                             : n.type === "success"
-                              ? "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-green-300"
-                              : "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-blue-300"
+                              ? "bg-emerald-300 border-emerald-400 text-emerald-900 dark:bg-emerald-900/50 dark:border-emerald-500 dark:text-emerald-300"
+                              : "bg-blue-300 border-blue-400 text-blue-900 dark:bg-blue-900/50 dark:border-blue-500 dark:text-blue-300"
                           }`}
                       >
                         <div>
