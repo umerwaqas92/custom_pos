@@ -17,15 +17,15 @@ export function Toast({ notification, onClose }: ToastProps) {
 
   const typeConfig = {
     success: {
-      bg: "bg-emerald-500/10 border-emerald-500/20 text-emerald-400",
+      bg: "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400",
       icon: CheckCircle,
     },
     warning: {
-      bg: "bg-amber-500/10 border-amber-500/20 text-amber-400",
+      bg: "bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-500/10 dark:border-amber-500/20 dark:text-amber-400",
       icon: AlertTriangle,
     },
     info: {
-      bg: "bg-blue-500/10 border-blue-500/20 text-blue-400",
+      bg: "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-blue-400",
       icon: Info,
     },
   };
