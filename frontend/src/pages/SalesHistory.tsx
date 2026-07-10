@@ -399,7 +399,10 @@ export default function SalesHistory() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card border border-border p-5 rounded-2xl">
         <div className="space-y-1">
           <h2 className="text-lg font-black text-foreground tracking-tight flex items-center gap-2">
-            <FileText className="w-5 h-5 text-primary" /> Sales Transaction Log
+            <span className="w-8 h-8 rounded-xl bg-primary/10 p-1 ring-1 ring-primary/15 flex items-center justify-center">
+              <img src="/icons/sales-history/header.png?v=1" alt="" className="w-full h-full object-contain" draggable={false} />
+            </span>
+            Sales Transaction Log
           </h2>
           <p className="text-xs text-muted-foreground">
             Search invoices, print receipts, and process returns & refunds from here.
@@ -421,7 +424,10 @@ export default function SalesHistory() {
             tab === "sales" ? "bg-primary text-white" : "text-muted-foreground hover:bg-secondary"
           }`}
         >
-          <Receipt className="w-3.5 h-3.5" /> Sales Invoices
+          <span className={`w-4 h-4 rounded flex items-center justify-center p-0.5 ${tab === "sales" ? "bg-white/20" : "bg-secondary"}`}>
+            <img src="/icons/sales-history/invoices.png?v=1" alt="" className="w-full h-full object-contain" draggable={false} />
+          </span>
+          Sales Invoices
         </button>
         <button
           onClick={() => setTab("returns")}
@@ -429,7 +435,10 @@ export default function SalesHistory() {
             tab === "returns" ? "bg-primary text-white" : "text-muted-foreground hover:bg-secondary"
           }`}
         >
-          <Undo2 className="w-3.5 h-3.5" /> Return History
+          <span className={`w-4 h-4 rounded flex items-center justify-center p-0.5 ${tab === "returns" ? "bg-white/20" : "bg-secondary"}`}>
+            <img src="/icons/sales-history/returns.png?v=1" alt="" className="w-full h-full object-contain" draggable={false} />
+          </span>
+          Return History
         </button>
       </div>
 
@@ -437,7 +446,7 @@ export default function SalesHistory() {
       <>
       <div className="bg-card border border-border rounded-2xl p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="relative col-span-1 sm:col-span-2 lg:col-span-1">
-          <Search className="w-4 h-4 absolute left-3 top-3.5 text-muted-foreground" />
+          <img src="/icons/sales-history/search.png?v=1" alt="" className="w-4 h-4 absolute left-3 top-3.5 object-contain opacity-70" draggable={false} />
           <input
             type="text"
             value={search}
@@ -585,7 +594,7 @@ export default function SalesHistory() {
                           onClick={() => handleOpenReceipt(s.id)}
                           className="bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition"
                         >
-                          <Eye className="w-3.5 h-3.5" /> Details
+                          <img src="/icons/sales-history/details.png?v=1" alt="" className="w-3.5 h-3.5 object-contain" draggable={false} /> Details
                         </button>
                         {s.returnStatus !== "FULL" && (
                           <button
@@ -593,7 +602,7 @@ export default function SalesHistory() {
                             className="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-[10px] font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition"
                             title="Process return & refund"
                           >
-                            <Undo2 className="w-3.5 h-3.5" /> Return
+                            <img src="/icons/sales-history/return-action.png?v=1" alt="" className="w-3.5 h-3.5 object-contain" draggable={false} /> Return
                           </button>
                         )}
                       </div>
@@ -611,7 +620,7 @@ export default function SalesHistory() {
       {/* Return history filters + summary */}
       <div className="bg-card border border-border rounded-2xl p-4">
         <div className="relative">
-          <Search className="w-4 h-4 absolute left-3 top-3.5 text-muted-foreground" />
+          <img src="/icons/sales-history/search.png?v=1" alt="" className="w-4 h-4 absolute left-3 top-3.5 object-contain opacity-70" draggable={false} />
           <input
             type="text"
             value={returnSearch}
@@ -693,7 +702,7 @@ export default function SalesHistory() {
                         onClick={() => openReturnDetail(r.id)}
                         className="bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold px-2.5 py-1.5 rounded-lg inline-flex items-center gap-1 transition"
                       >
-                        <Eye className="w-3.5 h-3.5" /> View
+                        <img src="/icons/sales-history/details.png?v=1" alt="" className="w-3.5 h-3.5 object-contain" draggable={false} /> View
                       </button>
                     </td>
                   </tr>
@@ -829,14 +838,14 @@ export default function SalesHistory() {
                   onClick={handlePrint}
                   className="flex-1 border border-border hover:bg-secondary text-foreground text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer"
                 >
-                  <Receipt className="w-4 h-4" />
+                  <img src="/icons/sales-history/print.png?v=1" alt="" className="w-4 h-4 object-contain" draggable={false} />
                   Print Slip
                 </button>
                 <button
                   onClick={downloadPdf}
                   className="flex-1 border border-border hover:bg-secondary text-foreground text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer"
                 >
-                  <FileText className="w-4 h-4 text-primary" />
+                  <img src="/icons/sales-history/pdf.png?v=1" alt="" className="w-4 h-4 object-contain" draggable={false} />
                   Download PDF
                 </button>
               </div>
@@ -845,7 +854,7 @@ export default function SalesHistory() {
                   onClick={() => openReturnDialog(activeSale.id)}
                   className="w-full bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 text-xs font-bold py-2.5 rounded-xl transition flex items-center justify-center gap-1.5"
                 >
-                  <Undo2 className="w-4 h-4" /> Process Return & Refund
+                  <img src="/icons/sales-history/return-action.png?v=1" alt="" className="w-4 h-4 object-contain" draggable={false} /> Process Return & Refund
                 </button>
               )}
               <button
@@ -888,7 +897,10 @@ export default function SalesHistory() {
 
             <div className="space-y-1 pr-8">
               <h3 className="text-lg font-black text-foreground flex items-center gap-2">
-                <Undo2 className="w-5 h-5 text-rose-400" /> Return & Refund
+                <span className="w-6 h-6 rounded-lg bg-rose-500/15 p-0.5 ring-1 ring-rose-500/25 flex items-center justify-center">
+                  <img src="/icons/sales-history/return-action.png?v=1" alt="" className="w-full h-full object-contain" draggable={false} />
+                </span>
+                Return & Refund
               </h3>
               <p className="text-xs text-muted-foreground">
                 Invoice <span className="font-mono text-foreground">{preview.sale.id.substring(0, 8)}</span>
@@ -1039,7 +1051,7 @@ export default function SalesHistory() {
               <X className="w-4 h-4" />
             </button>
             <div className="text-center space-y-1">
-              <Undo2 className="w-10 h-10 text-rose-400 mx-auto" />
+              <img src="/icons/sales-history/returns.png?v=1" alt="" className="w-12 h-12 object-contain mx-auto" draggable={false} />
               <h3 className="text-lg font-black text-foreground">Return Voucher</h3>
               <p className="text-xs text-muted-foreground font-mono">{activeReturn.id.substring(0, 8)}</p>
             </div>
