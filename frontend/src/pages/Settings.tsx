@@ -58,7 +58,27 @@ export default function Settings() {
   // ─── Backup State ─────────────────────────────────────────────────────────
   const [backups, setBackups] = useState<any[]>([]);
   const [importing, setImporting] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [creatingBackup, setCreatingBackup] = useState(false);
+  const [restoringName, setRestoringName] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  const parseApiError = async (err: any, fallback: string) => {
+    const data = err?.response?.data;
+    if (!data) return fallback;
+    if (typeof data === "string") return data;
+    if (data.error) return data.error;
+    if (data instanceof Blob) {
+      try {
+        const text = await data.text();
+        const json = JSON.parse(text);
+        return json.error || fallback;
+      } catch {
+        return fallback;
+      }
+    }
+    return fallback;
+  };
 
   // ─── Danger Zone State ────────────────────────────────────────────────────
   const [resetting, setResetting] = useState(false);
@@ -82,8 +102,10 @@ export default function Settings() {
   const loadBackups = async () => {
     try {
       const res = await axios.get("/api/auth/backup/list");
-      setBackups(res.data);
-    } catch { /* silent */ }
+      setBackups(Array.isArray(res.data) ? res.data : []);
+    } catch {
+      addNotification("Failed to load backup list.", "warning");
+    }
   };
 
   // ─── GST ──────────────────────────────────────────────────────────────────
@@ -159,36 +181,67 @@ export default function Settings() {
 
   // ─── Backup ───────────────────────────────────────────────────────────────
   const handleExportBackup = async () => {
+    setExporting(true);
     try {
       addNotification("Preparing backup package…", "info");
       const res = await axios.get("/api/auth/backup/export", { responseType: "blob" });
-      const url = window.URL.createObjectURL(new Blob([res.data]));
+      // Guard against error JSON returned as blob
+      if (res.data?.type === "application/json") {
+        const text = await res.data.text();
+        const json = JSON.parse(text);
+        throw new Error(json.error || "Export failed");
+      }
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: "application/zip" }));
       const link = document.createElement("a");
       link.href = url;
       link.setAttribute("download", `pos-backup-${new Date().toISOString().split("T")[0]}.zip`);
       document.body.appendChild(link);
       link.click();
       link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
       addNotification("Backup downloaded successfully.", "success");
-    } catch {
-      addNotification("Failed to export backup.", "warning");
+    } catch (err: any) {
+      addNotification(err.message || (await parseApiError(err, "Failed to export backup.")), "warning");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleCreateServerBackup = async () => {
+    setCreatingBackup(true);
+    try {
+      const res = await axios.post("/api/auth/backup/create");
+      addNotification(res.data.message || "Server backup created.", "success");
+      loadBackups();
+    } catch (err: any) {
+      addNotification(await parseApiError(err, "Failed to create backup."), "warning");
+    } finally {
+      setCreatingBackup(false);
     }
   };
 
   const handleImportBackup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedFile) return addNotification("Select a backup file first.", "warning");
-    if (!window.confirm("WARNING: Restoring from backup will overwrite all current data. This cannot be undone. Continue?")) return;
+    if (
+      !window.confirm(
+        "WARNING: Restoring from backup will overwrite all current data. This cannot be undone. Continue?"
+      )
+    )
+      return;
     const formData = new FormData();
     formData.append("backup", selectedFile);
     setImporting(true);
     try {
-      const res = await axios.post("/api/auth/backup/import", formData, { headers: { "Content-Type": "multipart/form-data" } });
+      const res = await axios.post("/api/auth/backup/import", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        timeout: 120000
+      });
       addNotification(res.data.message || "Data restored from backup.", "success");
       setSelectedFile(null);
       setTimeout(() => window.location.reload(), 1500);
     } catch (err: any) {
-      addNotification(err.response?.data?.error || "Failed to restore backup.", "warning");
+      addNotification(await parseApiError(err, "Failed to restore backup."), "warning");
     } finally {
       setImporting(false);
     }
@@ -196,38 +249,58 @@ export default function Settings() {
 
   const handleDownloadBackup = async (filename: string) => {
     try {
-      const res = await axios.get(`/api/auth/backup/download/${filename}`, { responseType: "blob" });
-      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const res = await axios.get(`/api/auth/backup/download/${encodeURIComponent(filename)}`, {
+        responseType: "blob"
+      });
+      if (res.data?.type === "application/json") {
+        const text = await res.data.text();
+        const json = JSON.parse(text);
+        throw new Error(json.error || "Download failed");
+      }
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: "application/zip" }));
       const link = document.createElement("a");
       link.href = url;
       link.setAttribute("download", filename);
       document.body.appendChild(link);
       link.click();
       link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
       addNotification("Backup downloaded.", "success");
-    } catch { addNotification("Failed to download backup.", "warning"); }
+    } catch (err: any) {
+      addNotification(err.message || (await parseApiError(err, "Failed to download backup.")), "warning");
+    }
   };
 
   const handleRestoreBackup = async (filename: string) => {
-    if (!window.confirm(`Restore system to backup "${filename}"?\n\nThis will overwrite all current data.`)) return;
+    if (
+      !window.confirm(
+        `Restore system to backup "${filename}"?\n\nThis will overwrite all current data.`
+      )
+    )
+      return;
+    setRestoringName(filename);
     addNotification("Restoring system data…", "info");
     try {
-      const res = await axios.post(`/api/auth/backup/restore/${filename}`);
+      const res = await axios.post(`/api/auth/backup/restore/${encodeURIComponent(filename)}`, null, {
+        timeout: 120000
+      });
       addNotification(res.data.message || "System data restored.", "success");
       setTimeout(() => window.location.reload(), 1500);
     } catch (err: any) {
-      addNotification(err.response?.data?.error || "Failed to restore.", "warning");
+      addNotification(await parseApiError(err, "Failed to restore."), "warning");
+    } finally {
+      setRestoringName(null);
     }
   };
 
   const handleDeleteBackup = async (filename: string) => {
     if (!window.confirm(`Delete backup file "${filename}"?`)) return;
     try {
-      await axios.delete(`/api/auth/backup/delete/${filename}`);
+      await axios.delete(`/api/auth/backup/delete/${encodeURIComponent(filename)}`);
       addNotification("Backup file deleted.", "success");
       loadBackups();
     } catch (err: any) {
-      addNotification(err.response?.data?.error || "Failed to delete backup.", "warning");
+      addNotification(await parseApiError(err, "Failed to delete backup."), "warning");
     }
   };
 
@@ -477,10 +550,24 @@ export default function Settings() {
           <p className="text-xs text-muted-foreground leading-relaxed">
             Downloads a ZIP containing the SQLite database and all uploaded files (documents, receipts, warranty records).
           </p>
-          <button onClick={handleExportBackup}
-            className="w-full bg-blue-600 hover:bg-blue-600/90 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition">
-            <Download className="w-3.5 h-3.5" /> Download Backup ZIP
-          </button>
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={handleExportBackup}
+              disabled={exporting}
+              className="w-full bg-blue-600 hover:bg-blue-600/90 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition disabled:opacity-50"
+            >
+              <Download className="w-3.5 h-3.5" />
+              {exporting ? "Preparing…" : "Download Backup ZIP"}
+            </button>
+            <button
+              onClick={handleCreateServerBackup}
+              disabled={creatingBackup}
+              className="w-full bg-secondary border border-border hover:bg-secondary/80 text-foreground text-xs font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition disabled:opacity-50"
+            >
+              <HardDrive className="w-3.5 h-3.5" />
+              {creatingBackup ? "Saving…" : "Save Backup on Server"}
+            </button>
+          </div>
         </div>
 
         {/* Import */}
@@ -523,43 +610,73 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* Automatic Backups list */}
+      {/* Server backups list (auto + manual) */}
       <div className="bg-card border border-border rounded-2xl overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-primary" />
-            <h3 className="font-extrabold text-sm text-foreground">Automatic Backups</h3>
-            <span className="text-[10px] bg-secondary border border-border px-2 py-0.5 rounded-lg text-muted-foreground font-semibold">Every 7 Days</span>
+            <h3 className="font-extrabold text-sm text-foreground">Server Backups</h3>
+            <span className="text-[10px] bg-secondary border border-border px-2 py-0.5 rounded-lg text-muted-foreground font-semibold">
+              Auto every 7 days
+            </span>
           </div>
-          <span className="text-[10px] text-muted-foreground">Keeps last 5</span>
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] text-muted-foreground">Keeps last 5 auto</span>
+            <button
+              onClick={loadBackups}
+              className="text-[10px] font-bold text-primary hover:underline flex items-center gap-1"
+            >
+              <RefreshCw className="w-3 h-3" /> Refresh
+            </button>
+          </div>
         </div>
 
         {backups.length === 0 ? (
           <div className="p-10 text-center space-y-2">
             <HardDrive className="w-8 h-8 text-muted-foreground/30 mx-auto" />
-            <p className="text-xs text-muted-foreground">No automatic backups generated yet.</p>
-            <p className="text-[10px] text-muted-foreground opacity-60">They are created every 7 days automatically.</p>
+            <p className="text-xs text-muted-foreground">No server backups yet.</p>
+            <p className="text-[10px] text-muted-foreground opacity-60">
+              Use “Save Backup on Server” or wait for the weekly auto backup.
+            </p>
           </div>
         ) : (
           <div className="divide-y divide-border/50">
             {backups.map((bk) => (
-              <div key={bk.filename} className="flex items-center justify-between px-5 py-3.5 hover:bg-secondary/30 transition">
+              <div
+                key={bk.filename}
+                className="flex items-center justify-between px-5 py-3.5 hover:bg-secondary/30 transition"
+              >
                 <div className="flex items-center gap-3 min-w-0">
                   <HardDrive className="w-4 h-4 text-primary/60 flex-shrink-0" />
                   <div className="min-w-0">
                     <p className="text-xs font-mono font-bold text-foreground truncate">{bk.filename}</p>
                     <p className="text-[10px] text-muted-foreground">
-                      {new Date(bk.createdAt).toLocaleString()} · {(bk.size / (1024 * 1024)).toFixed(2)} MB
+                      {new Date(bk.createdAt).toLocaleString()} ·{" "}
+                      {((bk.size || 0) / (1024 * 1024)).toFixed(2)} MB
+                      {String(bk.filename).startsWith("auto-") ? " · auto" : " · manual"}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 text-[11px] font-bold flex-shrink-0 ml-4">
-                  <button onClick={() => handleDownloadBackup(bk.filename)}
-                    className="text-primary hover:underline transition">Download</button>
-                  <button onClick={() => handleRestoreBackup(bk.filename)}
-                    className="text-amber-400 hover:underline transition">Restore</button>
-                  <button onClick={() => handleDeleteBackup(bk.filename)}
-                    className="text-red-400 hover:underline transition">Delete</button>
+                  <button
+                    onClick={() => handleDownloadBackup(bk.filename)}
+                    className="text-primary hover:underline transition"
+                  >
+                    Download
+                  </button>
+                  <button
+                    onClick={() => handleRestoreBackup(bk.filename)}
+                    disabled={restoringName === bk.filename}
+                    className="text-amber-400 hover:underline transition disabled:opacity-50"
+                  >
+                    {restoringName === bk.filename ? "Restoring…" : "Restore"}
+                  </button>
+                  <button
+                    onClick={() => handleDeleteBackup(bk.filename)}
+                    className="text-red-400 hover:underline transition"
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
             ))}

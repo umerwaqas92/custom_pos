@@ -1,80 +1,37 @@
-import path from "path";
-import fs from "fs";
-const AdmZip = require("adm-zip");
+import {
+  listBackupFiles,
+  writeBackupToDisk,
+  pruneAutoBackups,
+  ensureBackupsDir
+} from "./backup";
 
-export function runAutoBackup() {
+export async function runAutoBackup() {
   try {
-    const backupsDir = path.resolve(__dirname, "../../backups");
-    if (!fs.existsSync(backupsDir)) {
-      fs.mkdirSync(backupsDir, { recursive: true });
-    }
+    ensureBackupsDir();
 
-    // 1. Scan existing automatic backups
-    const files = fs.readdirSync(backupsDir);
-    const autoBackups = files
-      .filter(f => f.startsWith("auto-backup-") && f.endsWith(".zip"))
-      .map(f => {
-        const timePart = f.replace("auto-backup-", "").replace(".zip", "");
-        const parts = timePart.split("-");
-        const timestamp = Number(parts[parts.length - 1]);
-        return { filename: f, timestamp };
-      })
-      .sort((a, b) => b.timestamp - a.timestamp); // Newest first
-
+    const autos = listBackupFiles().filter((f) => f.filename.startsWith("auto-backup-"));
     const now = Date.now();
     const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
 
-    // 2. Check if a new automatic backup is needed
-    let needsBackup = false;
-    if (autoBackups.length === 0) {
-      needsBackup = true;
-    } else {
-      const lastBackupTime = autoBackups[0].timestamp;
-      if (now - lastBackupTime >= sevenDaysMs) {
+    let needsBackup = autos.length === 0;
+    if (!needsBackup && autos.length > 0) {
+      // Prefer timestamp from filename suffix; fall back to mtime
+      const newest = autos[0];
+      const parts = newest.filename.replace("auto-backup-", "").replace(".zip", "").split("-");
+      const ts = Number(parts[parts.length - 1]);
+      const lastTime = Number.isFinite(ts) && ts > 1e12 ? ts : new Date(newest.createdAt).getTime();
+      if (now - lastTime >= sevenDaysMs) {
         needsBackup = true;
       }
     }
 
     if (needsBackup) {
       console.log("[Scheduler] Creating weekly automatic backup...");
-      const zip = new AdmZip();
-      const dbPath = path.resolve(__dirname, "../../prisma/dev.db");
-      const uploadsPath = path.resolve(__dirname, "../../public/uploads");
-
-      if (fs.existsSync(dbPath)) {
-        zip.addLocalFile(dbPath, "prisma");
-      }
-
-      if (fs.existsSync(uploadsPath)) {
-        const uploadFiles = fs.readdirSync(uploadsPath);
-        if (uploadFiles.length > 0) {
-          zip.addLocalFolder(uploadsPath, "public/uploads");
-        }
-      }
-
-      const dateStr = new Date().toISOString().split("T")[0];
-      const newBackupFilename = `auto-backup-${dateStr}-${now}.zip`;
-      const newBackupPath = path.join(backupsDir, newBackupFilename);
-      
-      zip.writeZip(newBackupPath);
-      console.log(`[Scheduler] Weekly backup created successfully: ${newBackupFilename}`);
-
-      // Add to head of active list
-      autoBackups.unshift({ filename: newBackupFilename, timestamp: now });
+      const meta = await writeBackupToDisk("auto-backup");
+      console.log(`[Scheduler] Weekly backup created successfully: ${meta.filename}`);
     }
 
-    // 3. Keep-clean: Limit storage to the last 5 backups
-    const maxBackups = 5;
-    if (autoBackups.length > maxBackups) {
-      const itemsToDelete = autoBackups.slice(maxBackups);
-      itemsToDelete.forEach(item => {
-        const filePath = path.join(backupsDir, item.filename);
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-          console.log(`[Scheduler] Deleted old automatic backup: ${item.filename}`);
-        }
-      });
-    }
+    pruneAutoBackups(5);
   } catch (error) {
     console.error("[Scheduler] Automatic backup process failed:", error);
   }
@@ -82,13 +39,13 @@ export function runAutoBackup() {
 
 export function startScheduler() {
   console.log("[Scheduler] Initializing automatic backup daemon (7-day intervals)...");
-  
-  // Run on startup
-  runAutoBackup();
+
+  // Run on startup (async; don't block listen)
+  void runAutoBackup();
 
   // Run periodic check (every 12 hours)
   const twelveHoursMs = 12 * 60 * 60 * 1000;
   setInterval(() => {
-    runAutoBackup();
+    void runAutoBackup();
   }, twelveHoursMs);
 }
