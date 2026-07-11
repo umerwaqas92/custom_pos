@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { useStore } from "../store/useStore";
@@ -39,9 +39,31 @@ import {
 
 const LOW_STOCK_THRESHOLD = 3;
 
+const MONTH_LABELS = [
+  { value: "01", short: "Jan", full: "January" },
+  { value: "02", short: "Feb", full: "February" },
+  { value: "03", short: "Mar", full: "March" },
+  { value: "04", short: "Apr", full: "April" },
+  { value: "05", short: "May", full: "May" },
+  { value: "06", short: "Jun", full: "June" },
+  { value: "07", short: "Jul", full: "July" },
+  { value: "08", short: "Aug", full: "August" },
+  { value: "09", short: "Sep", full: "September" },
+  { value: "10", short: "Oct", full: "October" },
+  { value: "11", short: "Nov", full: "November" },
+  { value: "12", short: "Dec", full: "December" }
+];
+
+type DateFilter = "ALL" | "TODAY" | "7_DAYS" | "30_DAYS";
+
 interface Stats {
   todaySales: number;
   todaySalesCount: number;
+  periodSales?: number;
+  periodSalesCount?: number;
+  periodExpenses?: number;
+  periodProfit?: number;
+  periodLabel?: string;
   monthlySales: number;
   monthlySalesCount: number;
   monthlyExpenses: number;
@@ -61,6 +83,8 @@ interface Stats {
   totalBalance: number;
   recentSales: any[];
   recentCustomers: any[];
+  availableYears?: number[];
+  monthsWithSales?: Record<string, number>;
 }
 
 interface ChartData {
@@ -84,35 +108,59 @@ export default function Dashboard() {
   const [lowStockList, setLowStockList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Date filters (same UX as Sales History)
+  const [selectedMonth, setSelectedMonth] = useState<string>("ALL");
+  const [selectedYear, setSelectedYear] = useState<string>("ALL");
+  const [dateFilter, setDateFilter] = useState<DateFilter>("ALL");
+
+  const filterParams = useMemo(() => {
+    const params: Record<string, string> = {};
+    if (selectedBranchId) params.branchId = selectedBranchId;
+    if (selectedMonth !== "ALL") params.month = selectedMonth;
+    if (selectedYear !== "ALL") params.year = selectedYear;
+    if (selectedMonth === "ALL" && selectedYear === "ALL" && dateFilter !== "ALL") {
+      params.range = dateFilter;
+    }
+    return params;
+  }, [selectedBranchId, selectedMonth, selectedYear, dateFilter]);
+
+  const hasActiveDateFilter =
+    selectedMonth !== "ALL" || selectedYear !== "ALL" || dateFilter !== "ALL";
+
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const branchParams = selectedBranchId ? { branchId: selectedBranchId } : {};
-      const opts = { params: branchParams, timeout: 20000 };
+      const opts = { params: filterParams, timeout: 20000 };
       const [statsRes, chartsRes, topRes, alertRes] = await Promise.all([
         axios.get("/api/reports/dashboard-stats", opts),
-        axios.get("/api/reports/charts", { timeout: 20000 }),
-        axios.get("/api/reports/top-selling", { timeout: 20000 }),
-        axios.get("/api/inventory/alerts", opts)
+        axios.get("/api/reports/charts", opts),
+        axios.get("/api/reports/top-selling", opts),
+        axios.get("/api/inventory/alerts", {
+          params: selectedBranchId ? { branchId: selectedBranchId } : {},
+          timeout: 20000
+        })
       ]);
 
-      const charts = chartsRes.data && typeof chartsRes.data === "object" ? chartsRes.data : {};
+      const chartsData = chartsRes.data && typeof chartsRes.data === "object" ? chartsRes.data : {};
       setStats(statsRes.data && typeof statsRes.data === "object" ? statsRes.data : null);
       setCharts({
-        salesTrend: Array.isArray(charts.salesTrend) ? charts.salesTrend : [],
-        dailyRevenue: Array.isArray(charts.dailyRevenue) ? charts.dailyRevenue : [],
-        profitTrend: Array.isArray(charts.profitTrend) ? charts.profitTrend : [],
-        categoryChartData: Array.isArray(charts.categoryChartData) ? charts.categoryChartData : [],
-        brandChartData: Array.isArray(charts.brandChartData) ? charts.brandChartData : []
+        salesTrend: Array.isArray(chartsData.salesTrend) ? chartsData.salesTrend : [],
+        dailyRevenue: Array.isArray(chartsData.dailyRevenue) ? chartsData.dailyRevenue : [],
+        profitTrend: Array.isArray(chartsData.profitTrend) ? chartsData.profitTrend : [],
+        categoryChartData: Array.isArray(chartsData.categoryChartData) ? chartsData.categoryChartData : [],
+        brandChartData: Array.isArray(chartsData.brandChartData) ? chartsData.brandChartData : []
       });
       setTopProducts(Array.isArray(topRes.data) ? topRes.data : []);
       setLowStockList(Array.isArray(alertRes.data) ? alertRes.data : []);
     } catch (err) {
       console.error(err);
-      // Don't leave user on infinite spinner — show empty dashboard shell
       setStats({
         todaySales: 0,
         todaySalesCount: 0,
+        periodSales: 0,
+        periodSalesCount: 0,
+        periodExpenses: 0,
+        periodProfit: 0,
         monthlySales: 0,
         monthlySalesCount: 0,
         monthlyExpenses: 0,
@@ -150,12 +198,21 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchDashboardData();
-  }, [addNotification, selectedBranchId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedBranchId, selectedMonth, selectedYear, dateFilter]);
+
+  const monthsWithSales = stats?.monthsWithSales || {};
+  const yearOptions = useMemo(() => {
+    const fromApi = Array.isArray(stats?.availableYears) ? stats!.availableYears! : [];
+    const nowY = new Date().getFullYear();
+    const set = new Set<number>([...fromApi, nowY]);
+    return Array.from(set).sort((a, b) => b - a);
+  }, [stats?.availableYears]);
 
   const activeBranch = branches.find((b) => b.id === selectedBranchId);
   const displayName = activeBranch?.name || "Dashboard";
 
-  if (loading) {
+  if (loading && !stats) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="flex flex-col items-center gap-2">
@@ -165,6 +222,17 @@ export default function Dashboard() {
       </div>
     );
   }
+
+  const periodSales = hasActiveDateFilter
+    ? stats?.periodSales ?? stats?.totalRevenue ?? 0
+    : stats?.monthlySales ?? 0;
+  const periodCount = hasActiveDateFilter
+    ? stats?.periodSalesCount ?? stats?.totalSalesCount ?? 0
+    : stats?.monthlySalesCount ?? 0;
+  const periodProfit = hasActiveDateFilter
+    ? stats?.periodProfit ?? stats?.netProfit ?? 0
+    : stats?.monthlyProfit ?? 0;
+  const periodLabel = stats?.periodLabel || (hasActiveDateFilter ? "Selected period" : "This month");
 
   const statCards = [
     {
@@ -178,9 +246,9 @@ export default function Dashboard() {
       to: "/sales-history"
     },
     {
-      title: "Monthly Sales",
-      value: money(stats?.monthlySales),
-      description: `${stats?.monthlySalesCount || 0} invoices this month`,
+      title: hasActiveDateFilter ? "Period Sales" : "Monthly Sales",
+      value: money(periodSales),
+      description: `${periodCount} invoices · ${periodLabel}`,
       icon: DollarSign,
       iconSrc: "/icons/dashboard/monthly-sales.png",
       color: "bg-blue-500/10 text-blue-400 border-blue-500/20",
@@ -188,9 +256,9 @@ export default function Dashboard() {
       to: "/sales-history"
     },
     {
-      title: "Monthly Profit",
-      value: money(stats?.monthlyProfit),
-      description: "Sales − expenses (this month)",
+      title: hasActiveDateFilter ? "Period Profit" : "Monthly Profit",
+      value: money(periodProfit),
+      description: hasActiveDateFilter ? `Sales − expenses · ${periodLabel}` : "Sales − expenses (this month)",
       icon: TrendingUp,
       iconSrc: "/icons/dashboard/monthly-profit.png",
       color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
@@ -290,7 +358,9 @@ export default function Dashboard() {
           </div>
           <h1 className="text-2xl font-black tracking-tight text-foreground">Business Overview</h1>
           <p className="text-sm text-muted-foreground">
-            Today, month-to-date sales, stock health, cash, and performance trends.
+            {hasActiveDateFilter
+              ? `Filtered: ${periodLabel}. Today snapshot, stock, and cash still shown below.`
+              : "Today, month-to-date sales, stock health, cash, and performance trends."}
           </p>
         </div>
         <button
@@ -300,6 +370,149 @@ export default function Dashboard() {
         >
           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Refresh
         </button>
+      </div>
+
+      {/* Date filters — same pattern as Sales History */}
+      <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 bg-secondary border border-border rounded-xl px-3 py-2 min-w-[140px]">
+            <Calendar className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+            <select
+              value={selectedYear}
+              onChange={(e) => {
+                setSelectedYear(e.target.value);
+                setDateFilter("ALL");
+              }}
+              className="flex-1 bg-transparent text-xs text-foreground focus:outline-none cursor-pointer"
+            >
+              <option value="ALL">All years</option>
+              {yearOptions.map((y) => (
+                <option key={y} value={String(y)}>
+                  {y}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center gap-2 bg-secondary border border-border rounded-xl px-3 py-2 min-w-[160px]">
+            <select
+              value={selectedMonth}
+              onChange={(e) => {
+                setSelectedMonth(e.target.value);
+                setDateFilter("ALL");
+              }}
+              className="flex-1 bg-transparent text-xs text-foreground focus:outline-none cursor-pointer"
+            >
+              <option value="ALL">All months</option>
+              {MONTH_LABELS.map((m) => (
+                <option key={m.value} value={m.value}>
+                  {m.full}
+                  {monthsWithSales[m.value] ? ` (${monthsWithSales[m.value]})` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+          {hasActiveDateFilter && (
+            <span className="text-[11px] font-semibold text-primary bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-lg">
+              {periodLabel}
+            </span>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">
+              Quick month
+              {selectedYear !== "ALL" ? ` · ${selectedYear}` : " · all years"}
+            </span>
+            {hasActiveDateFilter && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedMonth("ALL");
+                  setSelectedYear("ALL");
+                  setDateFilter("ALL");
+                }}
+                className="text-[10px] font-bold text-primary hover:underline"
+              >
+                Clear date filters
+              </button>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedMonth("ALL");
+                setDateFilter("ALL");
+              }}
+              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition border ${
+                selectedMonth === "ALL"
+                  ? "bg-primary text-white border-primary"
+                  : "bg-secondary border-border text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              All
+            </button>
+            {MONTH_LABELS.map((m) => {
+              const count = monthsWithSales[m.value] || 0;
+              const active = selectedMonth === m.value;
+              return (
+                <button
+                  key={m.value}
+                  type="button"
+                  onClick={() => {
+                    setSelectedMonth(m.value);
+                    setDateFilter("ALL");
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition border min-w-[3rem] ${
+                    active
+                      ? "bg-primary text-white border-primary"
+                      : count > 0
+                        ? "bg-secondary border-border text-foreground hover:border-primary/40"
+                        : "bg-secondary/40 border-border/60 text-muted-foreground/60 hover:text-muted-foreground"
+                  }`}
+                  title={count > 0 ? `${m.full}: ${count} sales` : `${m.full}: no sales`}
+                >
+                  {m.short}
+                  {count > 0 && (
+                    <span className={`ml-1 text-[9px] ${active ? "text-white/80" : "text-muted-foreground"}`}>
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/60">
+          <span className="text-[10px] font-bold uppercase text-muted-foreground">Quick range:</span>
+          {(
+            [
+              { value: "ALL" as const, label: "All time" },
+              { value: "TODAY" as const, label: "Today" },
+              { value: "7_DAYS" as const, label: "7 days" },
+              { value: "30_DAYS" as const, label: "30 days" }
+            ]
+          ).map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => {
+                setDateFilter(opt.value);
+                setSelectedMonth("ALL");
+                setSelectedYear("ALL");
+              }}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition border ${
+                dateFilter === opt.value && selectedMonth === "ALL" && selectedYear === "ALL"
+                  ? "bg-primary/15 text-primary border-primary/30"
+                  : "bg-secondary border-border text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* KPI cards */}
@@ -440,7 +653,9 @@ export default function Dashboard() {
             <h3 className="font-bold text-sm text-foreground flex-1">Best Categories</h3>
             <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition" />
           </div>
-          <p className="text-[10px] text-muted-foreground mb-2">By sales revenue · last 30 days</p>
+          <p className="text-[10px] text-muted-foreground mb-2">
+            By sales revenue · {hasActiveDateFilter ? periodLabel : "selected period"}
+          </p>
           <div className="flex-1 w-full min-h-0 flex items-center justify-center">
             {charts?.categoryChartData && charts.categoryChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -482,7 +697,9 @@ export default function Dashboard() {
             <h3 className="font-bold text-sm text-foreground flex-1">Best Brands</h3>
             <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition" />
           </div>
-          <p className="text-[10px] text-muted-foreground mb-2">By sales revenue · last 30 days</p>
+          <p className="text-[10px] text-muted-foreground mb-2">
+            By sales revenue · {hasActiveDateFilter ? periodLabel : "selected period"}
+          </p>
           <div className="flex-1 w-full min-h-0">
             {charts?.brandChartData && charts.brandChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">

@@ -665,21 +665,143 @@ function reports_export(array $params): void
     }
 }
 
-/* ---------- Existing dashboard endpoints (enhanced charts) ---------- */
+/* ---------- Dashboard endpoints (date filters: startDate/endDate/month/year) ---------- */
+
+/**
+ * Build SQL fragments for sales filters used by dashboard.
+ * @return array{0:string,1:list<mixed>,2:string} [saleWhere, saleArgs, periodLabel]
+ */
+function reports_dashboard_period_filter(): array
+{
+    $q = query_params();
+    $branchId = isset($q['branchId']) && $q['branchId'] !== '' ? (string) $q['branchId'] : null;
+    $startDate = isset($q['startDate']) && $q['startDate'] !== '' ? (string) $q['startDate'] : null;
+    $endDate = isset($q['endDate']) && $q['endDate'] !== '' ? (string) $q['endDate'] : null;
+    $month = isset($q['month']) && $q['month'] !== '' && $q['month'] !== 'ALL' ? (string) $q['month'] : null;
+    $year = isset($q['year']) && $q['year'] !== '' && $q['year'] !== 'ALL' ? (string) $q['year'] : null;
+    $range = isset($q['range']) ? strtoupper((string) $q['range']) : 'ALL';
+
+    $where = '1=1';
+    $args = [];
+    $label = 'All time';
+
+    if ($branchId) {
+        $where .= ' AND branch_id = ?';
+        $args[] = $branchId;
+    }
+
+    // Explicit range wins when provided
+    if ($startDate || $endDate) {
+        if ($startDate) {
+            $where .= ' AND sale_date >= ?';
+            $args[] = date('Y-m-d 00:00:00', strtotime($startDate));
+        }
+        if ($endDate) {
+            $where .= ' AND sale_date <= ?';
+            $args[] = date('Y-m-d 23:59:59', strtotime($endDate));
+        }
+        $label = ($startDate ?: '…') . ' → ' . ($endDate ?: '…');
+        return [$where, $args, $label];
+    }
+
+    // Month / year chips (same semantics as Sales History)
+    if ($month !== null || $year !== null) {
+        if ($year !== null) {
+            $where .= ' AND YEAR(sale_date) = ?';
+            $args[] = (int) $year;
+        }
+        if ($month !== null) {
+            $where .= ' AND MONTH(sale_date) = ?';
+            $args[] = (int) $month;
+        }
+        $months = [1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep', 10 => 'Oct', 11 => 'Nov', 12 => 'Dec'];
+        $mLabel = $month !== null ? ($months[(int) $month] ?? $month) : 'All months';
+        $yLabel = $year !== null ? $year : 'all years';
+        $label = "{$mLabel} · {$yLabel}";
+        return [$where, $args, $label];
+    }
+
+    // Quick ranges
+    if ($range === 'TODAY') {
+        $where .= ' AND sale_date >= ? AND sale_date <= ?';
+        $args[] = date('Y-m-d 00:00:00');
+        $args[] = date('Y-m-d 23:59:59');
+        $label = 'Today';
+    } elseif ($range === '7_DAYS') {
+        $where .= ' AND sale_date >= ?';
+        $args[] = date('Y-m-d 00:00:00', strtotime('-7 days'));
+        $label = 'Last 7 days';
+    } elseif ($range === '30_DAYS') {
+        $where .= ' AND sale_date >= ?';
+        $args[] = date('Y-m-d 00:00:00', strtotime('-30 days'));
+        $label = 'Last 30 days';
+    }
+
+    return [$where, $args, $label];
+}
+
+/** Expense filter parallel to sales period (uses `date` column, no branch). */
+function reports_expense_period_filter(): array
+{
+    $q = query_params();
+    $startDate = isset($q['startDate']) && $q['startDate'] !== '' ? (string) $q['startDate'] : null;
+    $endDate = isset($q['endDate']) && $q['endDate'] !== '' ? (string) $q['endDate'] : null;
+    $month = isset($q['month']) && $q['month'] !== '' && $q['month'] !== 'ALL' ? (string) $q['month'] : null;
+    $year = isset($q['year']) && $q['year'] !== '' && $q['year'] !== 'ALL' ? (string) $q['year'] : null;
+    $range = isset($q['range']) ? strtoupper((string) $q['range']) : 'ALL';
+
+    $where = '1=1';
+    $args = [];
+    if ($startDate || $endDate) {
+        if ($startDate) {
+            $where .= ' AND date >= ?';
+            $args[] = date('Y-m-d 00:00:00', strtotime($startDate));
+        }
+        if ($endDate) {
+            $where .= ' AND date <= ?';
+            $args[] = date('Y-m-d 23:59:59', strtotime($endDate));
+        }
+        return [$where, $args];
+    }
+    if ($month !== null || $year !== null) {
+        if ($year !== null) {
+            $where .= ' AND YEAR(date) = ?';
+            $args[] = (int) $year;
+        }
+        if ($month !== null) {
+            $where .= ' AND MONTH(date) = ?';
+            $args[] = (int) $month;
+        }
+        return [$where, $args];
+    }
+    if ($range === 'TODAY') {
+        $where .= ' AND date >= ? AND date <= ?';
+        $args[] = date('Y-m-d 00:00:00');
+        $args[] = date('Y-m-d 23:59:59');
+    } elseif ($range === '7_DAYS') {
+        $where .= ' AND date >= ?';
+        $args[] = date('Y-m-d 00:00:00', strtotime('-7 days'));
+    } elseif ($range === '30_DAYS') {
+        $where .= ' AND date >= ?';
+        $args[] = date('Y-m-d 00:00:00', strtotime('-30 days'));
+    }
+    return [$where, $args];
+}
 
 function reports_dashboard_stats(array $params): void
 {
     $pdo = Database::pdo();
-    $branchId = query_params()['branchId'] ?? null;
+    [$saleWhere, $saleArgs, $periodLabel] = reports_dashboard_period_filter();
+    [$expWhere, $expArgs] = reports_expense_period_filter();
 
     $todayStart = date('Y-m-d 00:00:00');
     $monthStart = date('Y-m-01 00:00:00');
-
-    $saleFilter = '';
-    $saleArgs = [];
+    $branchId = query_params()['branchId'] ?? null;
+    $branchOnly = '';
+    $branchArgs = [];
     if ($branchId) {
-        $saleFilter = ' AND branch_id = ?';
-        $saleArgs[] = $branchId;
+        $branchOnly = ' AND branch_id = ?';
+        $branchArgs[] = $branchId;
     }
 
     $q = static function (PDO $pdo, string $sql, array $args = []) {
@@ -688,23 +810,31 @@ function reports_dashboard_stats(array $params): void
         return $st->fetch();
     };
 
+    // Always keep "today" snapshot (branch only)
     $today = $q(
         $pdo,
-        "SELECT COALESCE(SUM(payable_amount),0) AS total, COUNT(*) AS cnt FROM sales WHERE sale_date >= ?{$saleFilter}",
-        array_merge([$todayStart], $saleArgs)
+        "SELECT COALESCE(SUM(payable_amount),0) AS total, COUNT(*) AS cnt FROM sales WHERE sale_date >= ?{$branchOnly}",
+        array_merge([$todayStart], $branchArgs)
     );
-    $month = $q(
+
+    // Period sales (filtered)
+    $period = $q(
         $pdo,
-        "SELECT COALESCE(SUM(payable_amount),0) AS total, COUNT(*) AS cnt FROM sales WHERE sale_date >= ?{$saleFilter}",
-        array_merge([$monthStart], $saleArgs)
-    );
-    $all = $q(
-        $pdo,
-        "SELECT COALESCE(SUM(payable_amount),0) AS total, COUNT(*) AS cnt FROM sales WHERE 1=1{$saleFilter}",
+        "SELECT COALESCE(SUM(payable_amount),0) AS total, COUNT(*) AS cnt FROM sales WHERE {$saleWhere}",
         $saleArgs
     );
+
+    // Calendar month MTD (branch) for comparison card
+    $month = $q(
+        $pdo,
+        "SELECT COALESCE(SUM(payable_amount),0) AS total, COUNT(*) AS cnt FROM sales WHERE sale_date >= ?{$branchOnly}",
+        array_merge([$monthStart], $branchArgs)
+    );
+
+    $expensesPeriod = $q($pdo, "SELECT COALESCE(SUM(amount),0) AS total FROM expenses WHERE {$expWhere}", $expArgs);
     $expensesMonth = $q($pdo, "SELECT COALESCE(SUM(amount),0) AS total FROM expenses WHERE date >= ?", [$monthStart]);
     $expensesAll = $q($pdo, "SELECT COALESCE(SUM(amount),0) AS total FROM expenses");
+
     $products = $q(
         $pdo,
         "SELECT COUNT(*) AS cnt, COALESCE(SUM(stock_quantity),0) AS units,
@@ -729,14 +859,16 @@ function reports_dashboard_stats(array $params): void
         }
     }
 
+    $periodSales = (float) ($period['total'] ?? 0);
+    $periodCount = (int) ($period['cnt'] ?? 0);
+    $periodExpenses = (float) ($expensesPeriod['total'] ?? 0);
     $monthlySales = (float) ($month['total'] ?? 0);
     $monthlyExpenses = (float) ($expensesMonth['total'] ?? 0);
-    $totalRevenue = (float) ($all['total'] ?? 0);
     $totalExpenses = (float) ($expensesAll['total'] ?? 0);
 
     $recentSql = "SELECT s.id, s.payable_amount, s.sale_date, s.payment_method, c.name AS customer_name
                   FROM sales s LEFT JOIN customers c ON c.id = s.customer_id
-                  WHERE 1=1{$saleFilter} ORDER BY s.sale_date DESC LIMIT 8";
+                  WHERE {$saleWhere} ORDER BY s.sale_date DESC LIMIT 8";
     $st = $pdo->prepare($recentSql);
     $st->execute($saleArgs);
     $recentSales = [];
@@ -761,9 +893,32 @@ function reports_dashboard_stats(array $params): void
         ];
     }
 
+    // Years/months that have sales (for UI chips)
+    $yearRows = $pdo->query(
+        "SELECT YEAR(sale_date) AS y, COUNT(*) AS c FROM sales
+         WHERE YEAR(sale_date) <= YEAR(CURDATE())+1
+         GROUP BY y ORDER BY c DESC, y DESC"
+    )->fetchAll();
+    $years = array_map(static fn($r) => (int) $r['y'], $yearRows);
+    $monthRows = $pdo->query(
+        'SELECT MONTH(sale_date) AS m, COUNT(*) AS c FROM sales GROUP BY m'
+    )->fetchAll();
+    $monthsWithSales = [];
+    foreach ($monthRows as $r) {
+        $key = str_pad((string) $r['m'], 2, '0', STR_PAD_LEFT);
+        $monthsWithSales[$key] = (int) $r['c'];
+    }
+
     json_response([
+        'periodLabel' => $periodLabel,
         'todaySales' => (float) ($today['total'] ?? 0),
         'todaySalesCount' => (int) ($today['cnt'] ?? 0),
+        // Period-aware fields (primary KPI for filtered view)
+        'periodSales' => $periodSales,
+        'periodSalesCount' => $periodCount,
+        'periodExpenses' => $periodExpenses,
+        'periodProfit' => $periodSales - $periodExpenses,
+        // Calendar month (always MTD) for secondary cards
         'monthlySales' => $monthlySales,
         'monthlySalesCount' => (int) ($month['cnt'] ?? 0),
         'monthlyExpenses' => $monthlyExpenses,
@@ -772,10 +927,10 @@ function reports_dashboard_stats(array $params): void
         'totalUnitsInStock' => (int) ($products['units'] ?? 0),
         'lowStockCount' => (int) ($products['low'] ?? 0),
         'outOfStockCount' => (int) ($products['outq'] ?? 0),
-        'totalSalesCount' => (int) ($all['cnt'] ?? 0),
-        'totalRevenue' => $totalRevenue,
-        'totalExpenses' => $totalExpenses,
-        'netProfit' => $totalRevenue - $totalExpenses,
+        'totalSalesCount' => $periodCount,
+        'totalRevenue' => $periodSales,
+        'totalExpenses' => $periodExpenses > 0 ? $periodExpenses : $totalExpenses,
+        'netProfit' => $periodSales - $periodExpenses,
         'totalCustomers' => (int) ($customers['cnt'] ?? 0),
         'cashBalance' => $cash,
         'bankBalance' => $bank,
@@ -783,54 +938,110 @@ function reports_dashboard_stats(array $params): void
         'totalBalance' => $cash + $bank + $wallet,
         'recentSales' => $recentSales,
         'recentCustomers' => $recentCustomers,
+        'availableYears' => $years,
+        'monthsWithSales' => $monthsWithSales,
     ]);
 }
 
 function reports_charts(array $params): void
 {
     $pdo = Database::pdo();
+    [$saleWhere, $saleArgs] = reports_dashboard_period_filter();
+    // Strip branch_id alias — charts SQL uses s. prefix
+    $saleWhereS = str_replace('branch_id', 's.branch_id', str_replace('sale_date', 's.sale_date', $saleWhere));
+    $expWhere = str_replace('sale_date', 'date', explode(' AND branch_id', $saleWhere)[0]);
+    // rebuild expense filter cleanly
+    [$expWhere, $expArgs] = reports_expense_period_filter();
+
+    $q = query_params();
+    $hasCustom = !empty($q['startDate']) || !empty($q['endDate'])
+        || (!empty($q['month']) && $q['month'] !== 'ALL')
+        || (!empty($q['year']) && $q['year'] !== 'ALL')
+        || (!empty($q['range']) && strtoupper((string) $q['range']) !== 'ALL');
+
     $salesTrend = [];
     $dailyRevenue = [];
     $profitTrend = [];
 
-    for ($i = 13; $i >= 0; $i--) {
-        $day = date('Y-m-d', strtotime("-{$i} days"));
-        $start = $day . ' 00:00:00';
-        $end = $day . ' 23:59:59';
+    if (!$hasCustom) {
+        // Default: last 14 days
+        for ($i = 13; $i >= 0; $i--) {
+            $day = date('Y-m-d', strtotime("-{$i} days"));
+            $start = $day . ' 00:00:00';
+            $end = $day . ' 23:59:59';
+            $st = $pdo->prepare(
+                'SELECT COALESCE(SUM(payable_amount),0) AS rev FROM sales WHERE sale_date BETWEEN ? AND ?'
+            );
+            $st->execute([$start, $end]);
+            $rev = (float) $st->fetchColumn();
+            $st = $pdo->prepare(
+                'SELECT COALESCE(SUM(amount),0) AS exp FROM expenses WHERE date BETWEEN ? AND ?'
+            );
+            $st->execute([$start, $end]);
+            $exp = (float) $st->fetchColumn();
+            $label = date('M j', strtotime($day));
+            $salesTrend[] = ['date' => $label, 'fullDate' => $day, 'revenue' => $rev];
+            $dailyRevenue[] = ['date' => $label, 'fullDate' => $day, 'revenue' => $rev];
+            $profitTrend[] = [
+                'date' => $label,
+                'fullDate' => $day,
+                'revenue' => $rev,
+                'expenses' => $exp,
+                'profit' => $rev - $exp,
+            ];
+        }
+    } else {
+        // Group filtered period by day (max 62 points)
         $st = $pdo->prepare(
-            'SELECT COALESCE(SUM(payable_amount),0) AS rev FROM sales WHERE sale_date BETWEEN ? AND ?'
+            "SELECT DATE(s.sale_date) AS d, COALESCE(SUM(s.payable_amount),0) AS rev
+             FROM sales s WHERE {$saleWhereS}
+             GROUP BY DATE(s.sale_date) ORDER BY d ASC LIMIT 62"
         );
-        $st->execute([$start, $end]);
-        $rev = (float) $st->fetchColumn();
+        $st->execute($saleArgs);
+        $byDay = [];
+        foreach ($st->fetchAll() as $r) {
+            $byDay[$r['d']] = (float) $r['rev'];
+        }
         $st = $pdo->prepare(
-            'SELECT COALESCE(SUM(amount),0) AS exp FROM expenses WHERE date BETWEEN ? AND ?'
+            "SELECT DATE(date) AS d, COALESCE(SUM(amount),0) AS exp FROM expenses WHERE {$expWhere}
+             GROUP BY DATE(date)"
         );
-        $st->execute([$start, $end]);
-        $exp = (float) $st->fetchColumn();
-        $label = date('M j', strtotime($day));
-        $salesTrend[] = ['date' => $label, 'fullDate' => $day, 'revenue' => $rev];
-        $dailyRevenue[] = ['date' => $label, 'fullDate' => $day, 'revenue' => $rev];
-        $profitTrend[] = [
-            'date' => $label,
-            'fullDate' => $day,
-            'revenue' => $rev,
-            'expenses' => $exp,
-            'profit' => $rev - $exp,
-        ];
+        $st->execute($expArgs);
+        $expByDay = [];
+        foreach ($st->fetchAll() as $r) {
+            $expByDay[$r['d']] = (float) $r['exp'];
+        }
+        $days = array_unique(array_merge(array_keys($byDay), array_keys($expByDay)));
+        sort($days);
+        if (!$days) {
+            $days = [date('Y-m-d')];
+        }
+        foreach ($days as $day) {
+            $rev = $byDay[$day] ?? 0.0;
+            $exp = $expByDay[$day] ?? 0.0;
+            $label = date('M j', strtotime($day));
+            $salesTrend[] = ['date' => $label, 'fullDate' => $day, 'revenue' => $rev];
+            $dailyRevenue[] = ['date' => $label, 'fullDate' => $day, 'revenue' => $rev];
+            $profitTrend[] = [
+                'date' => $label,
+                'fullDate' => $day,
+                'revenue' => $rev,
+                'expenses' => $exp,
+                'profit' => $rev - $exp,
+            ];
+        }
     }
 
-    // Category / brand share (last 90 days)
-    $since = date('Y-m-d 00:00:00', strtotime('-90 days'));
     $st = $pdo->prepare(
         "SELECT COALESCE(c.name,'Uncategorized') AS name, SUM(si.total_price) AS value
          FROM sale_items si
          JOIN sales s ON s.id = si.sale_id
          JOIN products p ON p.id = si.product_id
          LEFT JOIN categories c ON c.id = p.category_id
-         WHERE s.sale_date >= ?
+         WHERE {$saleWhereS}
          GROUP BY name ORDER BY value DESC LIMIT 10"
     );
-    $st->execute([$since]);
+    $st->execute($saleArgs);
     $categoryChartData = [];
     foreach ($st->fetchAll() as $r) {
         $categoryChartData[] = ['name' => $r['name'], 'value' => (float) $r['value']];
@@ -842,10 +1053,10 @@ function reports_charts(array $params): void
          JOIN sales s ON s.id = si.sale_id
          JOIN products p ON p.id = si.product_id
          LEFT JOIN brands br ON br.id = p.brand_id
-         WHERE s.sale_date >= ?
+         WHERE {$saleWhereS}
          GROUP BY brand ORDER BY revenue DESC LIMIT 10"
     );
-    $st->execute([$since]);
+    $st->execute($saleArgs);
     $brandChartData = [];
     foreach ($st->fetchAll() as $r) {
         $brandChartData[] = ['brand' => $r['brand'], 'revenue' => (float) $r['revenue']];
@@ -863,16 +1074,21 @@ function reports_charts(array $params): void
 function reports_top_selling(array $params): void
 {
     $pdo = Database::pdo();
+    [$saleWhere, $saleArgs] = reports_dashboard_period_filter();
+    $saleWhereS = str_replace('branch_id', 's.branch_id', str_replace('sale_date', 's.sale_date', $saleWhere));
     $sql = "SELECT p.id, p.name, p.sku, br.name AS brand_name, SUM(si.quantity) AS qty, SUM(si.total_price) AS revenue
             FROM sale_items si
+            JOIN sales s ON s.id = si.sale_id
             JOIN products p ON p.id = si.product_id
             LEFT JOIN brands br ON br.id = p.brand_id
+            WHERE {$saleWhereS}
             GROUP BY p.id, p.name, p.sku, br.name
             ORDER BY qty DESC
             LIMIT 5";
-    $rows = $pdo->query($sql)->fetchAll();
+    $st = $pdo->prepare($sql);
+    $st->execute($saleArgs);
     $out = [];
-    foreach ($rows as $r) {
+    foreach ($st->fetchAll() as $r) {
         $out[] = [
             'name' => $r['name'],
             'sku' => $r['sku'],
