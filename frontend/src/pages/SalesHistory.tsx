@@ -70,6 +70,10 @@ export default function SalesHistory() {
   const [selectedBranch, setSelectedBranch] = useState("ALL");
   const [selectedCustomer, setSelectedCustomer] = useState("ALL");
   const [dateFilter, setDateFilter] = useState("ALL");
+  /** Year filter: "ALL" or "2026" */
+  const [selectedYear, setSelectedYear] = useState("ALL");
+  /** Month filter: "ALL" or "01"…"12" */
+  const [selectedMonth, setSelectedMonth] = useState("ALL");
 
   // Receipt
   const [activeSale, setActiveSale] = useState<any | null>(null);
@@ -340,6 +344,52 @@ export default function SalesHistory() {
     doc.close();
   };
 
+  const MONTH_LABELS = [
+    { value: "01", short: "Jan", full: "January" },
+    { value: "02", short: "Feb", full: "February" },
+    { value: "03", short: "Mar", full: "March" },
+    { value: "04", short: "Apr", full: "April" },
+    { value: "05", short: "May", full: "May" },
+    { value: "06", short: "Jun", full: "June" },
+    { value: "07", short: "Jul", full: "July" },
+    { value: "08", short: "Aug", full: "August" },
+    { value: "09", short: "Sep", full: "September" },
+    { value: "10", short: "Oct", full: "October" },
+    { value: "11", short: "Nov", full: "November" },
+    { value: "12", short: "Dec", full: "December" },
+  ];
+
+  /** Years that appear in sales data (most sales first, then newest) */
+  const yearOptions = useMemo(() => {
+    const counts = new Map<number, number>();
+    sales.forEach((s) => {
+      const d = new Date(s.saleDate);
+      if (isNaN(d.getTime())) return;
+      const y = d.getFullYear();
+      // Ignore far-future typo years (e.g. one bad 2027 import)
+      if (y > new Date().getFullYear() + 1) return;
+      counts.set(y, (counts.get(y) || 0) + 1);
+    });
+    const nowY = new Date().getFullYear();
+    if (!counts.has(nowY)) counts.set(nowY, 0);
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1] || b[0] - a[0])
+      .map(([y]) => y);
+  }, [sales]);
+
+  /** Months that have sales in the selected year (for chip highlight counts) */
+  const monthsWithSales = useMemo(() => {
+    const counts = new Map<string, number>();
+    sales.forEach((s) => {
+      const d = new Date(s.saleDate);
+      if (isNaN(d.getTime())) return;
+      if (selectedYear !== "ALL" && String(d.getFullYear()) !== selectedYear) return;
+      const key = String(d.getMonth() + 1).padStart(2, "0");
+      counts.set(key, (counts.get(key) || 0) + 1);
+    });
+    return counts;
+  }, [sales, selectedYear]);
+
   const filteredSales = sales.filter((s) => {
     const matchesSearch =
       s.id.toLowerCase().includes(search.toLowerCase()) ||
@@ -349,26 +399,41 @@ export default function SalesHistory() {
     const matchesBranch = selectedBranch === "ALL" || s.branchId === selectedBranch;
     const matchesCustomer = selectedCustomer === "ALL" || s.customerId === selectedCustomer;
 
-    let matchesDate = true;
     const saleDate = new Date(s.saleDate);
     const now = new Date();
 
-    if (dateFilter === "TODAY") {
-      matchesDate =
-        saleDate.getDate() === now.getDate() &&
-        saleDate.getMonth() === now.getMonth() &&
-        saleDate.getFullYear() === now.getFullYear();
-    } else if (dateFilter === "7_DAYS") {
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(now.getDate() - 7);
-      matchesDate = saleDate >= sevenDaysAgo;
-    } else if (dateFilter === "30_DAYS") {
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(now.getDate() - 30);
-      matchesDate = saleDate >= thirtyDaysAgo;
+    // Year / month filters (preferred when set)
+    let matchesMonthYear = true;
+    if (!isNaN(saleDate.getTime())) {
+      if (selectedYear !== "ALL" && String(saleDate.getFullYear()) !== selectedYear) {
+        matchesMonthYear = false;
+      }
+      if (selectedMonth !== "ALL") {
+        const m = String(saleDate.getMonth() + 1).padStart(2, "0");
+        if (m !== selectedMonth) matchesMonthYear = false;
+      }
     }
 
-    return matchesSearch && matchesBranch && matchesCustomer && matchesDate;
+    let matchesDate = true;
+    // Quick date range only when not using specific month (month already narrows the range)
+    if (selectedMonth === "ALL" && selectedYear === "ALL") {
+      if (dateFilter === "TODAY") {
+        matchesDate =
+          saleDate.getDate() === now.getDate() &&
+          saleDate.getMonth() === now.getMonth() &&
+          saleDate.getFullYear() === now.getFullYear();
+      } else if (dateFilter === "7_DAYS") {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(now.getDate() - 7);
+        matchesDate = saleDate >= sevenDaysAgo;
+      } else if (dateFilter === "30_DAYS") {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(now.getDate() - 30);
+        matchesDate = saleDate >= thirtyDaysAgo;
+      }
+    }
+
+    return matchesSearch && matchesBranch && matchesCustomer && matchesMonthYear && matchesDate;
   });
 
   const paymentMethodNames: Record<string, string> = {
@@ -456,63 +521,188 @@ export default function SalesHistory() {
 
       {tab === "sales" ? (
       <>
-      <div className="bg-card border border-border rounded-2xl p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="relative col-span-1 sm:col-span-2 lg:col-span-1">
-          <img src="/icons/sales-history/search.png?v=1" alt="" className="w-4 h-4 absolute left-3 top-3.5 object-contain opacity-70" draggable={false} />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by invoice ID, customer, cashier..."
-            className="w-full bg-secondary text-foreground text-xs border border-border pl-9 pr-4 py-3 rounded-xl focus:outline-none focus:ring-1 focus:ring-primary"
-          />
+      <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+          <div className="relative sm:col-span-2 lg:col-span-1 xl:col-span-1">
+            <img src="/icons/sales-history/search.png?v=1" alt="" className="w-4 h-4 absolute left-3 top-3.5 object-contain opacity-70" draggable={false} />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by invoice ID, customer, cashier..."
+              className="w-full bg-secondary text-foreground text-xs border border-border pl-9 pr-4 py-3 rounded-xl focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+
+          <div className="flex items-center gap-2 bg-secondary/50 border border-border p-2.5 rounded-xl">
+            <span className="text-[10px] font-bold uppercase text-muted-foreground pl-1.5">Branch:</span>
+            <select
+              value={selectedBranch}
+              onChange={(e) => setSelectedBranch(e.target.value)}
+              className="flex-1 bg-transparent text-xs text-foreground focus:outline-none cursor-pointer"
+            >
+              <option value="ALL">All Branches</option>
+              {branches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2 bg-secondary/50 border border-border p-2.5 rounded-xl">
+            <span className="text-[10px] font-bold uppercase text-muted-foreground pl-1.5">Customer:</span>
+            <select
+              value={selectedCustomer}
+              onChange={(e) => setSelectedCustomer(e.target.value)}
+              className="flex-1 bg-transparent text-xs text-foreground focus:outline-none cursor-pointer"
+            >
+              <option value="ALL">All Profiles</option>
+              {customers.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2 bg-secondary/50 border border-border p-2.5 rounded-xl">
+            <Calendar className="w-3.5 h-3.5 text-muted-foreground ml-1.5" />
+            <span className="text-[10px] font-bold uppercase text-muted-foreground">Year:</span>
+            <select
+              value={selectedYear}
+              onChange={(e) => {
+                setSelectedYear(e.target.value);
+                setDateFilter("ALL");
+              }}
+              className="flex-1 bg-transparent text-xs text-foreground focus:outline-none cursor-pointer"
+            >
+              <option value="ALL">All years</option>
+              {yearOptions.map((y) => (
+                <option key={y} value={String(y)}>
+                  {y}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2 bg-secondary/50 border border-border p-2.5 rounded-xl">
+            <span className="text-[10px] font-bold uppercase text-muted-foreground pl-1.5">Month:</span>
+            <select
+              value={selectedMonth}
+              onChange={(e) => {
+                setSelectedMonth(e.target.value);
+                setDateFilter("ALL");
+              }}
+              className="flex-1 bg-transparent text-xs text-foreground focus:outline-none cursor-pointer"
+            >
+              <option value="ALL">All months</option>
+              {MONTH_LABELS.map((m) => (
+                <option key={m.value} value={m.value}>
+                  {m.full}
+                  {monthsWithSales.has(m.value) ? ` (${monthsWithSales.get(m.value)})` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 bg-secondary/50 border border-border p-2.5 rounded-xl">
-          <span className="text-[10px] font-bold uppercase text-muted-foreground pl-1.5">Branch:</span>
-          <select
-            value={selectedBranch}
-            onChange={(e) => setSelectedBranch(e.target.value)}
-            className="flex-1 bg-transparent text-xs text-foreground focus:outline-none cursor-pointer"
-          >
-            <option value="ALL">All Branches</option>
-            {branches.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </select>
+        {/* Quick month chips */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">
+              Quick month
+              {selectedYear !== "ALL" ? ` · ${selectedYear}` : " · all years"}
+            </span>
+            {(selectedMonth !== "ALL" || selectedYear !== "ALL" || dateFilter !== "ALL") && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedMonth("ALL");
+                  setSelectedYear("ALL");
+                  setDateFilter("ALL");
+                }}
+                className="text-[10px] font-bold text-primary hover:underline"
+              >
+                Clear date filters
+              </button>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedMonth("ALL");
+                setDateFilter("ALL");
+              }}
+              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition border ${
+                selectedMonth === "ALL"
+                  ? "bg-primary text-white border-primary"
+                  : "bg-secondary border-border text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              All
+            </button>
+            {MONTH_LABELS.map((m) => {
+              const count = monthsWithSales.get(m.value) || 0;
+              const active = selectedMonth === m.value;
+              return (
+                <button
+                  key={m.value}
+                  type="button"
+                  onClick={() => {
+                    // Month only — do NOT auto-switch year (was forcing 2027)
+                    setSelectedMonth(m.value);
+                    setDateFilter("ALL");
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition border min-w-[3rem] ${
+                    active
+                      ? "bg-primary text-white border-primary"
+                      : count > 0
+                        ? "bg-secondary border-border text-foreground hover:border-primary/40"
+                        : "bg-secondary/40 border-border/60 text-muted-foreground/60 hover:text-muted-foreground"
+                  }`}
+                  title={count > 0 ? `${m.full}: ${count} sales` : `${m.full}: no sales`}
+                >
+                  {m.short}
+                  {count > 0 && (
+                    <span className={`ml-1 text-[9px] ${active ? "text-white/80" : "text-muted-foreground"}`}>
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 bg-secondary/50 border border-border p-2.5 rounded-xl">
-          <span className="text-[10px] font-bold uppercase text-muted-foreground pl-1.5">Customer:</span>
-          <select
-            value={selectedCustomer}
-            onChange={(e) => setSelectedCustomer(e.target.value)}
-            className="flex-1 bg-transparent text-xs text-foreground focus:outline-none cursor-pointer"
-          >
-            <option value="ALL">All Profiles</option>
-            {customers.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="flex items-center gap-2 bg-secondary/50 border border-border p-2.5 rounded-xl">
-          <Calendar className="w-3.5 h-3.5 text-muted-foreground ml-1.5" />
-          <span className="text-[10px] font-bold uppercase text-muted-foreground">Date:</span>
-          <select
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-            className="flex-1 bg-transparent text-xs text-foreground focus:outline-none cursor-pointer"
-          >
-            <option value="ALL">All Time</option>
-            <option value="TODAY">Today Only</option>
-            <option value="7_DAYS">Last 7 Days</option>
-            <option value="30_DAYS">Last 30 Days</option>
-          </select>
+        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/60">
+          <span className="text-[10px] font-bold uppercase text-muted-foreground">Quick range:</span>
+          {(
+            [
+              { value: "ALL", label: "All time" },
+              { value: "TODAY", label: "Today" },
+              { value: "7_DAYS", label: "7 days" },
+              { value: "30_DAYS", label: "30 days" },
+            ] as const
+          ).map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => {
+                setDateFilter(opt.value);
+                setSelectedMonth("ALL");
+                setSelectedYear("ALL");
+              }}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition border ${
+                dateFilter === opt.value && selectedMonth === "ALL" && selectedYear === "ALL"
+                  ? "bg-primary/15 text-primary border-primary/30"
+                  : "bg-secondary border-border text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
         </div>
       </div>
 
