@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import { useStore } from "../store/useStore";
 import PortalModal from "../components/PortalModal";
 import {
@@ -45,9 +46,20 @@ const REFUND_METHODS = [
 
 export default function SalesHistory() {
   const { addNotification } = useStore();
+  const navigate = useNavigate();
   const [tab, setTab] = useState<"sales" | "returns">("sales");
   const [sales, setSales] = useState<any[]>([]);
   const [returns, setReturns] = useState<any[]>([]);
+
+  /** Open Contacts and search this customer */
+  const openCustomerInContacts = (customer: { id?: string; name?: string } | null | undefined) => {
+    if (!customer?.name) return;
+    const params = new URLSearchParams();
+    params.set("tab", "customers");
+    params.set("q", customer.name);
+    if (customer.id) params.set("id", customer.id);
+    navigate(`/contacts?${params.toString()}`);
+  };
   const [branches, setBranches] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -559,7 +571,17 @@ export default function SalesHistory() {
                     <td className="py-4 text-muted-foreground">{new Date(s.saleDate).toLocaleString()}</td>
                     <td className="py-4 font-semibold text-foreground">
                       {s.customer ? (
-                        s.customer.name
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openCustomerInContacts(s.customer);
+                          }}
+                          className="text-left text-primary hover:underline font-semibold"
+                          title="Open customer in Contacts"
+                        >
+                          {s.customer.name}
+                        </button>
                       ) : (
                         <span className="text-muted-foreground italic">Walk-in Customer</span>
                       )}
@@ -683,7 +705,19 @@ export default function SalesHistory() {
                     <td className="py-4 text-muted-foreground">{new Date(r.returnDate).toLocaleString()}</td>
                     <td className="py-4 font-mono text-foreground">{r.saleId?.substring(0, 8)}</td>
                     <td className="py-4 font-semibold text-foreground">
-                      {r.sale?.customer?.name || (
+                      {r.sale?.customer ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openCustomerInContacts(r.sale.customer);
+                          }}
+                          className="text-left text-primary hover:underline font-semibold"
+                          title="Open customer in Contacts"
+                        >
+                          {r.sale.customer.name}
+                        </button>
+                      ) : (
                         <span className="italic text-muted-foreground">Walk-in</span>
                       )}
                     </td>
@@ -801,7 +835,15 @@ export default function SalesHistory() {
               {activeSale.customer && (
                 <div className="bg-secondary/60 p-2 rounded text-[10px] text-muted-foreground">
                   <p>
-                    Customer: <strong>{activeSale.customer.name}</strong>
+                    Customer:{" "}
+                    <button
+                      type="button"
+                      onClick={() => openCustomerInContacts(activeSale.customer)}
+                      className="font-bold text-primary hover:underline"
+                      title="Open customer in Contacts"
+                    >
+                      {activeSale.customer.name}
+                    </button>
                   </p>
                   {activeSale.paymentMethod === "EMI" ? (
                     <p>

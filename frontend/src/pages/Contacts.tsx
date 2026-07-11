@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
+import { useSearchParams } from "react-router-dom";
 import { useStore } from "../store/useStore";
 import PortalModal from "../components/PortalModal";
 import {
@@ -22,6 +23,7 @@ const PAGE_SIZE = 15;
 
 export default function Contacts() {
   const { addNotification } = useStore();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<"CUSTOMERS" | "SUPPLIERS">("CUSTOMERS");
   const [customers, setCustomers] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<any[]>([]);
@@ -77,6 +79,18 @@ export default function Contacts() {
   useEffect(() => {
     loadContacts();
   }, []);
+
+  // From Sales History: /contacts?tab=customers&q=Name — open Customers and search that person
+  useEffect(() => {
+    const tab = (searchParams.get("tab") || "").toLowerCase();
+    const q = searchParams.get("q") || searchParams.get("search") || "";
+    if (tab === "suppliers") setActiveTab("SUPPLIERS");
+    else if (tab === "customers" || q) setActiveTab("CUSTOMERS");
+    if (q) {
+      setSearch(q);
+      setCurrentPage(1);
+    }
+  }, [searchParams]);
 
   const handleCreateCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -409,8 +423,17 @@ export default function Contacts() {
                     </td>
                   </tr>
                 ) : (
-                  paginatedData.map((c) => (
-                    <tr key={c.id} className={`hover:bg-secondary/20 transition ${selectedIds.has(c.id) ? "bg-primary/5" : ""}`}>
+                  paginatedData.map((c) => {
+                    const fromHistory =
+                      searchParams.get("id") === c.id ||
+                      (search && c.name.toLowerCase() === search.trim().toLowerCase());
+                    return (
+                    <tr
+                      key={c.id}
+                      className={`hover:bg-secondary/20 transition ${
+                        selectedIds.has(c.id) ? "bg-primary/5" : ""
+                      } ${fromHistory ? "bg-primary/10 ring-1 ring-inset ring-primary/30" : ""}`}
+                    >
                       <td className="py-4 pl-2">
                         <input
                           type="checkbox"
@@ -454,7 +477,8 @@ export default function Contacts() {
                         </div>
                       </td>
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
             </table>
