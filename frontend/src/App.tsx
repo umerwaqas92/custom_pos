@@ -16,8 +16,9 @@ import CategoriesBrands from "./pages/CategoriesBrands";
 import SalesHistory from "./pages/SalesHistory";
 import Settings from "./pages/Settings";
 
-// Set Axios Base URL
-axios.defaults.baseURL = "http://localhost:5001";
+// Dev: hit Express on 5001 (Vite proxies /api too).
+// Production desktop: UI is served by Express → same origin, relative /api.
+axios.defaults.baseURL = import.meta.env.PROD ? "" : "http://127.0.0.1:5001";
 
 // Login Page Component
 function Login() {

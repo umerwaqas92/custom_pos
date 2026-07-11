@@ -1,6 +1,7 @@
 datasource db {
   provider = "sqlite"
-  url      = "file:./dev.db"
+  // Default local: file:./dev.db  |  Desktop app sets DATABASE_URL to userData path
+  url      = env("DATABASE_URL")
 }
 
 generator client {

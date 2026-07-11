@@ -19,7 +19,8 @@ import { startScheduler } from "./utils/scheduler";
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5001;
+const PORT = Number(process.env.PORT || 5001);
+const HOST = process.env.HOST || "0.0.0.0";
 
 // Ensure upload directory exists
 const uploadsDir = path.join(__dirname, "../public/uploads");
@@ -45,8 +46,34 @@ app.use("/api/settings", settingsRouter);
 
 // Health check endpoint
 app.get("/health", (req, res) => {
-  res.json({ status: "healthy", timestamp: new Date() });
+  res.json({ status: "healthy", timestamp: new Date(), electron: process.env.ELECTRON === "1" });
 });
+
+/**
+ * Desktop / production: serve built React app from frontend/dist
+ * so Electron can load http://127.0.0.1:PORT as a single window.
+ */
+const serveFrontend = process.env.SERVE_FRONTEND === "1" || process.env.ELECTRON === "1";
+const frontendDistCandidates = [
+  process.env.FRONTEND_DIST,
+  path.join(__dirname, "../../frontend/dist"),
+  path.join(__dirname, "../frontend/dist"),
+  process.env.POS_RESOURCES ? path.join(process.env.POS_RESOURCES, "frontend", "dist") : "",
+].filter(Boolean) as string[];
+
+const frontendDist = frontendDistCandidates.find((p) => p && fs.existsSync(path.join(p, "index.html")));
+
+if (serveFrontend && frontendDist) {
+  app.use(express.static(frontendDist));
+  // SPA fallback (not for /api or /uploads)
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api") || req.path.startsWith("/uploads") || req.path === "/health") {
+      return next();
+    }
+    res.sendFile(path.join(frontendDist, "index.html"));
+  });
+  console.log(`Serving frontend from ${frontendDist}`);
+}
 
 // Global error handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -55,7 +82,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 });
 
 // Start the server
-app.listen(PORT, () => {
-  console.log(`Backend server successfully running on port ${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`Backend server successfully running on http://${HOST}:${PORT}`);
   startScheduler();
 });

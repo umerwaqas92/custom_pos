@@ -39,3 +39,6 @@ temp/
 # Backups
 backups/
 *.zip
+
+release/
+.DS_Store

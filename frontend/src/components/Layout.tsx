@@ -142,25 +142,34 @@ export default function Layout() {
           } bg-card border-r border-border flex flex-col justify-between transition-all duration-300 relative z-30`}
       >
         <div>
-          {/* Logo Section */}
-          <div className={`h-16 flex items-center border-b border-border relative ${sidebarOpen ? "px-5" : "justify-center"}`}>
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-xl bg-primary text-white flex-shrink-0">
+          {/* Logo Section — no absolute overlay on the title */}
+          <div
+            className={`h-16 flex items-center border-b border-border gap-2 min-w-0 ${
+              sidebarOpen ? "px-4" : "px-2 justify-center"
+            }`}
+          >
+            <div className="flex items-center gap-2.5 min-w-0 flex-1 overflow-hidden">
+              <div className="relative p-2 rounded-xl bg-primary text-white flex-shrink-0 isolate">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
                 </svg>
               </div>
               {sidebarOpen && (
-                <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
+                <span
+                  className="font-bold text-base tracking-tight text-foreground truncate min-w-0"
+                  title={activeBranch?.name || "POS"}
+                >
                   {activeBranch?.name || "POS"}
                 </span>
               )}
             </div>
             <button
+              type="button"
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="absolute -right-3 top-5 bg-card border border-border p-1 rounded-full text-muted-foreground hover:text-foreground shadow-md z-50 transition"
+              className="flex-shrink-0 bg-secondary border border-border p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition"
+              title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
             >
-              <ChevronRight className={`w-4 h-4 transition-transform duration-300 ${sidebarOpen ? "rotate-180" : ""}`} />
+              <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-300 ${sidebarOpen ? "rotate-180" : ""}`} />
             </button>
           </div>
 
