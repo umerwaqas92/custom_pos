@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { useStore } from "../store/useStore";
 import PortalModal from "../components/PortalModal";
+import SuggestInput from "../components/SuggestInput";
 import {
   Plus,
   ArrowRightLeft,
@@ -179,6 +180,9 @@ export default function Inventory() {
     model: "", purchasePrice: "", sellingPrice: "", warrantyMonths: "12",
     minStock: "5", type: "SINGLE", description: ""
   });
+  /** Free-text labels for category/brand autocomplete (may create if not in list) */
+  const [categoryQuery, setCategoryQuery] = useState("");
+  const [brandQuery, setBrandQuery] = useState("");
 
   const [adjustment, setAdjustment] = useState({
     productId: "", branchId: "", quantity: "", reason: ""
@@ -222,6 +226,33 @@ export default function Inventory() {
     }
   };
 
+  /** Find existing category/brand by name, or create it. */
+  const resolveCategoryId = async (label: string, currentId: string): Promise<string | undefined> => {
+    const name = label.trim();
+    if (!name) return undefined;
+    if (currentId) {
+      const byId = categories.find((c) => c.id === currentId);
+      if (byId && byId.name.toLowerCase() === name.toLowerCase()) return currentId;
+    }
+    const existing = categories.find((c) => c.name.toLowerCase() === name.toLowerCase());
+    if (existing) return existing.id;
+    const res = await axios.post("/api/products/categories", { name });
+    return res.data.id as string;
+  };
+
+  const resolveBrandId = async (label: string, currentId: string): Promise<string | undefined> => {
+    const name = label.trim();
+    if (!name) return undefined;
+    if (currentId) {
+      const byId = brands.find((b) => b.id === currentId);
+      if (byId && byId.name.toLowerCase() === name.toLowerCase()) return currentId;
+    }
+    const existing = brands.find((b) => b.name.toLowerCase() === name.toLowerCase());
+    if (existing) return existing.id;
+    const res = await axios.post("/api/products/brands", { name });
+    return res.data.id as string;
+  };
+
   // Create Product Submit
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -233,13 +264,16 @@ export default function Inventory() {
     }
 
     try {
+      const categoryId = await resolveCategoryId(categoryQuery, newProduct.categoryId);
+      const brandId = await resolveBrandId(brandQuery, newProduct.brandId);
+
       // SKU is always auto-generated on create (not shown in add form)
       const payload = {
         ...newProduct,
         sku: undefined,
         barcode: newProduct.barcode.trim() || undefined,
-        categoryId: newProduct.categoryId || undefined,
-        brandId: newProduct.brandId || undefined,
+        categoryId: categoryId || undefined,
+        brandId: brandId || undefined,
         model: newProduct.model.trim() || undefined,
       };
       const res = await axios.post("/api/products", payload);
@@ -252,6 +286,8 @@ export default function Inventory() {
         model: "", purchasePrice: "", sellingPrice: "", warrantyMonths: "12",
         minStock: "5", type: "SINGLE", description: ""
       });
+      setCategoryQuery("");
+      setBrandQuery("");
     } catch (err: any) {
       const msg = err.response?.data?.error || "Failed to create product.";
       addNotification(msg, "warning");
@@ -655,13 +691,12 @@ export default function Inventory() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1 col-span-2">
                   <label className="text-[10px] font-bold text-muted-foreground uppercase">Product Name *</label>
-                  <input
-                    type="text"
+                  <SuggestInput
                     required
                     value={newProduct.name}
-                    onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-                    placeholder="e.g. AERIS Wall Mounted 1.5 Ton"
-                    className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
+                    onChange={(v) => setNewProduct({ ...newProduct, name: v })}
+                    placeholder="Type to search… e.g. AERIS Wall Mounted 1.5 Ton"
+                    localOptions={products.map((p) => ({ id: p.id, label: p.name }))}
                   />
                 </div>
                 <div className="col-span-2 rounded-lg border border-border bg-secondary/40 px-3 py-2">
@@ -681,25 +716,37 @@ export default function Inventory() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-muted-foreground uppercase">Category</label>
-                  <select
-                    value={newProduct.categoryId}
-                    onChange={(e) => setNewProduct({ ...newProduct, categoryId: e.target.value })}
-                    className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
-                  >
-                    <option value="">Select Category</option>
-                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
+                  <SuggestInput
+                    value={categoryQuery}
+                    onChange={(v) => {
+                      setCategoryQuery(v);
+                      const match = categories.find((c) => c.name.toLowerCase() === v.trim().toLowerCase());
+                      setNewProduct({ ...newProduct, categoryId: match?.id || "" });
+                    }}
+                    onSelect={(item) => {
+                      setCategoryQuery(item.label);
+                      setNewProduct({ ...newProduct, categoryId: item.id || "" });
+                    }}
+                    placeholder="Type category (Google + saved)"
+                    localOptions={categories.map((c) => ({ id: c.id, label: c.name }))}
+                  />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-muted-foreground uppercase">Brand</label>
-                  <select
-                    value={newProduct.brandId}
-                    onChange={(e) => setNewProduct({ ...newProduct, brandId: e.target.value })}
-                    className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
-                  >
-                    <option value="">Select Brand</option>
-                    {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                  </select>
+                  <SuggestInput
+                    value={brandQuery}
+                    onChange={(v) => {
+                      setBrandQuery(v);
+                      const match = brands.find((b) => b.name.toLowerCase() === v.trim().toLowerCase());
+                      setNewProduct({ ...newProduct, brandId: match?.id || "" });
+                    }}
+                    onSelect={(item) => {
+                      setBrandQuery(item.label);
+                      setNewProduct({ ...newProduct, brandId: item.id || "" });
+                    }}
+                    placeholder="Type brand (Google + saved)"
+                    localOptions={brands.map((b) => ({ id: b.id, label: b.name }))}
+                  />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-muted-foreground uppercase">Model / Part No.</label>

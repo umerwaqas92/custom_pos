@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { useStore } from "../store/useStore";
 import PortalModal from "../components/PortalModal";
+import SuggestInput from "../components/SuggestInput";
 import {
   Plus,
   Tag,
@@ -450,13 +451,13 @@ export default function CategoriesBrands() {
             <form onSubmit={handleCreateCategory} className="space-y-4">
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-muted-foreground uppercase">Category Name *</label>
-                <input
-                  type="text"
+                <SuggestInput
                   required
-                  placeholder="e.g. Smart Watches, Audio Cables"
                   value={newCategoryName}
-                  onChange={(e) => setNewCategoryName(e.target.value)}
-                  className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
+                  onChange={setNewCategoryName}
+                  onSelect={(item) => setNewCategoryName(item.label)}
+                  placeholder="Type to search… e.g. Air Conditioners"
+                  localOptions={categories.map((c) => ({ id: c.id, label: c.name }))}
                 />
               </div>
 
@@ -486,13 +487,13 @@ export default function CategoriesBrands() {
             <form onSubmit={handleCreateBrand} className="space-y-4">
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-muted-foreground uppercase">Brand Name *</label>
-                <input
-                  type="text"
+                <SuggestInput
                   required
-                  placeholder="e.g. Sony, Huawei, JBL"
                   value={newBrandName}
-                  onChange={(e) => setNewBrandName(e.target.value)}
-                  className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
+                  onChange={setNewBrandName}
+                  onSelect={(item) => setNewBrandName(item.label)}
+                  placeholder="Type to search… e.g. AERIS, SKYAIR"
+                  localOptions={brands.map((b) => ({ id: b.id, label: b.name }))}
                 />
               </div>
 

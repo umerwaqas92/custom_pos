@@ -5,6 +5,60 @@ import { invalidateCache } from "../utils/cache";
 
 const router = Router();
 
+/**
+ * Proxy Google Suggest so the browser avoids CORS.
+ * Uses: https://suggestqueries.google.com/complete/search?output=toolbar&hl=en&q=...
+ */
+router.get("/suggest", protect, async (req, res) => {
+  const q = String(req.query.q || "").trim();
+  if (!q || q.length < 1) {
+    return res.json({ suggestions: [] });
+  }
+  if (q.length > 80) {
+    return res.status(400).json({ error: "Query too long." });
+  }
+
+  try {
+    const url =
+      "https://suggestqueries.google.com/complete/search?output=toolbar&hl=en&q=" +
+      encodeURIComponent(q);
+
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        Accept: "application/xml,text/xml,*/*",
+      },
+    });
+
+    if (!response.ok) {
+      return res.status(502).json({ error: "Suggest service unavailable.", suggestions: [] });
+    }
+
+    const xml = await response.text();
+    const suggestions: string[] = [];
+    const re = /<suggestion\s+data="([^"]*)"/gi;
+    let match: RegExpExecArray | null;
+    while ((match = re.exec(xml)) !== null) {
+      const decoded = match[1]
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .trim();
+      if (decoded && !suggestions.includes(decoded)) {
+        suggestions.push(decoded);
+      }
+    }
+
+    return res.json({ suggestions: suggestions.slice(0, 10) });
+  } catch (error) {
+    console.error("Suggest proxy failed:", error);
+    return res.status(502).json({ error: "Failed to fetch suggestions.", suggestions: [] });
+  }
+});
+
 /** Build a short unique SKU when the client leaves SKU empty. */
 async function generateUniqueSku(name: string, brandId?: string | null, model?: string | null): Promise<string> {
   let brandPrefix = "";
