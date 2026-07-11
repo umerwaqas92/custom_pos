@@ -2,10 +2,7 @@
 node_modules/
 
 # Database
-*.db
-*.db-journal
-*.sql
-
+backend/prisma/migrations
 # Build output
 dist/
 build/
