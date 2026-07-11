@@ -78,11 +78,15 @@ export default function Accounting() {
           }
         })
       ]);
-      setExpenses(expRes.data);
-      setPurchases(purRes.data);
-      setSuppliers(suppRes.data);
-      setProducts(prodRes.data);
+      setExpenses(Array.isArray(expRes.data) ? expRes.data : []);
+      setPurchases(Array.isArray(purRes.data) ? purRes.data : []);
+      setSuppliers(Array.isArray(suppRes.data) ? suppRes.data : []);
+      setProducts(Array.isArray(prodRes.data) ? prodRes.data : []);
     } catch (err) {
+      setExpenses([]);
+      setPurchases([]);
+      setSuppliers([]);
+      setProducts([]);
       addNotification("Failed to load accounting ledgers.", "warning");
     }
   };
@@ -90,8 +94,9 @@ export default function Accounting() {
   const loadBankAccounts = async () => {
     try {
       const res = await axios.get("/api/accounting/bank-accounts");
-      setBankAccounts(res.data);
+      setBankAccounts(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
+      setBankAccounts([]);
       addNotification("Failed to load bank accounts.", "warning");
     }
   };
@@ -104,8 +109,9 @@ export default function Accounting() {
       if (txFilter.startDate) params.startDate = txFilter.startDate;
       if (txFilter.endDate) params.endDate = txFilter.endDate;
       const res = await axios.get("/api/accounting/transactions", { params });
-      setTransactions(res.data);
+      setTransactions(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
+      setTransactions([]);
       addNotification("Failed to load transactions.", "warning");
     }
   };
@@ -125,7 +131,7 @@ export default function Accounting() {
   const loadDailyClosings = async () => {
     try {
       const res = await axios.get("/api/accounting/daily-closings");
-      setDailyClosings(res.data);
+      setDailyClosings(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       addNotification("Failed to load daily closings.", "warning");
     }
@@ -936,14 +942,14 @@ export default function Accounting() {
                 <label className="text-[10px] font-bold text-muted-foreground uppercase">From Account *</label>
                 <select required value={newTransfer.fromAccountId} onChange={e => setNewTransfer({ ...newTransfer, fromAccountId: e.target.value })} className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none">
                   <option value="">Select source...</option>
-                  {bankAccounts.filter(a => a.isActive).map(a => <option key={a.id} value={a.id}>{a.name} (Rs. {a.balance.toLocaleString()})</option>)}
+                  {(Array.isArray(bankAccounts) ? bankAccounts : []).filter(a => a.isActive).map(a => <option key={a.id} value={a.id}>{a.name} (Rs. {a.balance.toLocaleString()})</option>)}
                 </select>
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-muted-foreground uppercase">To Account *</label>
                 <select required value={newTransfer.toAccountId} onChange={e => setNewTransfer({ ...newTransfer, toAccountId: e.target.value })} className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none">
                   <option value="">Select destination...</option>
-                  {bankAccounts.filter(a => a.isActive && a.id !== newTransfer.fromAccountId).map(a => <option key={a.id} value={a.id}>{a.name} (Rs. {a.balance.toLocaleString()})</option>)}
+                  {(Array.isArray(bankAccounts) ? bankAccounts : []).filter(a => a.isActive && a.id !== newTransfer.fromAccountId).map(a => <option key={a.id} value={a.id}>{a.name} (Rs. {a.balance.toLocaleString()})</option>)}
                 </select>
               </div>
               <div className="space-y-1">

@@ -232,7 +232,7 @@ export const useStore = create<StateStore>((set, get) => ({
   checkLowStock: async () => {
     try {
       const res = await axios.get("/api/inventory/alerts");
-      const alerts: any[] = res.data;
+      const alerts: any[] = Array.isArray(res.data) ? res.data : [];
       const count = alerts.length;
       const prevCount = get().lowStockCount;
       set({ lowStockCount: count });

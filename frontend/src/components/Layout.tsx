@@ -106,13 +106,15 @@ export default function Layout() {
     const fetchBranches = async () => {
       try {
         const res = await axios.get("/api/auth/branches", { timeout: 15000 });
-        setBranches(res.data);
+        const list = Array.isArray(res.data) ? res.data : [];
+        setBranches(list);
         // Default to first branch if none selected, or if selected ID no longer exists
-        if (res.data.length > 0 && (!selectedBranchId || !res.data.find((b: any) => b.id === selectedBranchId))) {
-          setSelectedBranchId(res.data[0].id);
+        if (list.length > 0 && (!selectedBranchId || !list.find((b: any) => b.id === selectedBranchId))) {
+          setSelectedBranchId(list[0].id);
         }
       } catch (err) {
         console.error("Failed to load branches", err);
+        setBranches([]);
       }
     };
     fetchBranches();

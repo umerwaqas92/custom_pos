@@ -204,9 +204,9 @@ export default function Inventory() {
         axios.get("/api/products/categories"),
         axios.get("/api/products/brands")
       ]);
-      setProducts(prodRes.data);
-      setCategories(catRes.data);
-      setBrands(brandRes.data);
+      setProducts(Array.isArray(prodRes.data) ? prodRes.data : []);
+      setCategories(Array.isArray(catRes.data) ? catRes.data : []);
+      setBrands(Array.isArray(brandRes.data) ? brandRes.data : []);
     } catch (err) {
       addNotification("Failed to load inventory records.", "warning");
     }
@@ -219,7 +219,7 @@ export default function Inventory() {
   const loadMovements = async () => {
     try {
       const res = await axios.get("/api/inventory/movements");
-      setMovements(res.data);
+      setMovements(Array.isArray(res.data) ? res.data : []);
       setHistoryOpen(true);
     } catch (err) {
       addNotification("Failed to load historical movements.", "warning");
@@ -347,7 +347,7 @@ export default function Inventory() {
 
   // Filter products list
   const filteredProducts = useMemo(() => {
-    const result = products.filter((p) => {
+    const result = (Array.isArray(products) ? products : []).filter((p) => {
       const branchQty = getAvailableQty(p, selectedBranchId);
       const matchesSearch =
         p.name.toLowerCase().includes(search.toLowerCase()) ||

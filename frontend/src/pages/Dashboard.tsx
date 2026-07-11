@@ -96,8 +96,15 @@ export default function Dashboard() {
         axios.get("/api/inventory/alerts", opts)
       ]);
 
-      setStats(statsRes.data);
-      setCharts(chartsRes.data);
+      const charts = chartsRes.data && typeof chartsRes.data === "object" ? chartsRes.data : {};
+      setStats(statsRes.data && typeof statsRes.data === "object" ? statsRes.data : null);
+      setCharts({
+        salesTrend: Array.isArray(charts.salesTrend) ? charts.salesTrend : [],
+        dailyRevenue: Array.isArray(charts.dailyRevenue) ? charts.dailyRevenue : [],
+        profitTrend: Array.isArray(charts.profitTrend) ? charts.profitTrend : [],
+        categoryChartData: Array.isArray(charts.categoryChartData) ? charts.categoryChartData : [],
+        brandChartData: Array.isArray(charts.brandChartData) ? charts.brandChartData : []
+      });
       setTopProducts(Array.isArray(topRes.data) ? topRes.data : []);
       setLowStockList(Array.isArray(alertRes.data) ? alertRes.data : []);
     } catch (err) {

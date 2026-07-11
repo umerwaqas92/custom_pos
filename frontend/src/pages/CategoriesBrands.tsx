@@ -139,8 +139,8 @@ export default function CategoriesBrands() {
         axios.get("/api/products/categories"),
         axios.get("/api/products/brands")
       ]);
-      setCategories(catRes.data);
-      setBrands(brandRes.data);
+      setCategories(Array.isArray(catRes.data) ? catRes.data : []);
+      setBrands(Array.isArray(brandRes.data) ? brandRes.data : []);
     } catch (err) {
       addNotification("Failed to load catalog options.", "warning");
     }
@@ -192,7 +192,7 @@ export default function CategoriesBrands() {
   const activeData = activeTab === "CATEGORIES" ? categories : brands;
 
   const filteredData = useMemo(() => {
-    const result = activeData.filter(item => item.name.toLowerCase().includes(search.toLowerCase()));
+    const result = (Array.isArray(activeData) ? activeData : []).filter(item => item.name.toLowerCase().includes(search.toLowerCase()));
     result.sort((a, b) => {
       let aVal: any, bVal: any;
       switch (sortKey) {

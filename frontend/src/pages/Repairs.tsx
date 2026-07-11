@@ -54,11 +54,15 @@ export default function Repairs() {
         axios.get("/api/auth/users"),
         axios.get("/api/accounting/customers")
       ]);
-      setJobs(jobsRes.data);
+      setJobs(Array.isArray(jobsRes.data) ? jobsRes.data : []);
       // Filter technicians from staff
-      setTechnicians(staffRes.data.filter((u: any) => u.role === "TECHNICIAN" || u.role === "OWNER"));
-      setCustomers(custRes.data);
+      const staff = Array.isArray(staffRes.data) ? staffRes.data : [];
+      setTechnicians(staff.filter((u: any) => u.role === "TECHNICIAN" || u.role === "OWNER"));
+      setCustomers(Array.isArray(custRes.data) ? custRes.data : []);
     } catch (err) {
+      setJobs([]);
+      setTechnicians([]);
+      setCustomers([]);
       addNotification("Failed to load repairs boards.", "warning");
     }
   };
@@ -173,7 +177,7 @@ export default function Repairs() {
       {/* Kanban Board Container */}
       <div className="flex-1 overflow-x-auto flex gap-4 pb-4 select-none min-h-[400px]">
         {COLUMNS.map((col) => {
-          const colJobs = jobs.filter(j => j.status === col.id);
+          const colJobs = (Array.isArray(jobs) ? jobs : []).filter(j => j.status === col.id);
           return (
             <div key={col.id} className="w-72 flex-shrink-0 flex flex-col max-h-full">
               

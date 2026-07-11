@@ -99,10 +99,13 @@ export default function SalesHistory() {
         axios.get("/api/auth/branches"),
         axios.get("/api/accounting/customers")
       ]);
-      setSales(salesRes.data);
-      setBranches(branchRes.data);
-      setCustomers(custRes.data);
+      setSales(Array.isArray(salesRes.data) ? salesRes.data : []);
+      setBranches(Array.isArray(branchRes.data) ? branchRes.data : []);
+      setCustomers(Array.isArray(custRes.data) ? custRes.data : []);
     } catch {
+      setSales([]);
+      setBranches([]);
+      setCustomers([]);
       addNotification("Failed to load sales history records.", "warning");
     } finally {
       setLoading(false);
@@ -113,8 +116,9 @@ export default function SalesHistory() {
     setLoading(true);
     try {
       const res = await axios.get("/api/sales/returns");
-      setReturns(res.data);
+      setReturns(Array.isArray(res.data) ? res.data : []);
     } catch {
+      setReturns([]);
       addNotification("Failed to load return history.", "warning");
     } finally {
       setLoading(false);
@@ -140,7 +144,7 @@ export default function SalesHistory() {
     try {
       const res = await axios.get(`/api/sales/${saleId}/returnable`);
       const data: ReturnablePreview = res.data;
-      const returnable = data.lines.filter((l) => l.remainingQty > 0);
+      const returnable = (Array.isArray(data?.lines) ? data.lines : []).filter((l) => l.remainingQty > 0);
       if (returnable.length === 0) {
         addNotification("Nothing left to return on this invoice.", "warning");
         return;
@@ -176,7 +180,7 @@ export default function SalesHistory() {
 
   const toggleAll = () => {
     if (!preview) return;
-    const returnable = preview.lines.filter((l) => l.remainingQty > 0);
+    const returnable = (Array.isArray(preview.lines) ? preview.lines : []).filter((l) => l.remainingQty > 0);
     if (selectedProductIds.size === returnable.length) {
       setSelectedProductIds(new Set());
     } else {
@@ -390,7 +394,7 @@ export default function SalesHistory() {
     return counts;
   }, [sales, selectedYear]);
 
-  const filteredSales = sales.filter((s) => {
+  const filteredSales = (Array.isArray(sales) ? sales : []).filter((s) => {
     const matchesSearch =
       s.id.toLowerCase().includes(search.toLowerCase()) ||
       (s.customer?.name && s.customer.name.toLowerCase().includes(search.toLowerCase())) ||
@@ -447,12 +451,12 @@ export default function SalesHistory() {
   const money = (n: number) =>
     `Rs. ${Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-  const returnableLines = preview?.lines.filter((l) => l.remainingQty > 0) || [];
+  const returnableLines = (Array.isArray(preview?.lines) ? preview!.lines : []).filter((l) => l.remainingQty > 0);
 
   const filteredReturns = useMemo(() => {
     const q = returnSearch.toLowerCase().trim();
     if (!q) return returns;
-    return returns.filter((r) => {
+    return (Array.isArray(returns) ? returns : []).filter((r) => {
       return (
         r.id.toLowerCase().includes(q) ||
         r.saleId.toLowerCase().includes(q) ||

@@ -138,7 +138,7 @@ export default function Reports() {
     const fetchBranches = async () => {
       try {
         const res = await axios.get("/api/auth/branches");
-        setBranches(res.data);
+        setBranches(Array.isArray(res.data) ? res.data : []);
       } catch (err) {
         console.error("Failed to load branches.");
       }
@@ -152,7 +152,7 @@ export default function Reports() {
       const res = await axios.get(`/api/reports/query/${report.id}`, {
         params: { startDate, endDate, branchId }
       });
-      setReportData(res.data);
+      setReportData(Array.isArray(res.data) ? res.data : []);
       setSelectedReport(report);
     } catch (err: any) {
       addNotification(err.response?.data?.error || "Failed to load report data.", "warning");

@@ -78,8 +78,8 @@ export default function Contacts() {
         axios.get("/api/accounting/customers"),
         axios.get("/api/accounting/suppliers")
       ]);
-      setCustomers(custRes.data);
-      setSuppliers(suppRes.data);
+      setCustomers(Array.isArray(custRes.data) ? custRes.data : []);
+      setSuppliers(Array.isArray(suppRes.data) ? suppRes.data : []);
     } catch (err) {
       addNotification("Failed to load contacts list.", "warning");
     }
@@ -274,7 +274,7 @@ export default function Contacts() {
 
   // Filter, sort, paginate customers
   const filteredCustomers = useMemo(() => {
-    const result = customers.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search));
+    const result = (Array.isArray(customers) ? customers : []).filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search));
     result.sort((a, b) => {
       let aVal: any, bVal: any;
       switch (sortKey) {
@@ -292,7 +292,7 @@ export default function Contacts() {
   }, [customers, search, sortKey, sortDir]);
 
   const filteredSuppliers = useMemo(() => {
-    const result = suppliers.filter(s => s.company.toLowerCase().includes(search.toLowerCase()) || s.phone.includes(search));
+    const result = (Array.isArray(suppliers) ? suppliers : []).filter(s => s.company.toLowerCase().includes(search.toLowerCase()) || s.phone.includes(search));
     result.sort((a, b) => {
       let aVal: any, bVal: any;
       switch (sortKey) {

@@ -88,8 +88,9 @@ export default function Settings() {
   const loadBranches = async () => {
     try {
       const res = await axios.get("/api/auth/branches");
-      setBranches(res.data);
-      setStoreBranches(res.data);
+      const list = Array.isArray(res.data) ? res.data : [];
+      setBranches(list);
+      setStoreBranches(list);
     } catch {
       addNotification("Failed to load branches.", "warning");
     }

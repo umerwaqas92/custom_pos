@@ -51,9 +51,10 @@ export default function Installments() {
     setLoading(true);
     try {
       const res = await axios.get("/api/sales");
-      setSales(res.data);
+      setSales(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error(err);
+      setSales([]);
       addNotification("Failed to load transactions list.", "error");
     } finally {
       setLoading(false);
@@ -65,7 +66,8 @@ export default function Installments() {
   }, []);
 
   // Filter Sales based on active tab and search
-  const pendingEmiSales = sales.filter(
+  const safeSales = Array.isArray(sales) ? sales : [];
+  const pendingEmiSales = safeSales.filter(
     (s) => s.paymentMethod === "EMI" && !s.emiDetails
   );
 
@@ -73,7 +75,8 @@ export default function Installments() {
     if (!emi) return "PAID";
     if (emi.status === "COMPLETED") return "PAID";
 
-    const sorted = [...emi.installments].sort((a: any, b: any) => a.installmentNumber - b.installmentNumber);
+    const installments = Array.isArray(emi.installments) ? emi.installments : [];
+    const sorted = [...installments].sort((a: any, b: any) => a.installmentNumber - b.installmentNumber);
     const firstUnpaid = sorted.find((inst: any) => inst.status === "PENDING");
     if (!firstUnpaid) return "PAID";
 
@@ -88,7 +91,7 @@ export default function Installments() {
     return "PAID";
   };
 
-  const activeEmiContracts = sales.filter((s) => s.emiDetails);
+  const activeEmiContracts = safeSales.filter((s) => s.emiDetails);
 
   const filteredActiveContracts = activeEmiContracts
     .filter((s) => {
@@ -186,8 +189,9 @@ export default function Installments() {
       
       // Update local state for contract details popup
       const res = await axios.get("/api/sales");
-      setSales(res.data);
-      const updatedContract = res.data.find((s: any) => s.id === saleId);
+      const list = Array.isArray(res.data) ? res.data : [];
+      setSales(list);
+      const updatedContract = list.find((s: any) => s.id === saleId);
       if (updatedContract) {
         setActiveContract(updatedContract);
       }
@@ -395,7 +399,7 @@ export default function Installments() {
               <tbody className="divide-y divide-border/50">
                 {filteredActiveContracts.map((sale) => {
                   const emi = sale.emiDetails;
-                  const paidInstallments = emi.installments.filter((i: any) => i.status === "PAID").length;
+                  const paidInstallments = (Array.isArray(emi.installments) ? emi.installments : []).filter((i: any) => i.status === "PAID").length;
                   const totalRemaining = emi.totalPrincipal - emi.downPayment - emi.installments
                     .filter((i: any) => i.status === "PAID")
                     .reduce((sum: number, i: any) => sum + i.amount, 0);
@@ -691,8 +695,9 @@ export default function Installments() {
       {/* DETAILED ACTIVE CONTRACT MODAL SCHEDULER */}
       {activeContract && (() => {
         const emi = activeContract.emiDetails;
-        const paidCount = emi.installments.filter((i: any) => i.status === "PAID").length;
-        const paidAmount = emi.installments.filter((i: any) => i.status === "PAID").reduce((sum: number, i: any) => sum + i.amount, 0);
+        const insts = Array.isArray(emi.installments) ? emi.installments : [];
+        const paidCount = insts.filter((i: any) => i.status === "PAID").length;
+        const paidAmount = insts.filter((i: any) => i.status === "PAID").reduce((sum: number, i: any) => sum + i.amount, 0);
         const remainingAmount = emi.totalPrincipal - emi.downPayment - paidAmount;
         
         return (

@@ -80,7 +80,7 @@ export default function POS() {
 
       // Reload customers list
       const custRes = await axios.get("/api/accounting/customers");
-      setCustomers(custRes.data);
+      setCustomers(Array.isArray(custRes.data) ? custRes.data : []);
 
       // Auto-select the newly created customer
       setSelectedCustId(response.data.id);
@@ -107,10 +107,13 @@ export default function POS() {
         axios.get("/api/products/categories"),
         axios.get("/api/accounting/customers")
       ]);
-      setProducts(prodRes.data);
-      setCategories(catRes.data);
-      setCustomers(custRes.data);
+      setProducts(Array.isArray(prodRes.data) ? prodRes.data : []);
+      setCategories(Array.isArray(catRes.data) ? catRes.data : []);
+      setCustomers(Array.isArray(custRes.data) ? custRes.data : []);
     } catch (err) {
+      setProducts([]);
+      setCategories([]);
+      setCustomers([]);
       addNotification("Failed to load POS catalog.", "warning");
     } finally {
       setLoading(false);
@@ -181,7 +184,7 @@ export default function POS() {
   }, [addNotification, cart.length, clearCart, custModalOpen, receiptResult, selectedBranchId, paymentMethod, amountPaid, cartDiscount, products, selectedCustId]);
 
   // Filtered Products List
-  const filteredProducts = products.filter((p) => {
+  const filteredProducts = (Array.isArray(products) ? products : []).filter((p) => {
     const matchesSearch =
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -276,7 +279,7 @@ export default function POS() {
           branchId: selectedBranchId || undefined
         }
       });
-      setProducts(prodRes.data);
+      setProducts(Array.isArray(prodRes.data) ? prodRes.data : []);
     } catch (err: any) {
       const msg = err.response?.data?.error || "Transaction failed.";
       addNotification(msg, "warning");
