@@ -225,16 +225,26 @@ export default function Inventory() {
   // Create Product Submit
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { name, sku, purchasePrice, sellingPrice } = newProduct;
+    const { name, purchasePrice, sellingPrice } = newProduct;
 
-    if (!name || !sku || !purchasePrice || !sellingPrice) {
-      addNotification("Please fill in all required fields.", "warning");
+    if (!name || !purchasePrice || !sellingPrice) {
+      addNotification("Please fill in product name, purchase price, and selling price.", "warning");
       return;
     }
 
     try {
-      await axios.post("/api/products", newProduct);
-      addNotification("Product created successfully in catalog.", "success");
+      // SKU is always auto-generated on create (not shown in add form)
+      const payload = {
+        ...newProduct,
+        sku: undefined,
+        barcode: newProduct.barcode.trim() || undefined,
+        categoryId: newProduct.categoryId || undefined,
+        brandId: newProduct.brandId || undefined,
+        model: newProduct.model.trim() || undefined,
+      };
+      const res = await axios.post("/api/products", payload);
+      const createdSku = res.data?.sku ? ` (SKU: ${res.data.sku})` : "";
+      addNotification(`Product created successfully${createdSku}.`, "success");
       setAddOpen(false);
       loadInventory();
       setNewProduct({
@@ -643,26 +653,22 @@ export default function Inventory() {
             <h3 className="text-base font-bold text-foreground mb-4">Add New Catalog Product</h3>
             <form onSubmit={handleAddProduct} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
+                <div className="space-y-1 col-span-2">
                   <label className="text-[10px] font-bold text-muted-foreground uppercase">Product Name *</label>
                   <input
                     type="text"
                     required
                     value={newProduct.name}
                     onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                    placeholder="e.g. AERIS Wall Mounted 1.5 Ton"
                     className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase">SKU Code *</label>
-                  <input
-                    type="text"
-                    required
-                    value={newProduct.sku}
-                    onChange={(e) => setNewProduct({ ...newProduct, sku: e.target.value })}
-                    placeholder="e.g. AP-IP15PM"
-                    className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
-                  />
+                <div className="col-span-2 rounded-lg border border-border bg-secondary/40 px-3 py-2">
+                  <p className="text-[10px] font-bold text-foreground">SKU Code — auto generated</p>
+                  <p className="text-[9px] text-muted-foreground mt-0.5">
+                    You do not need to enter a SKU. The app creates a unique code when you save.
+                  </p>
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-muted-foreground uppercase">Barcode (EAN/UPC)</label>

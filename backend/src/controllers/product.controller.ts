@@ -5,6 +5,41 @@ import { invalidateCache } from "../utils/cache";
 
 const router = Router();
 
+/** Build a short unique SKU when the client leaves SKU empty. */
+async function generateUniqueSku(name: string, brandId?: string | null, model?: string | null): Promise<string> {
+  let brandPrefix = "";
+  if (brandId) {
+    const brand = await prisma.brand.findUnique({ where: { id: brandId }, select: { name: true } });
+    if (brand?.name) {
+      brandPrefix = brand.name
+        .toUpperCase()
+        .replace(/[^A-Z0-9]+/g, "")
+        .slice(0, 6);
+    }
+  }
+
+  const modelPart = (model || "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "")
+    .slice(0, 8);
+
+  const namePart = name
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "")
+    .slice(0, 8);
+
+  const base = [brandPrefix || namePart || "PRD", modelPart || null].filter(Boolean).join("-");
+
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const suffix = Date.now().toString(36).toUpperCase().slice(-4) + Math.random().toString(36).toUpperCase().slice(2, 4);
+    const sku = `${base}-${suffix}`.slice(0, 40);
+    const existing = await prisma.product.findUnique({ where: { sku } });
+    if (!existing) return sku;
+  }
+
+  return `PRD-${Date.now().toString(36).toUpperCase()}`;
+}
+
 // ==================== CATEGORY ROUTES ====================
 
 // List Categories
@@ -287,13 +322,19 @@ router.post("/", protect, restrictTo("OWNER", "MANAGER", "WAREHOUSE"), async (re
     discountRate, description, weight, minStock, type
   } = req.body;
 
-  if (!name || !sku || purchasePrice === undefined || sellingPrice === undefined) {
-    return res.status(400).json({ error: "Name, SKU, purchase price, and selling price are required." });
+  if (!name || purchasePrice === undefined || purchasePrice === "" || sellingPrice === undefined || sellingPrice === "") {
+    return res.status(400).json({ error: "Name, purchase price, and selling price are required." });
   }
 
   try {
+    // Auto-generate SKU when blank (Excel-style catalogs rarely have SKUs)
+    let finalSku = typeof sku === "string" ? sku.trim() : "";
+    if (!finalSku) {
+      finalSku = await generateUniqueSku(String(name), brandId || null, model || null);
+    }
+
     // Check if SKU is unique
-    const existingSku = await prisma.product.findUnique({ where: { sku } });
+    const existingSku = await prisma.product.findUnique({ where: { sku: finalSku } });
     if (existingSku) return res.status(400).json({ error: "SKU already exists." });
 
     if (barcode) {
@@ -304,7 +345,7 @@ router.post("/", protect, restrictTo("OWNER", "MANAGER", "WAREHOUSE"), async (re
     const product = await prisma.product.create({
       data: {
         name,
-        sku,
+        sku: finalSku,
         barcode: barcode || null,
         qrCode: qrCode || null,
         categoryId: categoryId || null,
