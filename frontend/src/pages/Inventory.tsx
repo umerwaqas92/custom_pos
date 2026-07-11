@@ -275,6 +275,7 @@ export default function Inventory() {
         categoryId: categoryId || undefined,
         brandId: brandId || undefined,
         model: newProduct.model.trim() || undefined,
+        description: newProduct.description.trim() || undefined,
       };
       const res = await axios.post("/api/products", payload);
       const createdSku = res.data?.sku ? ` (SKU: ${res.data.sku})` : "";
@@ -775,6 +776,16 @@ export default function Inventory() {
                     value={newProduct.sellingPrice}
                     onChange={(e) => setNewProduct({ ...newProduct, sellingPrice: e.target.value })}
                     className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
+                  />
+                </div>
+                <div className="space-y-1 col-span-2">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Description</label>
+                  <textarea
+                    value={newProduct.description}
+                    onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                    placeholder="e.g. Wall Mounted type unit, 1.5 ton"
+                    rows={2}
+                    className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none resize-y min-h-[60px]"
                   />
                 </div>
               </div>
