@@ -16,8 +16,26 @@ import CategoriesBrands from "./pages/CategoriesBrands";
 import SalesHistory from "./pages/SalesHistory";
 import Settings from "./pages/Settings";
 
-// Set Axios Base URL
-axios.defaults.baseURL = "http://localhost:5001";
+// API base: production uses same origin (PHP /api on shared host).
+// Dev defaults to Node backend; override with VITE_API_URL (e.g. http://localhost:8080 for PHP).
+axios.defaults.baseURL =
+  import.meta.env.VITE_API_URL ??
+  (import.meta.env.PROD ? "" : "http://localhost:5001");
+
+// InfinityFree / shared hosts often strip Authorization — also send X-Access-Token.
+axios.defaults.timeout = 25000;
+axios.interceptors.request.use((config) => {
+  const token =
+    (typeof localStorage !== "undefined" && localStorage.getItem("pos_token")) ||
+    (axios.defaults.headers.common["Authorization"] as string | undefined)?.replace(/^Bearer\s+/i, "") ||
+    null;
+  if (token) {
+    config.headers = config.headers ?? {};
+    config.headers.Authorization = `Bearer ${token}`;
+    config.headers["X-Access-Token"] = token;
+  }
+  return config;
+});
 
 // Login Page Component
 function Login() {
@@ -148,9 +166,33 @@ function RoleGuard({ children, allowedRoles }: GuardProps) {
 }
 
 export default function App() {
-  const { token, theme, loadSettings } = useStore();
+  const { token, theme, loadSettings, logout } = useStore();
   const [trialExpired, setTrialExpired] = useState(false);
   const [activated, setActivated] = useState(localStorage.getItem("pos_activated") === "true");
+  const [sessionChecked, setSessionChecked] = useState(!token);
+
+  // If a stored token is invalid/stale, clear it so user is not stuck on loading dashboard
+  useEffect(() => {
+    if (!token) {
+      setSessionChecked(true);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        await axios.get("/api/auth/me", { timeout: 12000 });
+      } catch {
+        if (!cancelled) {
+          logout();
+        }
+      } finally {
+        if (!cancelled) setSessionChecked(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [token, logout]);
 
   // Handle checking trial duration (30 days)
   useEffect(() => {
@@ -216,6 +258,25 @@ export default function App() {
     root.classList.remove("light", "dark");
     root.classList.add(theme);
   }, [theme]);
+
+  if (!sessionChecked) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-background text-foreground">
+        <span className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm text-muted-foreground">Checking session…</p>
+        <button
+          type="button"
+          className="text-xs text-primary underline"
+          onClick={() => {
+            logout();
+            setSessionChecked(true);
+          }}
+        >
+          Skip to login
+        </button>
+      </div>
+    );
+  }
 
   return (
     <>

@@ -88,19 +88,53 @@ export default function Dashboard() {
     setLoading(true);
     try {
       const branchParams = selectedBranchId ? { branchId: selectedBranchId } : {};
+      const opts = { params: branchParams, timeout: 20000 };
       const [statsRes, chartsRes, topRes, alertRes] = await Promise.all([
-        axios.get("/api/reports/dashboard-stats", { params: branchParams }),
-        axios.get("/api/reports/charts"),
-        axios.get("/api/reports/top-selling"),
-        axios.get("/api/inventory/alerts", { params: branchParams })
+        axios.get("/api/reports/dashboard-stats", opts),
+        axios.get("/api/reports/charts", { timeout: 20000 }),
+        axios.get("/api/reports/top-selling", { timeout: 20000 }),
+        axios.get("/api/inventory/alerts", opts)
       ]);
 
       setStats(statsRes.data);
       setCharts(chartsRes.data);
-      setTopProducts(topRes.data);
-      setLowStockList(alertRes.data);
+      setTopProducts(Array.isArray(topRes.data) ? topRes.data : []);
+      setLowStockList(Array.isArray(alertRes.data) ? alertRes.data : []);
     } catch (err) {
       console.error(err);
+      // Don't leave user on infinite spinner — show empty dashboard shell
+      setStats({
+        todaySales: 0,
+        todaySalesCount: 0,
+        monthlySales: 0,
+        monthlySalesCount: 0,
+        monthlyExpenses: 0,
+        monthlyProfit: 0,
+        totalProducts: 0,
+        totalUnitsInStock: 0,
+        lowStockCount: 0,
+        outOfStockCount: 0,
+        totalSalesCount: 0,
+        totalRevenue: 0,
+        totalExpenses: 0,
+        netProfit: 0,
+        totalCustomers: 0,
+        cashBalance: 0,
+        bankBalance: 0,
+        walletBalance: 0,
+        totalBalance: 0,
+        recentSales: [],
+        recentCustomers: []
+      });
+      setCharts({
+        salesTrend: [],
+        dailyRevenue: [],
+        profitTrend: [],
+        categoryChartData: [],
+        brandChartData: []
+      });
+      setTopProducts([]);
+      setLowStockList([]);
       addNotification("Failed to fetch dashboard metrics.", "warning");
     } finally {
       setLoading(false);

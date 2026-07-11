@@ -73,9 +73,21 @@ interface StateStore {
   checkLowStock: () => Promise<void>;
 }
 
+function readStoredUser(): User | null {
+  try {
+    const raw = localStorage.getItem("pos_user");
+    if (!raw) return null;
+    return JSON.parse(raw) as User;
+  } catch {
+    localStorage.removeItem("pos_user");
+    localStorage.removeItem("pos_token");
+    return null;
+  }
+}
+
 export const useStore = create<StateStore>((set, get) => ({
   token: localStorage.getItem("pos_token"),
-  user: localStorage.getItem("pos_user") ? JSON.parse(localStorage.getItem("pos_user")!) : null,
+  user: readStoredUser(),
   branches: [],
   selectedBranchId: localStorage.getItem("pos_branch_id"),
   cart: [],

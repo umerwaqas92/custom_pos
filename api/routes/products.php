@@ -1,0 +1,721 @@
+<?php
+
+declare(strict_types=1);
+
+function register_products_routes(Router $router): void
+{
+    // Specific paths before :id
+    $router->get('products/suggest', 'products_suggest');
+    $router->get('products/categories', 'products_categories_list');
+    $router->post('products/categories', 'products_categories_create', false, ['OWNER', 'MANAGER']);
+    $router->put('products/categories/:id', 'products_categories_update', false, ['OWNER', 'MANAGER']);
+    $router->delete('products/categories/:id', 'products_categories_delete', false, ['OWNER', 'MANAGER']);
+    $router->post('products/categories/bulk-delete', 'products_categories_bulk_delete', false, ['OWNER', 'MANAGER']);
+
+    $router->get('products/brands', 'products_brands_list');
+    $router->post('products/brands', 'products_brands_create', false, ['OWNER', 'MANAGER']);
+    $router->put('products/brands/:id', 'products_brands_update', false, ['OWNER', 'MANAGER']);
+    $router->delete('products/brands/:id', 'products_brands_delete', false, ['OWNER', 'MANAGER']);
+    $router->post('products/brands/bulk-delete', 'products_brands_bulk_delete', false, ['OWNER', 'MANAGER']);
+
+    $router->post('products/bulk-delete', 'products_bulk_delete', false, ['OWNER']);
+    $router->get('products', 'products_list');
+    $router->get('products/:id', 'products_get');
+    $router->post('products', 'products_create', false, ['OWNER', 'MANAGER', 'WAREHOUSE']);
+    $router->put('products/:id', 'products_update', false, ['OWNER', 'MANAGER', 'WAREHOUSE']);
+    $router->delete('products/:id', 'products_delete', false, ['OWNER']);
+}
+
+function products_format_category(array $r): array
+{
+    return [
+        'id' => $r['id'],
+        'name' => $r['name'],
+        'createdAt' => $r['created_at'],
+        'updatedAt' => $r['updated_at'],
+    ];
+}
+
+function products_format_brand(array $r): array
+{
+    return products_format_category($r);
+}
+
+function products_format_product(array $r, array $extras = []): array
+{
+    $images = $r['images'] ?? '[]';
+    if (is_string($images)) {
+        $decoded = json_decode($images, true);
+        $images = is_array($decoded) ? $decoded : [];
+    }
+
+    $out = [
+        'id' => $r['id'],
+        'name' => $r['name'],
+        'sku' => $r['sku'],
+        'barcode' => $r['barcode'],
+        'qrCode' => $r['qr_code'] ?? null,
+        'categoryId' => $r['category_id'] ?? null,
+        'brandId' => $r['brand_id'] ?? null,
+        'model' => $r['model'] ?? null,
+        'serialNumber' => $r['serial_number'] ?? null,
+        'imei' => $r['imei'] ?? null,
+        'color' => $r['color'] ?? null,
+        'storage' => $r['storage'] ?? null,
+        'ram' => $r['ram'] ?? null,
+        'processor' => $r['processor'] ?? null,
+        'warrantyMonths' => isset($r['warranty_months']) ? (int) $r['warranty_months'] : 0,
+        'supplierId' => $r['supplier_id'] ?? null,
+        'purchasePrice' => isset($r['purchase_price']) ? (float) $r['purchase_price'] : 0.0,
+        'sellingPrice' => isset($r['selling_price']) ? (float) $r['selling_price'] : 0.0,
+        'wholesalePrice' => isset($r['wholesale_price']) && $r['wholesale_price'] !== null
+            ? (float) $r['wholesale_price'] : null,
+        'taxRate' => isset($r['tax_rate']) ? (float) $r['tax_rate'] : 0.0,
+        'discountRate' => isset($r['discount_rate']) ? (float) $r['discount_rate'] : 0.0,
+        'images' => $images,
+        'description' => $r['description'] ?? null,
+        'weight' => isset($r['weight']) && $r['weight'] !== null ? (float) $r['weight'] : null,
+        'stockQuantity' => isset($r['stock_quantity']) ? (int) $r['stock_quantity'] : 0,
+        'minStock' => isset($r['min_stock']) ? (int) $r['min_stock'] : 5,
+        'type' => $r['type'] ?? 'SINGLE',
+        'createdAt' => $r['created_at'] ?? null,
+        'updatedAt' => $r['updated_at'] ?? null,
+    ];
+
+    return array_merge($out, $extras);
+}
+
+function products_suggest(array $params): void
+{
+    $q = trim((string) (query_params()['q'] ?? ''));
+    if ($q === '') {
+        json_response(['suggestions' => []]);
+    }
+    if (strlen($q) > 80) {
+        json_error('Query too long.', 400);
+    }
+
+    // Best-effort Google suggest; fail soft on free hosts that block outbound HTTP
+    $url = 'https://suggestqueries.google.com/complete/search?output=toolbar&hl=en&q=' . rawurlencode($q);
+    $ctx = stream_context_create([
+        'http' => [
+            'timeout' => 4,
+            'header' => "User-Agent: Mozilla/5.0\r\nAccept: application/xml\r\n",
+        ],
+        'ssl' => ['verify_peer' => false, 'verify_peer_name' => false],
+    ]);
+    $xml = @file_get_contents($url, false, $ctx);
+    if ($xml === false) {
+        json_response(['suggestions' => [], 'error' => 'Suggest service unavailable.']);
+    }
+
+    $suggestions = [];
+    if (preg_match_all('/<suggestion\s+data="([^"]*)"/i', $xml, $m)) {
+        foreach ($m[1] as $raw) {
+            $decoded = html_entity_decode($raw, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $decoded = trim($decoded);
+            if ($decoded !== '' && !in_array($decoded, $suggestions, true)) {
+                $suggestions[] = $decoded;
+            }
+        }
+    }
+    json_response(['suggestions' => array_slice($suggestions, 0, 10)]);
+}
+
+/* ---------- Categories ---------- */
+
+function products_categories_list(array $params): void
+{
+    $pdo = Database::pdo();
+    $rows = $pdo->query('SELECT * FROM categories ORDER BY name ASC')->fetchAll();
+    json_response(array_map('products_format_category', $rows));
+}
+
+function products_categories_create(array $params): void
+{
+    $body = read_json_body();
+    $name = trim((string) ($body['name'] ?? ''));
+    if ($name === '') {
+        json_error('Name is required.', 400);
+    }
+    $pdo = Database::pdo();
+    $exists = $pdo->prepare('SELECT id FROM categories WHERE name = ? LIMIT 1');
+    $exists->execute([$name]);
+    if ($exists->fetch()) {
+        json_error('Category already exists.', 400);
+    }
+    $id = uuid_v4();
+    $now = now_sql();
+    $pdo->prepare('INSERT INTO categories (id, name, created_at, updated_at) VALUES (?, ?, ?, ?)')
+        ->execute([$id, $name, $now, $now]);
+    $st = $pdo->prepare('SELECT * FROM categories WHERE id = ?');
+    $st->execute([$id]);
+    json_response(products_format_category($st->fetch()), 201);
+}
+
+function products_categories_update(array $params): void
+{
+    $id = $params['id'];
+    $body = read_json_body();
+    $name = trim((string) ($body['name'] ?? ''));
+    if ($name === '') {
+        json_error('Name is required.', 400);
+    }
+    $pdo = Database::pdo();
+    $pdo->prepare('UPDATE categories SET name = ?, updated_at = ? WHERE id = ?')
+        ->execute([$name, now_sql(), $id]);
+    $st = $pdo->prepare('SELECT * FROM categories WHERE id = ?');
+    $st->execute([$id]);
+    $row = $st->fetch();
+    if (!$row) {
+        json_error('Failed to update category.', 400);
+    }
+    json_response(products_format_category($row));
+}
+
+function products_categories_delete(array $params): void
+{
+    $id = $params['id'];
+    $pdo = Database::pdo();
+    try {
+        Database::begin();
+        $pdo->prepare('UPDATE products SET category_id = NULL WHERE category_id = ?')->execute([$id]);
+        $pdo->prepare('DELETE FROM categories WHERE id = ?')->execute([$id]);
+        Database::commit();
+        json_response(['message' => 'Category deleted successfully.']);
+    } catch (Throwable $e) {
+        Database::rollBack();
+        json_error('Failed to delete category.', 500);
+    }
+}
+
+function products_categories_bulk_delete(array $params): void
+{
+    $body = read_json_body();
+    $ids = $body['ids'] ?? null;
+    if (!is_array($ids) || count($ids) === 0) {
+        json_error('No category IDs provided.', 400);
+    }
+    $pdo = Database::pdo();
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    try {
+        Database::begin();
+        $pdo->prepare("UPDATE products SET category_id = NULL WHERE category_id IN ($placeholders)")->execute($ids);
+        $pdo->prepare("DELETE FROM categories WHERE id IN ($placeholders)")->execute($ids);
+        Database::commit();
+        json_response(['message' => count($ids) . ' categories deleted successfully.']);
+    } catch (Throwable $e) {
+        Database::rollBack();
+        json_error('Failed to bulk delete categories.', 500);
+    }
+}
+
+/* ---------- Brands ---------- */
+
+function products_brands_list(array $params): void
+{
+    $pdo = Database::pdo();
+    $rows = $pdo->query('SELECT * FROM brands ORDER BY name ASC')->fetchAll();
+    json_response(array_map('products_format_brand', $rows));
+}
+
+function products_brands_create(array $params): void
+{
+    $body = read_json_body();
+    $name = trim((string) ($body['name'] ?? ''));
+    if ($name === '') {
+        json_error('Name is required.', 400);
+    }
+    $pdo = Database::pdo();
+    $exists = $pdo->prepare('SELECT id FROM brands WHERE name = ? LIMIT 1');
+    $exists->execute([$name]);
+    if ($exists->fetch()) {
+        json_error('Brand already exists.', 400);
+    }
+    $id = uuid_v4();
+    $now = now_sql();
+    $pdo->prepare('INSERT INTO brands (id, name, created_at, updated_at) VALUES (?, ?, ?, ?)')
+        ->execute([$id, $name, $now, $now]);
+    $st = $pdo->prepare('SELECT * FROM brands WHERE id = ?');
+    $st->execute([$id]);
+    json_response(products_format_brand($st->fetch()), 201);
+}
+
+function products_brands_update(array $params): void
+{
+    $id = $params['id'];
+    $body = read_json_body();
+    $name = trim((string) ($body['name'] ?? ''));
+    if ($name === '') {
+        json_error('Name is required.', 400);
+    }
+    $pdo = Database::pdo();
+    $pdo->prepare('UPDATE brands SET name = ?, updated_at = ? WHERE id = ?')
+        ->execute([$name, now_sql(), $id]);
+    $st = $pdo->prepare('SELECT * FROM brands WHERE id = ?');
+    $st->execute([$id]);
+    $row = $st->fetch();
+    if (!$row) {
+        json_error('Failed to update brand.', 400);
+    }
+    json_response(products_format_brand($row));
+}
+
+function products_brands_delete(array $params): void
+{
+    $id = $params['id'];
+    $pdo = Database::pdo();
+    try {
+        Database::begin();
+        $pdo->prepare('UPDATE products SET brand_id = NULL WHERE brand_id = ?')->execute([$id]);
+        $pdo->prepare('DELETE FROM brands WHERE id = ?')->execute([$id]);
+        Database::commit();
+        json_response(['message' => 'Brand deleted successfully.']);
+    } catch (Throwable $e) {
+        Database::rollBack();
+        json_error('Failed to delete brand.', 500);
+    }
+}
+
+function products_brands_bulk_delete(array $params): void
+{
+    $body = read_json_body();
+    $ids = $body['ids'] ?? null;
+    if (!is_array($ids) || count($ids) === 0) {
+        json_error('No brand IDs provided.', 400);
+    }
+    $pdo = Database::pdo();
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    try {
+        Database::begin();
+        $pdo->prepare("UPDATE products SET brand_id = NULL WHERE brand_id IN ($placeholders)")->execute($ids);
+        $pdo->prepare("DELETE FROM brands WHERE id IN ($placeholders)")->execute($ids);
+        Database::commit();
+        json_response(['message' => count($ids) . ' brands deleted successfully.']);
+    } catch (Throwable $e) {
+        Database::rollBack();
+        json_error('Failed to bulk delete brands.', 500);
+    }
+}
+
+/* ---------- Products ---------- */
+
+function products_generate_sku(PDO $pdo, string $name, ?string $brandId, ?string $model): string
+{
+    $brandPrefix = '';
+    if ($brandId) {
+        $st = $pdo->prepare('SELECT name FROM brands WHERE id = ?');
+        $st->execute([$brandId]);
+        $b = $st->fetch();
+        if ($b) {
+            $brandPrefix = strtoupper(preg_replace('/[^A-Z0-9]+/i', '', $b['name']) ?? '');
+            $brandPrefix = substr($brandPrefix, 0, 6);
+        }
+    }
+    $modelPart = strtoupper(preg_replace('/[^A-Z0-9]+/i', '', (string) $model) ?? '');
+    $modelPart = substr($modelPart, 0, 8);
+    $namePart = strtoupper(preg_replace('/[^A-Z0-9]+/i', '', $name) ?? '');
+    $namePart = substr($namePart, 0, 8);
+    $base = ($brandPrefix !== '' ? $brandPrefix : ($namePart !== '' ? $namePart : 'PRD'));
+    if ($modelPart !== '') {
+        $base .= '-' . $modelPart;
+    }
+
+    for ($attempt = 0; $attempt < 8; $attempt++) {
+        $suffix = strtoupper(base_convert((string) (int) (microtime(true) * 1000), 10, 36));
+        $suffix = substr($suffix, -4) . strtoupper(substr(bin2hex(random_bytes(2)), 0, 2));
+        $sku = substr($base . '-' . $suffix, 0, 40);
+        $check = $pdo->prepare('SELECT id FROM products WHERE sku = ? LIMIT 1');
+        $check->execute([$sku]);
+        if (!$check->fetch()) {
+            return $sku;
+        }
+    }
+    return 'PRD-' . strtoupper(base_convert((string) time(), 10, 36));
+}
+
+function products_attach_relations(PDO $pdo, array $productRow, ?string $branchFilter = null, bool $lite = false): array
+{
+    $extras = [];
+    if (!empty($productRow['category_id'])) {
+        $st = $pdo->prepare('SELECT id, name FROM categories WHERE id = ?');
+        $st->execute([$productRow['category_id']]);
+        $c = $st->fetch();
+        $extras['category'] = $c ? ['id' => $c['id'], 'name' => $c['name']] : null;
+    } else {
+        $extras['category'] = null;
+    }
+    if (!empty($productRow['brand_id'])) {
+        $st = $pdo->prepare('SELECT id, name FROM brands WHERE id = ?');
+        $st->execute([$productRow['brand_id']]);
+        $b = $st->fetch();
+        $extras['brand'] = $b ? ['id' => $b['id'], 'name' => $b['name']] : null;
+    } else {
+        $extras['brand'] = null;
+    }
+
+    if (!$lite) {
+        if (!empty($productRow['supplier_id'])) {
+            $st = $pdo->prepare('SELECT * FROM suppliers WHERE id = ?');
+            $st->execute([$productRow['supplier_id']]);
+            $s = $st->fetch();
+            if ($s) {
+                $extras['supplier'] = [
+                    'id' => $s['id'],
+                    'company' => $s['company'],
+                    'contactPerson' => $s['contact_person'],
+                    'phone' => $s['phone'],
+                    'email' => $s['email'],
+                    'address' => $s['address'],
+                ];
+            } else {
+                $extras['supplier'] = null;
+            }
+        } else {
+            $extras['supplier'] = null;
+        }
+    }
+
+    if ($branchFilter) {
+        $st = $pdo->prepare(
+            'SELECT bs.branch_id, bs.quantity, b.name AS branch_name
+             FROM branch_stocks bs
+             LEFT JOIN branches b ON b.id = bs.branch_id
+             WHERE bs.product_id = ? AND bs.branch_id = ?'
+        );
+        $st->execute([$productRow['id'], $branchFilter]);
+        $stocks = [];
+        foreach ($st->fetchAll() as $bs) {
+            $stocks[] = [
+                'branchId' => $bs['branch_id'],
+                'quantity' => (int) $bs['quantity'],
+                'branch' => $lite ? null : ['id' => $bs['branch_id'], 'name' => $bs['branch_name']],
+            ];
+        }
+        $extras['branchStocks'] = $stocks;
+    } elseif (!$lite) {
+        $st = $pdo->prepare(
+            'SELECT bs.branch_id, bs.quantity, b.id AS b_id, b.name AS b_name
+             FROM branch_stocks bs
+             LEFT JOIN branches b ON b.id = bs.branch_id
+             WHERE bs.product_id = ?'
+        );
+        $st->execute([$productRow['id']]);
+        $stocks = [];
+        foreach ($st->fetchAll() as $bs) {
+            $stocks[] = [
+                'branchId' => $bs['branch_id'],
+                'quantity' => (int) $bs['quantity'],
+                'branch' => $bs['b_id'] ? ['id' => $bs['b_id'], 'name' => $bs['b_name']] : null,
+            ];
+        }
+        $extras['branchStocks'] = $stocks;
+    }
+
+    return products_format_product($productRow, $extras);
+}
+
+function products_list(array $params): void
+{
+    $q = query_params();
+    $pdo = Database::pdo();
+    $isLite = isset($q['lite']) && ($q['lite'] === '1' || $q['lite'] === 'true');
+    $branchFilter = isset($q['branchId']) && $q['branchId'] !== '' ? (string) $q['branchId'] : null;
+
+    $where = ['1=1'];
+    $args = [];
+    if (!empty($q['sku'])) {
+        $where[] = 'sku = ?';
+        $args[] = (string) $q['sku'];
+    }
+    if (!empty($q['barcode'])) {
+        $where[] = 'barcode = ?';
+        $args[] = (string) $q['barcode'];
+    }
+    if (!empty($q['category'])) {
+        $where[] = 'category_id = ?';
+        $args[] = (string) $q['category'];
+    }
+    if (!empty($q['brand'])) {
+        $where[] = 'brand_id = ?';
+        $args[] = (string) $q['brand'];
+    }
+    if (!empty($q['search'])) {
+        $s = '%' . (string) $q['search'] . '%';
+        $where[] = '(name LIKE ? OR sku LIKE ? OR barcode LIKE ? OR model LIKE ? OR serial_number LIKE ? OR imei LIKE ?)';
+        array_push($args, $s, $s, $s, $s, $s, $s);
+    }
+
+    $sql = 'SELECT * FROM products WHERE ' . implode(' AND ', $where) . ' ORDER BY name ASC';
+    $st = $pdo->prepare($sql);
+    $st->execute($args);
+    $rows = $st->fetchAll();
+    $out = [];
+    foreach ($rows as $row) {
+        $out[] = products_attach_relations($pdo, $row, $branchFilter, $isLite);
+    }
+    json_response($out);
+}
+
+function products_get(array $params): void
+{
+    $pdo = Database::pdo();
+    $st = $pdo->prepare('SELECT * FROM products WHERE id = ? LIMIT 1');
+    $st->execute([$params['id']]);
+    $row = $st->fetch();
+    if (!$row) {
+        json_error('Product not found.', 404);
+    }
+    json_response(products_attach_relations($pdo, $row, null, false));
+}
+
+function products_create(array $params): void
+{
+    $body = read_json_body();
+    $name = trim((string) ($body['name'] ?? ''));
+    $purchasePrice = $body['purchasePrice'] ?? null;
+    $sellingPrice = $body['sellingPrice'] ?? null;
+
+    if ($name === '' || $purchasePrice === null || $purchasePrice === '' || $sellingPrice === null || $sellingPrice === '') {
+        json_error('Name, purchase price, and selling price are required.', 400);
+    }
+
+    $pdo = Database::pdo();
+    $brandId = $body['brandId'] ?? null;
+    $model = $body['model'] ?? null;
+    $finalSku = isset($body['sku']) && is_string($body['sku']) ? trim($body['sku']) : '';
+    if ($finalSku === '') {
+        $finalSku = products_generate_sku($pdo, $name, $brandId ?: null, $model ? (string) $model : null);
+    }
+
+    $chk = $pdo->prepare('SELECT id FROM products WHERE sku = ? LIMIT 1');
+    $chk->execute([$finalSku]);
+    if ($chk->fetch()) {
+        json_error('SKU already exists.', 400);
+    }
+
+    $barcode = $body['barcode'] ?? null;
+    if ($barcode) {
+        $chk = $pdo->prepare('SELECT id FROM products WHERE barcode = ? LIMIT 1');
+        $chk->execute([$barcode]);
+        if ($chk->fetch()) {
+            json_error('Barcode already exists.', 400);
+        }
+    }
+
+    $id = uuid_v4();
+    $now = now_sql();
+    $pdo->prepare(
+        'INSERT INTO products (
+            id, name, sku, barcode, qr_code, category_id, brand_id, model, serial_number, imei,
+            color, storage, ram, processor, warranty_months, supplier_id, purchase_price, selling_price,
+            wholesale_price, tax_rate, discount_rate, images, description, weight, stock_quantity,
+            min_stock, type, created_at, updated_at
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+    )->execute([
+        $id,
+        $name,
+        $finalSku,
+        $barcode ?: null,
+        $body['qrCode'] ?? null,
+        $body['categoryId'] ?? null,
+        $brandId ?: null,
+        $model ?: null,
+        $body['serialNumber'] ?? null,
+        $body['imei'] ?? null,
+        $body['color'] ?? null,
+        $body['storage'] ?? null,
+        $body['ram'] ?? null,
+        $body['processor'] ?? null,
+        (int) ($body['warrantyMonths'] ?? 0),
+        $body['supplierId'] ?? null,
+        (float) $purchasePrice,
+        (float) $sellingPrice,
+        isset($body['wholesalePrice']) && $body['wholesalePrice'] !== '' && $body['wholesalePrice'] !== null
+            ? (float) $body['wholesalePrice'] : null,
+        isset($body['taxRate']) ? (float) $body['taxRate'] : 0.0,
+        isset($body['discountRate']) ? (float) $body['discountRate'] : 0.0,
+        json_encode([]),
+        $body['description'] ?? null,
+        isset($body['weight']) && $body['weight'] !== '' && $body['weight'] !== null
+            ? (float) $body['weight'] : null,
+        0,
+        isset($body['minStock']) ? (int) $body['minStock'] : 5,
+        $body['type'] ?? 'SINGLE',
+        $now,
+        $now,
+    ]);
+
+    // Init branch stocks at 0
+    $branches = $pdo->query('SELECT id FROM branches')->fetchAll();
+    $ins = $pdo->prepare(
+        'INSERT INTO branch_stocks (id, branch_id, product_id, quantity) VALUES (?, ?, ?, 0)'
+    );
+    foreach ($branches as $br) {
+        $ins->execute([uuid_v4(), $br['id'], $id]);
+    }
+
+    $st = $pdo->prepare('SELECT * FROM products WHERE id = ?');
+    $st->execute([$id]);
+    json_response(products_attach_relations($pdo, $st->fetch(), null, false), 201);
+}
+
+function products_update(array $params): void
+{
+    $id = $params['id'];
+    $body = read_json_body();
+    $pdo = Database::pdo();
+
+    $st = $pdo->prepare('SELECT id FROM products WHERE id = ?');
+    $st->execute([$id]);
+    if (!$st->fetch()) {
+        json_error('Product not found.', 404);
+    }
+
+    if (!empty($body['sku'])) {
+        $chk = $pdo->prepare('SELECT id FROM products WHERE sku = ? AND id <> ? LIMIT 1');
+        $chk->execute([$body['sku'], $id]);
+        if ($chk->fetch()) {
+            json_error('SKU is already in use by another product.', 400);
+        }
+    }
+
+    $fields = [
+        'name' => 'name',
+        'sku' => 'sku',
+        'barcode' => 'barcode',
+        'qrCode' => 'qr_code',
+        'categoryId' => 'category_id',
+        'brandId' => 'brand_id',
+        'model' => 'model',
+        'serialNumber' => 'serial_number',
+        'imei' => 'imei',
+        'color' => 'color',
+        'storage' => 'storage',
+        'ram' => 'ram',
+        'processor' => 'processor',
+        'supplierId' => 'supplier_id',
+        'description' => 'description',
+        'type' => 'type',
+    ];
+    $sets = [];
+    $vals = [];
+    foreach ($fields as $json => $col) {
+        if (array_key_exists($json, $body)) {
+            $sets[] = "{$col} = ?";
+            $val = $body[$json];
+            $vals[] = ($val === '' ? null : $val);
+        }
+    }
+    if (array_key_exists('warrantyMonths', $body)) {
+        $sets[] = 'warranty_months = ?';
+        $vals[] = (int) $body['warrantyMonths'];
+    }
+    if (array_key_exists('purchasePrice', $body)) {
+        $sets[] = 'purchase_price = ?';
+        $vals[] = (float) $body['purchasePrice'];
+    }
+    if (array_key_exists('sellingPrice', $body)) {
+        $sets[] = 'selling_price = ?';
+        $vals[] = (float) $body['sellingPrice'];
+    }
+    if (array_key_exists('wholesalePrice', $body)) {
+        $sets[] = 'wholesale_price = ?';
+        $vals[] = ($body['wholesalePrice'] === '' || $body['wholesalePrice'] === null)
+            ? null : (float) $body['wholesalePrice'];
+    }
+    if (array_key_exists('taxRate', $body)) {
+        $sets[] = 'tax_rate = ?';
+        $vals[] = (float) $body['taxRate'];
+    }
+    if (array_key_exists('discountRate', $body)) {
+        $sets[] = 'discount_rate = ?';
+        $vals[] = (float) $body['discountRate'];
+    }
+    if (array_key_exists('weight', $body)) {
+        $sets[] = 'weight = ?';
+        $vals[] = ($body['weight'] === '' || $body['weight'] === null) ? null : (float) $body['weight'];
+    }
+    if (array_key_exists('minStock', $body)) {
+        $sets[] = 'min_stock = ?';
+        $vals[] = (int) $body['minStock'];
+    }
+
+    if ($sets) {
+        $sets[] = 'updated_at = ?';
+        $vals[] = now_sql();
+        $vals[] = $id;
+        $pdo->prepare('UPDATE products SET ' . implode(', ', $sets) . ' WHERE id = ?')->execute($vals);
+    }
+
+    $st = $pdo->prepare('SELECT * FROM products WHERE id = ?');
+    $st->execute([$id]);
+    json_response(products_attach_relations($pdo, $st->fetch(), null, false));
+}
+
+function products_delete(array $params): void
+{
+    $id = $params['id'];
+    $pdo = Database::pdo();
+
+    $refs = [
+        $pdo->prepare('SELECT id FROM sale_items WHERE product_id = ? LIMIT 1'),
+        $pdo->prepare('SELECT id FROM purchase_items WHERE product_id = ? LIMIT 1'),
+        $pdo->prepare('SELECT id FROM warranty_claims WHERE product_id = ? LIMIT 1'),
+    ];
+    foreach ($refs as $st) {
+        $st->execute([$id]);
+        if ($st->fetch()) {
+            json_error(
+                'Cannot delete product because it is referenced in sales history, purchase orders, or warranty claims.',
+                400
+            );
+        }
+    }
+
+    try {
+        Database::begin();
+        $pdo->prepare('DELETE FROM branch_stocks WHERE product_id = ?')->execute([$id]);
+        $pdo->prepare('DELETE FROM stock_movements WHERE product_id = ?')->execute([$id]);
+        $pdo->prepare('DELETE FROM products WHERE id = ?')->execute([$id]);
+        Database::commit();
+        json_response(['message' => 'Product deleted successfully.']);
+    } catch (Throwable $e) {
+        Database::rollBack();
+        json_error('Failed to delete product.', 500);
+    }
+}
+
+function products_bulk_delete(array $params): void
+{
+    $body = read_json_body();
+    $ids = $body['ids'] ?? null;
+    if (!is_array($ids) || count($ids) === 0) {
+        json_error('No product IDs provided.', 400);
+    }
+    $pdo = Database::pdo();
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+
+    foreach (['sale_items', 'purchase_items', 'warranty_claims'] as $table) {
+        $st = $pdo->prepare("SELECT id FROM {$table} WHERE product_id IN ($placeholders) LIMIT 1");
+        $st->execute($ids);
+        if ($st->fetch()) {
+            json_error(
+                'Cannot delete selected products because one or more are referenced in sales history, purchase orders, or warranty claims.',
+                400
+            );
+        }
+    }
+
+    try {
+        Database::begin();
+        $pdo->prepare("DELETE FROM branch_stocks WHERE product_id IN ($placeholders)")->execute($ids);
+        $pdo->prepare("DELETE FROM stock_movements WHERE product_id IN ($placeholders)")->execute($ids);
+        $pdo->prepare("DELETE FROM products WHERE id IN ($placeholders)")->execute($ids);
+        Database::commit();
+        json_response(['message' => count($ids) . ' products deleted successfully.']);
+    } catch (Throwable $e) {
+        Database::rollBack();
+        json_error('Failed to bulk delete products.', 500);
+    }
+}

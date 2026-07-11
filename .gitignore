@@ -12,6 +12,9 @@ build/
 .env.local
 .env.*.local
 
+# PHP API secrets (never commit real DB password / JWT secret)
+api/config.php
+
 # IDE
 .vscode/
 .idea/

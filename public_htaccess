@@ -1,0 +1,28 @@
+# Rename/copy this file to `.htaccess` in the web root (htdocs / public_html)
+# after uploading frontend/dist + api/
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Keep API on PHP front controller
+  RewriteRule ^api(?:/|$) - [L]
+
+  # Static uploads
+  RewriteRule ^uploads(?:/|$) - [L]
+
+  # Existing files and dirs (assets, icons, etc.)
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # SPA fallback
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+# Security headers (optional; host may strip)
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "SAMEORIGIN"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>

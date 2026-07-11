@@ -1,0 +1,39 @@
+# Route all /api/* requests to front controller
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /api/
+
+  # Pass Authorization header through (CGI / shared hosting often drops it)
+  RewriteCond %{HTTP:Authorization} .
+  RewriteRule ^ - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+  RewriteCond %{HTTP:X-Access-Token} .
+  RewriteRule ^ - [E=HTTP_X_ACCESS_TOKEN:%{HTTP:X-Access-Token}]
+
+  # Block direct access to config and libraries
+  RewriteRule ^(config\.php|config\.sample\.php|bootstrap\.php)$ - [F,L]
+  RewriteRule ^(lib|sql|backups)/ - [F,L]
+
+  # Existing files (none expected) pass through
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteRule ^ index.php [QSA,L]
+</IfModule>
+
+# Extra belt-and-suspenders for Authorization
+<IfModule mod_setenvif.c>
+  SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+  SetEnvIf X-Access-Token "(.*)" HTTP_X_ACCESS_TOKEN=$1
+</IfModule>
+
+# Deny config if rewrite unavailable
+<FilesMatch "^(config\.php|config\.sample\.php|bootstrap\.php)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+</FilesMatch>
+
+# PHP settings (shared hosting may ignore some)
+<IfModule mod_php.c>
+  php_value upload_max_filesize 8M
+  php_value post_max_size 10M
+</IfModule>
