@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <!-- Squircle background with rounded corners matching the reference image -->
+  <rect width="512" height="512" rx="160" fill="#2563eb" />
+
+  <!-- Bold, centered white lightning bolt with rounded joins -->
+  <path d="M 276 56 L 76 296 H 256 L 236 456 L 436 216 H 256 Z" 
+        fill="none" 
+        stroke="#ffffff" 
+        stroke-width="36" 
+        stroke-linejoin="round" 
+        stroke-linecap="round" />
+</svg>

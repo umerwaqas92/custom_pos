@@ -1,8 +1,98 @@
 import { Router } from "express";
 import prisma from "../utils/db";
 import { protect, restrictTo } from "../middleware/auth";
+import { invalidateCache } from "../utils/cache";
 
 const router = Router();
+
+/**
+ * Proxy Google Suggest so the browser avoids CORS.
+ * Uses: https://suggestqueries.google.com/complete/search?output=toolbar&hl=en&q=...
+ */
+router.get("/suggest", protect, async (req, res) => {
+  const q = String(req.query.q || "").trim();
+  if (!q || q.length < 1) {
+    return res.json({ suggestions: [] });
+  }
+  if (q.length > 80) {
+    return res.status(400).json({ error: "Query too long." });
+  }
+
+  try {
+    const url =
+      "https://suggestqueries.google.com/complete/search?output=toolbar&hl=en&q=" +
+      encodeURIComponent(q);
+
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        Accept: "application/xml,text/xml,*/*",
+      },
+    });
+
+    if (!response.ok) {
+      return res.status(502).json({ error: "Suggest service unavailable.", suggestions: [] });
+    }
+
+    const xml = await response.text();
+    const suggestions: string[] = [];
+    const re = /<suggestion\s+data="([^"]*)"/gi;
+    let match: RegExpExecArray | null;
+    while ((match = re.exec(xml)) !== null) {
+      const decoded = match[1]
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .trim();
+      if (decoded && !suggestions.includes(decoded)) {
+        suggestions.push(decoded);
+      }
+    }
+
+    return res.json({ suggestions: suggestions.slice(0, 10) });
+  } catch (error) {
+    console.error("Suggest proxy failed:", error);
+    return res.status(502).json({ error: "Failed to fetch suggestions.", suggestions: [] });
+  }
+});
+
+/** Build a short unique SKU when the client leaves SKU empty. */
+async function generateUniqueSku(name: string, brandId?: string | null, model?: string | null): Promise<string> {
+  let brandPrefix = "";
+  if (brandId) {
+    const brand = await prisma.brand.findUnique({ where: { id: brandId }, select: { name: true } });
+    if (brand?.name) {
+      brandPrefix = brand.name
+        .toUpperCase()
+        .replace(/[^A-Z0-9]+/g, "")
+        .slice(0, 6);
+    }
+  }
+
+  const modelPart = (model || "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "")
+    .slice(0, 8);
+
+  const namePart = name
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "")
+    .slice(0, 8);
+
+  const base = [brandPrefix || namePart || "PRD", modelPart || null].filter(Boolean).join("-");
+
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const suffix = Date.now().toString(36).toUpperCase().slice(-4) + Math.random().toString(36).toUpperCase().slice(2, 4);
+    const sku = `${base}-${suffix}`.slice(0, 40);
+    const existing = await prisma.product.findUnique({ where: { sku } });
+    if (!existing) return sku;
+  }
+
+  return `PRD-${Date.now().toString(36).toUpperCase()}`;
+}
 
 // ==================== CATEGORY ROUTES ====================
 
@@ -24,9 +114,45 @@ router.post("/categories", protect, restrictTo("OWNER", "MANAGER"), async (req, 
   if (!name) return res.status(400).json({ error: "Name is required." });
   try {
     const category = await prisma.category.create({ data: { name } });
+    invalidateCache("reports:");
     return res.status(201).json(category);
   } catch (error) {
     return res.status(400).json({ error: "Category already exists." });
+  }
+});
+
+// Update Category
+router.put("/categories/:id", protect, restrictTo("OWNER", "MANAGER"), async (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ error: "Name is required." });
+  try {
+    const updated = await prisma.category.update({
+      where: { id },
+      data: { name }
+    });
+    invalidateCache("reports:");
+    return res.json(updated);
+  } catch (error) {
+    return res.status(400).json({ error: "Failed to update category." });
+  }
+});
+
+// Delete Category
+router.delete("/categories/:id", protect, restrictTo("OWNER", "MANAGER"), async (req, res) => {
+  const { id } = req.params;
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.product.updateMany({
+        where: { categoryId: id },
+        data: { categoryId: null }
+      });
+      await tx.category.delete({ where: { id } });
+    });
+    invalidateCache("reports:");
+    return res.json({ message: "Category deleted successfully." });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to delete category." });
   }
 });
 
@@ -50,9 +176,81 @@ router.post("/brands", protect, restrictTo("OWNER", "MANAGER"), async (req, res)
   if (!name) return res.status(400).json({ error: "Name is required." });
   try {
     const brand = await prisma.brand.create({ data: { name } });
+    invalidateCache("reports:");
     return res.status(201).json(brand);
   } catch (error) {
     return res.status(400).json({ error: "Brand already exists." });
+  }
+});
+
+// Update Brand
+router.put("/brands/:id", protect, restrictTo("OWNER", "MANAGER"), async (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ error: "Name is required." });
+  try {
+    const updated = await prisma.brand.update({
+      where: { id },
+      data: { name }
+    });
+    invalidateCache("reports:");
+    return res.json(updated);
+  } catch (error) {
+    return res.status(400).json({ error: "Failed to update brand." });
+  }
+});
+
+// Delete Brand
+router.delete("/brands/:id", protect, restrictTo("OWNER", "MANAGER"), async (req, res) => {
+  const { id } = req.params;
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.product.updateMany({
+        where: { brandId: id },
+        data: { brandId: null }
+      });
+      await tx.brand.delete({ where: { id } });
+    });
+    invalidateCache("reports:");
+    return res.json({ message: "Brand deleted successfully." });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to delete brand." });
+  }
+});
+
+// Bulk Delete Categories
+router.post("/categories/bulk-delete", protect, restrictTo("OWNER", "MANAGER"), async (req, res) => {
+  const { ids } = req.body;
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ error: "No category IDs provided." });
+  }
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.product.updateMany({ where: { categoryId: { in: ids } }, data: { categoryId: null } });
+      await tx.category.deleteMany({ where: { id: { in: ids } } });
+    });
+    invalidateCache("reports:");
+    return res.json({ message: `${ids.length} categories deleted successfully.` });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to bulk delete categories." });
+  }
+});
+
+// Bulk Delete Brands
+router.post("/brands/bulk-delete", protect, restrictTo("OWNER", "MANAGER"), async (req, res) => {
+  const { ids } = req.body;
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ error: "No brand IDs provided." });
+  }
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.product.updateMany({ where: { brandId: { in: ids } }, data: { brandId: null } });
+      await tx.brand.deleteMany({ where: { id: { in: ids } } });
+    });
+    invalidateCache("reports:");
+    return res.json({ message: `${ids.length} brands deleted successfully.` });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to bulk delete brands." });
   }
 });
 
@@ -60,7 +258,9 @@ router.post("/brands", protect, restrictTo("OWNER", "MANAGER"), async (req, res)
 
 // List and Search Products
 router.get("/", protect, async (req, res) => {
-  const { search, category, brand, sku, barcode } = req.query;
+  const { search, category, brand, sku, barcode, lite, branchId } = req.query;
+  const isLite = lite === "1" || lite === "true";
+  const branchFilter = branchId ? String(branchId) : undefined;
 
   try {
     const whereClause: any = {};
@@ -82,18 +282,60 @@ router.get("/", protect, async (req, res) => {
       ];
     }
 
-    const products = await prisma.product.findMany({
-      where: whereClause,
-      include: {
-        category: true,
-        brand: true,
-        supplier: true,
-        branchStocks: {
-          include: { branch: true }
-        }
-      },
-      orderBy: { name: "asc" }
-    });
+    const products = isLite
+      ? await prisma.product.findMany({
+          where: whereClause,
+          select: {
+            id: true,
+            name: true,
+            sku: true,
+            barcode: true,
+            categoryId: true,
+            brandId: true,
+            model: true,
+            serialNumber: true,
+            imei: true,
+            sellingPrice: true,
+            purchasePrice: true,
+            taxRate: true,
+            discountRate: true,
+            stockQuantity: true,
+            minStock: true,
+            type: true,
+            category: {
+              select: { id: true, name: true }
+            },
+            brand: {
+              select: { id: true, name: true }
+            },
+            ...(branchFilter
+              ? {
+                  branchStocks: {
+                    where: { branchId: branchFilter },
+                    select: { branchId: true, quantity: true }
+                  }
+                }
+              : {})
+          },
+          orderBy: { name: "asc" }
+        })
+      : await prisma.product.findMany({
+          where: whereClause,
+          include: {
+            category: true,
+            brand: true,
+            supplier: true,
+            branchStocks: branchFilter
+              ? {
+                  where: { branchId: branchFilter },
+                  include: { branch: true }
+                }
+              : {
+                  include: { branch: true }
+                }
+          },
+          orderBy: { name: "asc" }
+        });
 
     return res.json(products);
   } catch (error) {
@@ -134,13 +376,19 @@ router.post("/", protect, restrictTo("OWNER", "MANAGER", "WAREHOUSE"), async (re
     discountRate, description, weight, minStock, type
   } = req.body;
 
-  if (!name || !sku || purchasePrice === undefined || sellingPrice === undefined) {
-    return res.status(400).json({ error: "Name, SKU, purchase price, and selling price are required." });
+  if (!name || purchasePrice === undefined || purchasePrice === "" || sellingPrice === undefined || sellingPrice === "") {
+    return res.status(400).json({ error: "Name, purchase price, and selling price are required." });
   }
 
   try {
+    // Auto-generate SKU when blank (Excel-style catalogs rarely have SKUs)
+    let finalSku = typeof sku === "string" ? sku.trim() : "";
+    if (!finalSku) {
+      finalSku = await generateUniqueSku(String(name), brandId || null, model || null);
+    }
+
     // Check if SKU is unique
-    const existingSku = await prisma.product.findUnique({ where: { sku } });
+    const existingSku = await prisma.product.findUnique({ where: { sku: finalSku } });
     if (existingSku) return res.status(400).json({ error: "SKU already exists." });
 
     if (barcode) {
@@ -151,7 +399,7 @@ router.post("/", protect, restrictTo("OWNER", "MANAGER", "WAREHOUSE"), async (re
     const product = await prisma.product.create({
       data: {
         name,
-        sku,
+        sku: finalSku,
         barcode: barcode || null,
         qrCode: qrCode || null,
         categoryId: categoryId || null,
@@ -180,17 +428,20 @@ router.post("/", protect, restrictTo("OWNER", "MANAGER", "WAREHOUSE"), async (re
     });
 
     // Automatically initialize branch stocks with 0 quantity
-    const branches = await prisma.branch.findMany();
-    for (const b of branches) {
-      await prisma.branchStock.create({
-        data: {
+    const branches = await prisma.branch.findMany({
+      select: { id: true }
+    });
+    if (branches.length > 0) {
+      await prisma.branchStock.createMany({
+        data: branches.map((b) => ({
           branchId: b.id,
           productId: product.id,
           quantity: 0
-        }
+        }))
       });
     }
 
+    invalidateCache("reports:");
     return res.status(201).json(product);
   } catch (error) {
     console.error(error);
@@ -247,6 +498,7 @@ router.put("/:id", protect, restrictTo("OWNER", "MANAGER", "WAREHOUSE"), async (
       }
     });
 
+    invalidateCache("reports:");
     return res.json(updated);
   } catch (error) {
     console.error(error);
@@ -258,14 +510,55 @@ router.put("/:id", protect, restrictTo("OWNER", "MANAGER", "WAREHOUSE"), async (
 router.delete("/:id", protect, restrictTo("OWNER"), async (req, res) => {
   const { id } = req.params;
   try {
+    // Check if referenced in sales history, purchase orders, or warranty claims
+    const hasSales = await prisma.saleItem.findFirst({ where: { productId: id } });
+    const hasPurchases = await prisma.purchaseItem.findFirst({ where: { productId: id } });
+    const hasWarranties = await prisma.warrantyClaim.findFirst({ where: { productId: id } });
+
+    if (hasSales || hasPurchases || hasWarranties) {
+      return res.status(400).json({
+        error: "Cannot delete product because it is referenced in sales history, purchase orders, or warranty claims."
+      });
+    }
+
     // Cascade-deleting stocks is automatically handled or manual
     await prisma.branchStock.deleteMany({ where: { productId: id } });
     await prisma.stockMovement.deleteMany({ where: { productId: id } });
     await prisma.product.delete({ where: { id } });
+    invalidateCache("reports:");
     return res.json({ message: "Product deleted successfully." });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: "Failed to delete product." });
+  }
+});
+
+// Bulk Delete Products
+router.post("/bulk-delete", protect, restrictTo("OWNER"), async (req, res) => {
+  const { ids } = req.body;
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ error: "No product IDs provided." });
+  }
+  try {
+    // Check if any product is referenced in sales history, purchase orders, or warranty claims
+    const hasSales = await prisma.saleItem.findFirst({ where: { productId: { in: ids } } });
+    const hasPurchases = await prisma.purchaseItem.findFirst({ where: { productId: { in: ids } } });
+    const hasWarranties = await prisma.warrantyClaim.findFirst({ where: { productId: { in: ids } } });
+
+    if (hasSales || hasPurchases || hasWarranties) {
+      return res.status(400).json({
+        error: "Cannot delete selected products because one or more are referenced in sales history, purchase orders, or warranty claims."
+      });
+    }
+
+    await prisma.branchStock.deleteMany({ where: { productId: { in: ids } } });
+    await prisma.stockMovement.deleteMany({ where: { productId: { in: ids } } });
+    await prisma.product.deleteMany({ where: { id: { in: ids } } });
+    invalidateCache("reports:");
+    return res.json({ message: `${ids.length} products deleted successfully.` });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Failed to bulk delete products." });
   }
 });
 

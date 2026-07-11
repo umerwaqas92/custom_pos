@@ -1,6 +1,8 @@
 # Dependencies
 node_modules/
 
+# Database
+backend/prisma/migrations
 # Build output
 dist/
 build/
@@ -33,3 +35,7 @@ uploads/
 # Temp files
 tmp/
 temp/
+
+# Backups
+backups/
+*.zip

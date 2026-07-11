@@ -21,6 +21,7 @@ model User {
   sales        Sale[]
   repairJobs   RepairJob[]
   activities   ActivityLog[]
+  saleReturns  SaleReturn[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 }
@@ -73,7 +74,14 @@ model Product {
   purchaseItems  PurchaseItem[]
   saleItems      SaleItem[]
   stockMovements StockMovement[]
-  
+  returnItems    SaleReturnItem[]
+
+  @@index([categoryId])
+  @@index([brandId])
+  @@index([supplierId])
+  @@index([name])
+  @@index([stockQuantity])
+
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 }
@@ -87,6 +95,8 @@ model BranchStock {
   product    Product  @relation(fields: [productId], references: [id])
 
   @@unique([branchId, productId])
+  @@index([branchId])
+  @@index([productId])
 }
 
 model Category {
@@ -147,6 +157,10 @@ model PurchaseOrder {
   attachmentPath String?
   items          PurchaseItem[]
   payments       SupplierPayment[]
+  
+  @@index([supplierId])
+  @@index([status])
+  @@index([orderDate])
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 }
@@ -159,6 +173,9 @@ model PurchaseItem {
   product         Product       @relation(fields: [productId], references: [id])
   quantity        Int
   costPrice       Float
+
+  @@index([purchaseOrderId])
+  @@index([productId])
 }
 
 model Sale {
@@ -177,11 +194,20 @@ model Sale {
   paidAmount     Float
   paymentMethod  String          // 'CASH', 'CARD', 'MOBILE', 'SPLIT', 'CREDIT'
   paymentStatus  String          // 'PAID', 'PARTIAL', 'UNPAID'
+  returnStatus   String          @default("NONE") // 'NONE', 'PARTIAL', 'FULL'
   notes          String?
   items          SaleItem[]
   warrantyClaims WarrantyClaim[]
+  returns        SaleReturn[]
+
+  @@index([customerId])
+  @@index([cashierId])
+  @@index([branchId])
+  @@index([saleDate])
+  @@index([returnStatus])
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
+  emiDetails     SaleEmi?
 }
 
 model SaleItem {
@@ -197,6 +223,9 @@ model SaleItem {
   totalPrice   Float
   serialNumber String?
   imei         String?
+
+  @@index([saleId])
+  @@index([productId])
 }
 
 model RepairJob {
@@ -216,6 +245,11 @@ model RepairJob {
   estimatedDelivery DateTime?
   notes             String?
   photos            String?   // JSON string representing array of paths
+
+  @@index([customerId])
+  @@index([technicianId])
+  @@index([status])
+  @@index([createdAt])
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 }
@@ -229,6 +263,11 @@ model WarrantyClaim {
   status             String    @default("PENDING") // 'PENDING', 'APPROVED', 'REJECTED'
   resolutionDetails  String?
   notes              String?
+
+  @@index([saleId])
+  @@index([productId])
+  @@index([status])
+  @@index([claimDate])
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 }
@@ -242,6 +281,10 @@ model StockMovement {
   branchId    String?
   referenceId String?
   notes       String?
+
+  @@index([productId])
+  @@index([branchId])
+  @@index([createdAt])
   createdAt   DateTime @default(now())
 }
 
@@ -253,6 +296,9 @@ model Expense {
   description   String?
   paymentMethod String
   attachment    String?
+
+  @@index([date])
+  @@index([category])
   createdAt     DateTime @default(now())
 }
 
@@ -264,6 +310,9 @@ model CustomerCreditPayment {
   paymentDate   DateTime @default(now())
   paymentMethod String
   notes         String?
+
+  @@index([customerId])
+  @@index([paymentDate])
 }
 
 model SupplierPayment {
@@ -276,6 +325,10 @@ model SupplierPayment {
   paymentDate     DateTime       @default(now())
   paymentMethod   String
   notes           String?
+
+  @@index([supplierId])
+  @@index([purchaseOrderId])
+  @@index([paymentDate])
 }
 
 model ActivityLog {
@@ -284,5 +337,149 @@ model ActivityLog {
   user      User     @relation(fields: [userId], references: [id])
   action    String
   details   String?
+
+  @@index([userId])
+  @@index([createdAt])
   createdAt DateTime @default(now())
+}
+
+model BankAccount {
+  id            String        @id @default(uuid())
+  name          String        // e.g. "HBL Main Account", "Cash Drawer"
+  type          String        // 'CASH', 'BANK', 'MOBILE_WALLET'
+  accountNumber String?
+  bankName      String?
+  balance       Float         @default(0.0)
+  isActive      Boolean       @default(true)
+  notes         String?
+  transactions  Transaction[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model Transaction {
+  id              String       @id @default(uuid())
+  bankAccountId   String
+  bankAccount     BankAccount  @relation(fields: [bankAccountId], references: [id])
+  type            String       // 'INCOME', 'EXPENSE', 'TRANSFER', 'OPENING_BALANCE'
+  category        String       // 'SALE', 'EXPENSE', 'PURCHASE', 'CREDIT_PAYMENT', 'SUPPLIER_PAYMENT', 'TRANSFER', 'ADJUSTMENT', 'OPENING'
+  amount          Float
+  referenceType   String?      // 'SALE', 'EXPENSE', 'PURCHASE_ORDER', 'CREDIT_PAYMENT', 'SUPPLIER_PAYMENT', 'MANUAL'
+  referenceId     String?      // ID of the related record
+  description     String?
+  branchId        String?
+  createdBy       String?
+
+  @@index([bankAccountId])
+  @@index([branchId])
+  @@index([createdAt])
+  createdAt       DateTime     @default(now())
+}
+
+model DailyClosing {
+  id                String    @id @default(uuid())
+  closingDate       DateTime  @unique
+  branchId          String?
+  openingBalance    Float     @default(0.0)
+  totalSales        Float     @default(0.0)
+  totalExpenses     Float     @default(0.0)
+  totalReturns      Float     @default(0.0)
+  cashIn            Float     @default(0.0)    // Other cash received
+  cashOut           Float     @default(0.0)    // Other cash paid out
+  expectedBalance   Float     @default(0.0)
+  actualBalance     Float     @default(0.0)
+  variance          Float     @default(0.0)    // actual - expected
+  status            String    @default("OPEN") // 'OPEN', 'CLOSED'
+  notes             String?
+  closedBy          String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model SaleEmi {
+  id               String           @id @default(uuid())
+  saleId           String           @unique
+  sale             Sale             @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  
+  // Guarantor / Reference Info
+  guarantorName    String
+  guarantorPhone   String
+  guarantorAddress String
+
+  // Document Uploads (Paths saved to backend public/uploads folder)
+  cnicFrontPath    String
+  cnicBackPath     String
+  chequePath       String
+
+  // Installment plan math
+  months           Int              // 3, 6, or 12 months
+  interestRate     Float            // markup percentage added to base price
+  downPayment      Float
+  totalPrincipal   Float            // final price (original + markup interest)
+  monthlyPayment   Float
+  status           String           // 'ACTIVE', 'COMPLETED', 'DEFAULTED'
+  installments     EmiInstallment[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+}
+
+model EmiInstallment {
+  id                String    @id @default(uuid())
+  saleEmiId         String
+  saleEmi           SaleEmi   @relation(fields: [saleEmiId], references: [id], onDelete: Cascade)
+  installmentNumber Int       // e.g. 1, 2, 3...
+  dueDate           DateTime
+  amount            Float
+  amountPaid        Float     @default(0.0)
+  paidDate          DateTime?
+  status            String    @default("PENDING") // 'PENDING', 'PAID', 'OVERDUE'
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model SystemSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SaleReturn {
+  id            String           @id @default(uuid())
+  saleId        String
+  sale          Sale             @relation(fields: [saleId], references: [id])
+  processedById String
+  processedBy   User             @relation(fields: [processedById], references: [id])
+  returnDate    DateTime         @default(now())
+  refundAmount  Float
+  refundMethod  String           // 'CASH', 'CARD', 'MOBILE', 'CREDIT_ADJUST'
+  reason        String?
+  notes         String?
+  status        String           @default("COMPLETED") // 'COMPLETED', 'CANCELLED'
+  items         SaleReturnItem[]
+
+  @@index([saleId])
+  @@index([processedById])
+  @@index([returnDate])
+  @@index([status])
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+}
+
+model SaleReturnItem {
+  id           String     @id @default(uuid())
+  saleReturnId String
+  saleReturn   SaleReturn @relation(fields: [saleReturnId], references: [id], onDelete: Cascade)
+  saleItemId   String?
+  productId    String
+  product      Product    @relation(fields: [productId], references: [id])
+  quantity     Int
+  unitRefund   Float
+  totalRefund  Float
+  reason       String?
+
+  @@index([saleReturnId])
+  @@index([productId])
+  @@index([saleItemId])
 }

@@ -3,9 +3,48 @@ import * as bcrypt from "bcryptjs";
 import * as jwt from "jsonwebtoken";
 import prisma from "../utils/db";
 import { protect, restrictTo, AuthenticatedRequest } from "../middleware/auth";
+import { invalidateCache } from "../utils/cache";
+import path from "path";
+import fs from "fs";
+import multer from "multer";
+import {
+  buildBackupZip,
+  listBackupFiles,
+  resolveBackupFilename,
+  restoreFromZipFile,
+  writeBackupToDisk,
+  ensureBackupsDir
+} from "../utils/backup";
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || "super-secret-key-change-in-prod";
+
+// Configure Multer for backup zip uploads
+const uploadDir = path.resolve(__dirname, "../../public/uploads");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const backupStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    cb(null, `backup-import-${Date.now()}.zip`);
+  }
+});
+
+const backupUpload = multer({
+  storage: backupStorage,
+  fileFilter: (req, file, cb) => {
+    const isZip = path.extname(file.originalname).toLowerCase() === ".zip";
+    if (isZip) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only ZIP archive files are allowed.") as any, false);
+    }
+  }
+});
 
 // Login
 router.post("/login", async (req, res) => {
@@ -199,5 +238,203 @@ router.post("/branches", protect, restrictTo("OWNER"), async (req, res) => {
     return res.status(500).json({ error: "Internal server error." });
   }
 });
+
+// Update branch (OWNER only)
+router.put("/branches/:id", protect, restrictTo("OWNER"), async (req, res) => {
+  const { id } = req.params;
+  const { name, address, phone } = req.body;
+  if (!name) return res.status(400).json({ error: "Branch name is required." });
+  try {
+    const updatedBranch = await prisma.branch.update({
+      where: { id },
+      data: { name, address, phone }
+    });
+    return res.json(updatedBranch);
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to update branch." });
+  }
+});
+
+// Delete branch (OWNER only)
+router.delete("/branches/:id", protect, restrictTo("OWNER"), async (req, res) => {
+  const { id } = req.params;
+  try {
+    await prisma.branchStock.deleteMany({ where: { branchId: id } });
+    await prisma.user.updateMany({ where: { branchId: id }, data: { branchId: null } });
+    await prisma.dailyClosing.deleteMany({ where: { branchId: id } });
+    await prisma.branch.delete({ where: { id } });
+    return res.json({ message: "Branch deleted successfully." });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Failed to delete branch." });
+  }
+});
+
+// Clear all transactions data but keep products, categories, brands, customers, suppliers, branches, users (OWNER only)
+router.post("/reset-transactions", protect, restrictTo("OWNER"), async (req, res) => {
+  try {
+    await prisma.$transaction([
+      // 1. Delete dependent transactional records
+      prisma.activityLog.deleteMany({}),
+      prisma.emiInstallment.deleteMany({}),
+      prisma.saleEmi.deleteMany({}),
+      prisma.saleReturnItem.deleteMany({}),
+      prisma.saleReturn.deleteMany({}),
+      prisma.warrantyClaim.deleteMany({}),
+      prisma.saleItem.deleteMany({}),
+      prisma.sale.deleteMany({}),
+      prisma.repairJob.deleteMany({}),
+      
+      prisma.purchaseItem.deleteMany({}),
+      prisma.purchaseOrder.deleteMany({}),
+      
+      prisma.supplierPayment.deleteMany({}),
+      prisma.customerCreditPayment.deleteMany({}),
+      prisma.expense.deleteMany({}),
+      prisma.stockMovement.deleteMany({}),
+      
+      prisma.dailyClosing.deleteMany({}),
+      prisma.transaction.deleteMany({}),
+      
+      // 2. Reset customer credit balances and reward points to 0
+      prisma.customer.updateMany({
+        data: {
+          creditBalance: 0.0,
+          rewardPoints: 0
+        }
+      }),
+
+      // 3. Reset BankAccount balances to 0
+      prisma.bankAccount.updateMany({
+        data: {
+          balance: 0.0
+        }
+      })
+    ]);
+
+    invalidateCache("reports:");
+
+    return res.json({ message: "All transactions and sales history have been cleared successfully. Products, categories, and contacts have been preserved." });
+  } catch (error) {
+    console.error("Failed to reset transactions:", error);
+    return res.status(500).json({ error: "Failed to clear transaction records." });
+  }
+});
+
+// List on-disk backups (auto + manual)
+router.get("/backup/list", protect, restrictTo("OWNER", "MANAGER"), (_req, res) => {
+  try {
+    ensureBackupsDir();
+    return res.json(listBackupFiles());
+  } catch (error) {
+    console.error("Backup list failed:", error);
+    return res.status(500).json({ error: "Failed to list backups." });
+  }
+});
+
+// Create a manual backup saved under backups/
+router.post("/backup/create", protect, restrictTo("OWNER", "MANAGER"), async (_req, res) => {
+  try {
+    const meta = await writeBackupToDisk("manual-backup");
+    return res.status(201).json({
+      message: "Backup created successfully.",
+      ...meta
+    });
+  } catch (error: any) {
+    console.error("Backup create failed:", error);
+    return res.status(500).json({ error: error.message || "Failed to create backup." });
+  }
+});
+
+// Download a stored backup by filename
+router.get("/backup/download/:filename", protect, restrictTo("OWNER", "MANAGER"), (req, res) => {
+  try {
+    const full = resolveBackupFilename(req.params.filename);
+    return res.download(full, path.basename(full));
+  } catch (error: any) {
+    return res.status(404).json({ error: error.message || "Backup not found." });
+  }
+});
+
+// Restore from a stored backup filename
+router.post("/backup/restore/:filename", protect, restrictTo("OWNER"), async (req, res) => {
+  try {
+    const full = resolveBackupFilename(req.params.filename);
+    await restoreFromZipFile(full);
+    invalidateCache();
+    return res.json({
+      message: "System data restored from backup. Reloading is recommended."
+    });
+  } catch (error: any) {
+    console.error("Backup restore failed:", error);
+    return res.status(500).json({ error: error.message || "Failed to restore backup." });
+  }
+});
+
+// Delete a stored backup
+router.delete("/backup/delete/:filename", protect, restrictTo("OWNER", "MANAGER"), (req, res) => {
+  try {
+    const full = resolveBackupFilename(req.params.filename);
+    fs.unlinkSync(full);
+    return res.json({ message: "Backup deleted." });
+  } catch (error: any) {
+    return res.status(400).json({ error: error.message || "Failed to delete backup." });
+  }
+});
+
+// Export Database and Uploads Backup (OWNER & MANAGER)
+router.get("/backup/export", protect, restrictTo("OWNER", "MANAGER"), async (_req, res) => {
+  try {
+    const zip = await buildBackupZip();
+    const buffer = zip.toBuffer();
+
+    res.set({
+      "Content-Type": "application/zip",
+      "Content-Disposition": `attachment; filename="pos-backup-${new Date().toISOString().split("T")[0]}.zip"`,
+      "Content-Length": buffer.length
+    });
+
+    return res.send(buffer);
+  } catch (error: any) {
+    console.error("Backup export failed:", error);
+    return res.status(500).json({ error: error.message || "Failed to generate backup archive." });
+  }
+});
+
+// Import Database and Uploads Backup (OWNER only)
+router.post(
+  "/backup/import",
+  protect,
+  restrictTo("OWNER"),
+  backupUpload.single("backup"),
+  async (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ error: "Please upload a valid backup zip file." });
+    }
+
+    const tempFilePath = req.file.path;
+
+    try {
+      await restoreFromZipFile(tempFilePath);
+      invalidateCache();
+
+      if (fs.existsSync(tempFilePath)) {
+        fs.unlinkSync(tempFilePath);
+      }
+
+      return res.json({
+        message: "Data restored successfully from backup. The page will reload."
+      });
+    } catch (error: any) {
+      console.error("Backup import failed:", error);
+      if (fs.existsSync(tempFilePath)) {
+        fs.unlinkSync(tempFilePath);
+      }
+      return res.status(500).json({
+        error: error.message || "Failed to restore data from the uploaded backup."
+      });
+    }
+  }
+);
 
 export default router;

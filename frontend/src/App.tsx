@@ -3,17 +3,22 @@ import { BrowserRouter, Routes, Route, Navigate, Link } from "react-router-dom";
 import axios from "axios";
 import { useStore } from "./store/useStore";
 import Layout from "./components/Layout";
+import TrialExpiredOverlay from "./components/TrialExpiredOverlay";
 
 // Import pages
 import Dashboard from "./pages/Dashboard";
 import POS from "./pages/POS";
 import Inventory from "./pages/Inventory";
-import Repairs from "./pages/Repairs";
 import Contacts from "./pages/Contacts";
+import Installments from "./pages/Installments";
 import Accounting from "./pages/Accounting";
+import CategoriesBrands from "./pages/CategoriesBrands";
+import SalesHistory from "./pages/SalesHistory";
+import Settings from "./pages/Settings";
+import Reports from "./pages/Reports";
 
 // Set Axios Base URL
-axios.defaults.baseURL = "http://localhost:5000";
+axios.defaults.baseURL = "http://localhost:5001";
 
 // Login Page Component
 function Login() {
@@ -58,15 +63,15 @@ function Login() {
       <div className="w-full max-w-md bg-card border border-border p-8 rounded-2xl shadow-2xl relative overflow-hidden backdrop-blur-md">
         {/* Glow accent */}
         <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
-        
+
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 text-primary mb-3">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold tracking-tight text-foreground">ANTIGRAVITY POS</h2>
-          <p className="text-sm text-muted-foreground mt-1">Electronics Shop Management Dashboard</p>
+          <h2 className="text-2xl font-bold tracking-tight text-foreground"> POS System</h2>
+          <p className="text-sm text-muted-foreground mt-1">Shop Management Dashboard</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -144,12 +149,63 @@ function RoleGuard({ children, allowedRoles }: GuardProps) {
 }
 
 export default function App() {
-  const { token, theme } = useStore();
+  const { token, theme, loadSettings } = useStore();
+  const [trialExpired, setTrialExpired] = useState(false);
+  const [activated, setActivated] = useState(localStorage.getItem("pos_activated") === "true");
+
+  // Handle checking trial duration (30 days)
+  useEffect(() => {
+    let trialStart = localStorage.getItem("pos_trial_start");
+    if (!trialStart) {
+      trialStart = new Date().toISOString();
+      localStorage.setItem("pos_trial_start", trialStart);
+    }
+
+    const checkTrialStatus = () => {
+      const isActivated = localStorage.getItem("pos_activated") === "true";
+      setActivated(isActivated);
+
+      if (isActivated) {
+        setTrialExpired(false);
+        return;
+      }
+
+      const startDate = new Date(trialStart!);
+      const thirtyDays = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
+      const expiryTime = startDate.getTime() + thirtyDays;
+      
+      if (Date.now() > expiryTime) {
+        setTrialExpired(true);
+      } else {
+        setTrialExpired(false);
+      }
+    };
+
+    checkTrialStatus();
+    const interval = setInterval(checkTrialStatus, 15000); // Check status periodically
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleResetTrial = () => {
+    const newStart = new Date().toISOString();
+    localStorage.setItem("pos_trial_start", newStart);
+    localStorage.removeItem("pos_activated");
+    setActivated(false);
+    setTrialExpired(false);
+    window.location.reload();
+  };
+
+  const handleActivate = () => {
+    setActivated(true);
+    setTrialExpired(false);
+  };
 
   // Configure Axios interceptors for Authorization Header
   useEffect(() => {
     if (token) {
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      // Load settings from backend when token is available
+      loadSettings();
     } else {
       delete axios.defaults.headers.common["Authorization"];
     }
@@ -163,10 +219,11 @@ export default function App() {
   }, [theme]);
 
   return (
-    <BrowserRouter>
+    <>
+      <BrowserRouter>
       <Routes>
         <Route path="/login" element={!token ? <Login /> : <Navigate to="/" replace />} />
-        
+
         <Route
           path="/"
           element={token ? <Layout /> : <Navigate to="/login" replace />}
@@ -194,12 +251,14 @@ export default function App() {
             }
           />
 
-          {/* Repairs (Technician, Cashier, Manager, Owner) */}
+
+
+          {/* Installments (Owner, Manager, Cashier) */}
           <Route
-            path="repairs"
+            path="installments"
             element={
-              <RoleGuard allowedRoles={["OWNER", "MANAGER", "CASHIER", "TECHNICIAN"]}>
-                <Repairs />
+              <RoleGuard allowedRoles={["OWNER", "MANAGER", "CASHIER"]}>
+                <Installments />
               </RoleGuard>
             }
           />
@@ -224,9 +283,53 @@ export default function App() {
             }
           />
 
+          {/* Categories & Brands (Owner, Manager) */}
+          <Route
+            path="categories-brands"
+            element={
+              <RoleGuard allowedRoles={["OWNER", "MANAGER"]}>
+                <CategoriesBrands />
+              </RoleGuard>
+            }
+          />
+
+          {/* Sales History (Owner, Manager, Cashier) */}
+          <Route
+            path="sales-history"
+            element={
+              <RoleGuard allowedRoles={["OWNER", "MANAGER", "CASHIER"]}>
+                <SalesHistory />
+              </RoleGuard>
+            }
+          />
+
+          {/* Configuration Settings (Owner, Manager) */}
+          <Route
+            path="settings"
+            element={
+              <RoleGuard allowedRoles={["OWNER", "MANAGER"]}>
+                <Settings />
+              </RoleGuard>
+            }
+          />
+
+          {/* Reports Dashboard (Owner, Manager) */}
+          <Route
+            path="reports"
+            element={
+              <RoleGuard allowedRoles={["OWNER", "MANAGER"]}>
+                <Reports />
+              </RoleGuard>
+            }
+          />
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
     </BrowserRouter>
-  );
+    {trialExpired && !activated && (
+      <TrialExpiredOverlay onActivate={handleActivate} onResetTrial={handleResetTrial} />
+    )}
+  </>
+);
 }

@@ -10,16 +10,28 @@ import salesRouter from "./controllers/sales.controller";
 import repairsRouter from "./controllers/repairs.controller";
 import accountingRouter from "./controllers/accounting.controller";
 import reportsRouter from "./controllers/reports.controller";
+import settingsRouter from "./controllers/settings.controller";
+
+import path from "path";
+import fs from "fs";
+import { startScheduler } from "./utils/scheduler";
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
+
+// Ensure upload directory exists
+const uploadsDir = path.join(__dirname, "../public/uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use("/uploads", express.static(uploadsDir));
 
 // Routing API endpoints
 app.use("/api/auth", authRouter);
@@ -29,6 +41,7 @@ app.use("/api/sales", salesRouter);
 app.use("/api/repairs", repairsRouter);
 app.use("/api/accounting", accountingRouter);
 app.use("/api/reports", reportsRouter);
+app.use("/api/settings", settingsRouter);
 
 // Health check endpoint
 app.get("/health", (req, res) => {
@@ -44,4 +57,5 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 // Start the server
 app.listen(PORT, () => {
   console.log(`Backend server successfully running on port ${PORT}`);
+  startScheduler();
 });

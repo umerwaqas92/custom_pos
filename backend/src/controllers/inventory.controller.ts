@@ -1,8 +1,10 @@
 import { Router } from "express";
 import prisma from "../utils/db";
 import { protect, restrictTo } from "../middleware/auth";
+import { invalidateCache } from "../utils/cache";
 
 const router = Router();
+const LOW_STOCK_THRESHOLD = 3;
 
 // Adjust stock quantity manually (OWNER, MANAGER, WAREHOUSE)
 router.post("/adjust", protect, restrictTo("OWNER", "MANAGER", "WAREHOUSE"), async (req, res) => {
@@ -58,6 +60,7 @@ router.post("/adjust", protect, restrictTo("OWNER", "MANAGER", "WAREHOUSE"), asy
       return movement;
     });
 
+    invalidateCache("reports:");
     return res.json(result);
   } catch (error: any) {
     return res.status(400).json({ error: error.message || "Failed to adjust stock." });
@@ -123,6 +126,7 @@ router.post("/transfer", protect, restrictTo("OWNER", "MANAGER", "WAREHOUSE"), a
       return { success: true, transferred: qty };
     });
 
+    invalidateCache("reports:");
     return res.json(result);
   } catch (error: any) {
     return res.status(400).json({ error: error.message || "Transfer failed." });
@@ -147,16 +151,12 @@ router.get("/movements", protect, async (req, res) => {
   }
 });
 
-// Get low stock alerts
+// Get low / out-of-stock alerts (branch stock; matches Inventory low-stock rule: qty <= 3)
 router.get("/alerts", protect, async (req, res) => {
   try {
-    // Finds products where the aggregated stock quantity is less than or equal to minStock
-    const lowStockProducts = await prisma.product.findMany({
-      where: {
-        stockQuantity: {
-          lte: prisma.product.fields.minStock
-        }
-      },
+    const branchId = req.query.branchId ? String(req.query.branchId) : "";
+
+    const products = await prisma.product.findMany({
       include: {
         brand: true,
         category: true,
@@ -166,7 +166,38 @@ router.get("/alerts", protect, async (req, res) => {
       }
     });
 
-    return res.json(lowStockProducts);
+    const alerts = products
+      .map((product) => {
+        let availableQty: number;
+        if (branchId) {
+          availableQty =
+            product.branchStocks.find((bs) => bs.branchId === branchId)?.quantity ?? 0;
+        } else if (product.branchStocks.length > 0) {
+          availableQty = product.branchStocks.reduce((sum, bs) => sum + (bs.quantity || 0), 0);
+        } else {
+          availableQty = product.stockQuantity || 0;
+        }
+
+        // Keep in sync with Inventory.tsx: lowStockOnly uses LOW_STOCK_THRESHOLD (3)
+        const status =
+          availableQty <= 0 ? "OUT" : availableQty <= LOW_STOCK_THRESHOLD ? "LOW" : "OK";
+
+        return {
+          id: product.id,
+          name: product.name,
+          sku: product.sku,
+          brand: product.brand,
+          category: product.category,
+          branchStocks: product.branchStocks,
+          stockQuantity: availableQty,
+          minStock: LOW_STOCK_THRESHOLD,
+          status
+        };
+      })
+      .filter((p) => p.status === "OUT" || p.status === "LOW")
+      .sort((a, b) => a.stockQuantity - b.stockQuantity);
+
+    return res.json(alerts);
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: "Failed to load stock alerts." });
