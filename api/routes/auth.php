@@ -580,6 +580,151 @@ function auth_import_sql_string(string $sql): void
     }
 }
 
+function auth_camel_to_snake(string $s): string
+{
+    return strtolower((string) preg_replace('/([a-z])([A-Z])/', '$1_$2', $s));
+}
+
+/**
+ * Convert desktop Prisma SQLite DB file into MySQL dump SQL matching web schema.
+ */
+function auth_sqlite_file_to_mysql_sql(string $sqlitePath): string
+{
+    if (!extension_loaded('pdo_sqlite')) {
+        throw new RuntimeException('Server cannot read SQLite backups (pdo_sqlite missing). Convert offline or contact host.');
+    }
+    $src = new PDO('sqlite:' . $sqlitePath);
+    $src->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    try {
+        $src->exec('PRAGMA wal_checkpoint(TRUNCATE)');
+    } catch (Throwable $e) {
+        // ignore
+    }
+
+    $tableMap = [
+        'User' => 'users',
+        'Branch' => 'branches',
+        'Product' => 'products',
+        'BranchStock' => 'branch_stocks',
+        'Category' => 'categories',
+        'Brand' => 'brands',
+        'Supplier' => 'suppliers',
+        'Customer' => 'customers',
+        'PurchaseOrder' => 'purchase_orders',
+        'PurchaseItem' => 'purchase_items',
+        'Sale' => 'sales',
+        'SaleItem' => 'sale_items',
+        'RepairJob' => 'repair_jobs',
+        'WarrantyClaim' => 'warranty_claims',
+        'StockMovement' => 'stock_movements',
+        'Expense' => 'expenses',
+        'CustomerCreditPayment' => 'customer_credit_payments',
+        'SupplierPayment' => 'supplier_payments',
+        'ActivityLog' => 'activity_logs',
+        'BankAccount' => 'bank_accounts',
+        'Transaction' => 'transactions',
+        'DailyClosing' => 'daily_closings',
+        'SaleEmi' => 'sale_emis',
+        'EmiInstallment' => 'emi_installments',
+        'SystemSetting' => 'system_settings',
+        'SaleReturn' => 'sale_returns',
+        'SaleReturnItem' => 'sale_return_items',
+    ];
+    $order = [
+        'Branch', 'User', 'Category', 'Brand', 'Supplier', 'Customer', 'BankAccount', 'SystemSetting',
+        'Product', 'BranchStock', 'PurchaseOrder', 'PurchaseItem', 'Sale', 'SaleItem', 'SaleEmi', 'EmiInstallment',
+        'SaleReturn', 'SaleReturnItem', 'RepairJob', 'WarrantyClaim', 'StockMovement', 'Expense',
+        'CustomerCreditPayment', 'SupplierPayment', 'ActivityLog', 'Transaction', 'DailyClosing',
+    ];
+
+    $normalize = static function (string $col, $v) {
+        if ($v === null) {
+            return null;
+        }
+        if ($col === 'is_active') {
+            return (int) ((bool) $v || $v === 1 || $v === '1');
+        }
+        if (preg_match('/(_at|_date|date|paid_date|due_date|estimated_delivery|claim_date|order_date|sale_date|return_date|payment_date|closing_date)$/', $col)
+            || $col === 'date') {
+            $s = str_replace('T', ' ', (string) $v);
+            $s = (string) preg_replace('/\.\d{3}Z?$/', '', $s);
+            $s = rtrim($s, 'Z');
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $s)) {
+                $s .= ' 00:00:00';
+            }
+            return $s;
+        }
+        return $v;
+    };
+
+    $lines = [
+        '-- Converted from desktop SQLite backup ' . date('c'),
+        'SET NAMES utf8mb4;',
+        'SET FOREIGN_KEY_CHECKS=0;',
+        '',
+    ];
+    foreach (array_reverse($order) as $prismaTable) {
+        if (!isset($tableMap[$prismaTable])) {
+            continue;
+        }
+        $lines[] = 'DELETE FROM `' . $tableMap[$prismaTable] . '`;';
+    }
+    $lines[] = '';
+
+    foreach ($order as $prismaTable) {
+        if (!isset($tableMap[$prismaTable])) {
+            continue;
+        }
+        $mysqlTable = $tableMap[$prismaTable];
+        try {
+            $colsInfo = $src->query('PRAGMA table_info(`' . str_replace('`', '``', $prismaTable) . '`)')->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Throwable $e) {
+            continue;
+        }
+        if (!$colsInfo) {
+            continue;
+        }
+        $sqliteCols = array_column($colsInfo, 'name');
+        $mapped = [];
+        foreach ($sqliteCols as $c) {
+            $mapped[$c] = auth_camel_to_snake($c);
+        }
+        $rows = $src->query('SELECT * FROM `' . str_replace('`', '``', $prismaTable) . '`')->fetchAll(PDO::FETCH_ASSOC);
+        if (!$rows) {
+            continue;
+        }
+        $colSql = implode(',', array_map(static fn($c) => '`' . str_replace('`', '``', $c) . '`', array_values($mapped)));
+        foreach ($rows as $row) {
+            $vals = [];
+            foreach ($sqliteCols as $sc) {
+                $mc = $mapped[$sc];
+                $v = $normalize($mc, $row[$sc] ?? null);
+                if ($v === null) {
+                    $vals[] = 'NULL';
+                } else {
+                    $vals[] = $src->quote((string) $v);
+                }
+            }
+            $lines[] = 'INSERT INTO `' . $mysqlTable . '` (' . $colSql . ') VALUES (' . implode(',', $vals) . ');';
+        }
+        $lines[] = '';
+    }
+
+    $lines[] = 'SET FOREIGN_KEY_CHECKS=1;';
+    $lines[] = "INSERT INTO bank_accounts (id, name, type, balance, is_active, created_at, updated_at)
+SELECT 'a3000000-0000-4000-8000-000000000001', 'Cash Drawer', 'CASH', 0, 1, NOW(), NOW() FROM DUAL
+WHERE (SELECT COUNT(*) FROM bank_accounts) = 0;";
+    $lines[] = "INSERT INTO bank_accounts (id, name, type, balance, is_active, created_at, updated_at)
+SELECT 'a3000000-0000-4000-8000-000000000002', 'Main Bank', 'BANK', 0, 1, NOW(), NOW() FROM DUAL
+WHERE (SELECT COUNT(*) FROM bank_accounts) < 2;";
+
+    return implode("\n", $lines);
+}
+
+/**
+ * Extract SQL (or convert SQLite desktop zip) and restore upload files.
+ * Returns SQL string for auth_import_sql_string().
+ */
 function auth_extract_sql_from_upload(string $tmpPath, string $originalName): string
 {
     $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
@@ -600,50 +745,86 @@ function auth_extract_sql_from_upload(string $tmpPath, string $originalName): st
             throw new RuntimeException('Could not open ZIP backup.');
         }
         $sql = null;
-        // Prefer dump.sql / *.sql, reject SQLite-only archives
-        $hasSqlite = false;
+        $sqliteIndex = null;
+        $sqliteName = null;
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $name = str_replace('\\', '/', (string) $zip->getNameIndex($i));
             $base = strtolower(basename($name));
-            if ($base === 'dev.db' || str_ends_with($name, 'prisma/dev.db')) {
-                $hasSqlite = true;
+            if ($base === 'dev.db' || str_ends_with(strtolower($name), 'prisma/dev.db') || $base === 'dev.db-wal') {
+                if ($base === 'dev.db' || str_ends_with(strtolower($name), '/dev.db') || $base === 'dev.db') {
+                    $sqliteIndex = $i;
+                    $sqliteName = $name;
+                }
             }
             if ($base === 'dump.sql' || $base === 'backup.sql' || str_ends_with($base, '.sql')) {
-                $sql = $zip->getFromIndex($i);
-                if ($sql !== false && trim((string) $sql) !== '') {
+                $chunk = $zip->getFromIndex($i);
+                if ($chunk !== false && trim((string) $chunk) !== '') {
+                    $sql = $chunk;
                     break;
                 }
-                $sql = null;
             }
         }
 
-        // Restore uploads if present
+        // Restore uploads (web + desktop paths)
         ensure_dir(uploads_path());
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $name = str_replace('\\', '/', (string) $zip->getNameIndex($i));
             if (str_contains($name, '..')) {
                 continue;
             }
-            if (preg_match('#(^|/)uploads/([^/]+)$#', $name, $m)) {
-                $dest = uploads_path() . DIRECTORY_SEPARATOR . $m[2];
+            if (preg_match('#(?:^|/)(?:public/)?uploads/([^/]+)$#i', $name, $m)) {
+                $dest = uploads_path() . DIRECTORY_SEPARATOR . $m[1];
                 $data = $zip->getFromIndex($i);
                 if ($data !== false) {
                     file_put_contents($dest, $data);
                 }
             }
         }
-        $zip->close();
 
-        if ($sql === null || trim((string) $sql) === '') {
-            if ($hasSqlite) {
-                throw new RuntimeException('This ZIP is an old desktop/SQLite backup (prisma/dev.db). Create a new backup from this web POS instead.');
-            }
-            throw new RuntimeException('No .sql file found inside the ZIP. Expected dump.sql.');
+        if ($sql !== null && trim((string) $sql) !== '') {
+            $zip->close();
+            return (string) $sql;
         }
-        return (string) $sql;
+
+        // Desktop SQLite backup → convert on the fly
+        if ($sqliteIndex !== null) {
+            $tmpDir = sys_get_temp_dir() . '/pos_sqlite_' . bin2hex(random_bytes(4));
+            @mkdir($tmpDir, 0755, true);
+            $dbPath = $tmpDir . '/dev.db';
+            $dbData = $zip->getFromIndex($sqliteIndex);
+            if ($dbData === false) {
+                $zip->close();
+                throw new RuntimeException('Could not read prisma/dev.db from ZIP.');
+            }
+            file_put_contents($dbPath, $dbData);
+            // Also extract WAL/SHM if present for checkpoint
+            for ($i = 0; $i < $zip->numFiles; $i++) {
+                $name = str_replace('\\', '/', (string) $zip->getNameIndex($i));
+                $base = basename($name);
+                if ($base === 'dev.db-wal' || $base === 'dev.db-shm') {
+                    $blob = $zip->getFromIndex($i);
+                    if ($blob !== false) {
+                        file_put_contents($tmpDir . '/' . $base, $blob);
+                    }
+                }
+            }
+            $zip->close();
+            try {
+                $converted = auth_sqlite_file_to_mysql_sql($dbPath);
+            } finally {
+                foreach (glob($tmpDir . '/*') ?: [] as $f) {
+                    @unlink($f);
+                }
+                @rmdir($tmpDir);
+            }
+            return $converted;
+        }
+
+        $zip->close();
+        throw new RuntimeException('No dump.sql or prisma/dev.db found inside the ZIP.');
     }
 
-    throw new RuntimeException('Unsupported backup type. Upload a .sql or .zip (with dump.sql) file.');
+    throw new RuntimeException('Unsupported backup type. Upload a .sql or .zip backup file.');
 }
 
 function auth_backup_download(array $params): void
