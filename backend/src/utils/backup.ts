@@ -4,11 +4,45 @@ import { execFileSync } from "child_process";
 import prisma from "./db";
 const AdmZip = require("adm-zip");
 
-export const BACKUPS_DIR = path.resolve(__dirname, "../../backups");
-export const DB_PATH = path.resolve(__dirname, "../../prisma/dev.db");
-export const DB_WAL_PATH = path.resolve(__dirname, "../../prisma/dev.db-wal");
-export const DB_SHM_PATH = path.resolve(__dirname, "../../prisma/dev.db-shm");
-export const UPLOADS_PATH = path.resolve(__dirname, "../../public/uploads");
+/**
+ * Resolve paths for both:
+ * - Dev: backend/prisma/dev.db
+ * - Electron desktop (Mac/Windows): userData (writable; Program Files is read-only on Windows)
+ */
+function resolveFromDatabaseUrl(): string | null {
+  const url = process.env.DATABASE_URL;
+  if (!url || !url.startsWith("file:")) return null;
+  let p = url.slice("file:".length);
+  // file:///C:/... or file:/C:/... or file:./dev.db
+  if (p.startsWith("///")) p = p.slice(2); // keep leading /
+  else if (p.startsWith("//") && !p.startsWith("//./")) {
+    // file://hostname/path — rare
+    p = p.replace(/^\/\/[^/]*/, "");
+  }
+  // Windows absolute after file:  C:/Users/...
+  if (/^[A-Za-z]:[\\/]/.test(p) || path.isAbsolute(p)) {
+    return path.normalize(p);
+  }
+  // Relative to prisma folder
+  return path.resolve(__dirname, "../../prisma", p.replace(/^\.\//, ""));
+}
+
+function userDataRoot(): string | null {
+  return process.env.POS_USER_DATA || null;
+}
+
+const resolvedDb = resolveFromDatabaseUrl();
+export const DB_PATH = resolvedDb || path.resolve(__dirname, "../../prisma/dev.db");
+export const DB_WAL_PATH = DB_PATH + "-wal";
+export const DB_SHM_PATH = DB_PATH + "-shm";
+
+const dataRoot = userDataRoot();
+export const BACKUPS_DIR = dataRoot
+  ? path.join(dataRoot, "backups")
+  : path.resolve(__dirname, "../../backups");
+export const UPLOADS_PATH = dataRoot
+  ? path.join(dataRoot, "uploads")
+  : path.resolve(__dirname, "../../public/uploads");
 export const BACKEND_ROOT = path.resolve(__dirname, "../../");
 
 /** Ensure backups directory exists */
@@ -49,16 +83,16 @@ export async function buildBackupZip(): Promise<InstanceType<typeof AdmZip>> {
   const zip = new AdmZip();
 
   if (!fs.existsSync(DB_PATH)) {
-    throw new Error("Database file not found.");
+    throw new Error("Database file not found at " + DB_PATH);
   }
-  zip.addLocalFile(DB_PATH, "prisma");
+  // Always store as prisma/dev.db inside zip for compatibility
+  zip.addLocalFile(DB_PATH, "prisma", "dev.db");
 
-  // Optional sidecars only if still present after checkpoint (normally empty/truncated)
   if (fs.existsSync(DB_WAL_PATH) && fs.statSync(DB_WAL_PATH).size > 0) {
-    zip.addLocalFile(DB_WAL_PATH, "prisma");
+    zip.addLocalFile(DB_WAL_PATH, "prisma", "dev.db-wal");
   }
   if (fs.existsSync(DB_SHM_PATH) && fs.statSync(DB_SHM_PATH).size > 0) {
-    zip.addLocalFile(DB_SHM_PATH, "prisma");
+    zip.addLocalFile(DB_SHM_PATH, "prisma", "dev.db-shm");
   }
 
   if (fs.existsSync(UPLOADS_PATH)) {
@@ -98,7 +132,12 @@ export async function writeBackupToDisk(prefix = "manual-backup"): Promise<{
 export function zipContainsDatabase(zip: InstanceType<typeof AdmZip>): boolean {
   return zip.getEntries().some((entry: any) => {
     const name = String(entry.entryName).replace(/\\/g, "/");
-    return name === "prisma/dev.db" || name.endsWith("/prisma/dev.db") || name === "dev.db";
+    return (
+      name === "prisma/dev.db" ||
+      name.endsWith("/prisma/dev.db") ||
+      name === "dev.db" ||
+      name.endsWith("/dev.db")
+    );
   });
 }
 
@@ -116,14 +155,15 @@ export async function restoreFromZipFile(zipPath: string): Promise<void> {
     throw new Error("Invalid backup archive. Expected prisma/dev.db inside the ZIP.");
   }
 
-  // Release Prisma's hold on the DB
+  // Ensure parent dirs exist (desktop app userData)
+  const dbDir = path.dirname(DB_PATH);
+  if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
+
   await prisma.$disconnect();
 
   try {
-    // Clear live sidecars BEFORE overwrite — critical for correct restore
     clearSqliteSidecars();
 
-    // Extract carefully: write DB to a temp name first, then swap
     const tempDb = DB_PATH + ".restore-tmp";
     removeIfExists(tempDb);
 
@@ -135,15 +175,16 @@ export async function restoreFromZipFile(zipPath: string): Promise<void> {
       if (entry.isDirectory) continue;
       const name = String(entry.entryName).replace(/\\/g, "/");
 
-      if (name === "prisma/dev.db" || name.endsWith("/prisma/dev.db") || name === "dev.db") {
-        dbEntry = entry;
-      } else if (
-        name.startsWith("public/uploads/") ||
-        name.includes("/public/uploads/")
+      if (
+        name === "prisma/dev.db" ||
+        name.endsWith("/prisma/dev.db") ||
+        name === "dev.db" ||
+        name.endsWith("/dev.db")
       ) {
+        dbEntry = entry;
+      } else if (name.startsWith("public/uploads/") || name.includes("/public/uploads/")) {
         uploadEntries.push(entry);
       }
-      // Intentionally ignore wal/shm from zip — we start clean after restore
     }
 
     if (!dbEntry) {
@@ -152,29 +193,49 @@ export async function restoreFromZipFile(zipPath: string): Promise<void> {
 
     fs.writeFileSync(tempDb, dbEntry.getData());
 
-    // Atomic-ish replace of main DB
     if (fs.existsSync(DB_PATH)) {
       const bak = DB_PATH + ".pre-restore";
       removeIfExists(bak);
-      fs.renameSync(DB_PATH, bak);
+      // On Windows, rename can fail if file is locked — try copy+unlink fallback
       try {
-        fs.renameSync(tempDb, DB_PATH);
+        fs.renameSync(DB_PATH, bak);
+      } catch {
+        fs.copyFileSync(DB_PATH, bak);
+        try {
+          fs.unlinkSync(DB_PATH);
+        } catch {
+          /* ignore */
+        }
+      }
+      try {
+        try {
+          fs.renameSync(tempDb, DB_PATH);
+        } catch {
+          fs.copyFileSync(tempDb, DB_PATH);
+          removeIfExists(tempDb);
+        }
         removeIfExists(bak);
       } catch (err) {
-        // Roll back if swap fails
         if (fs.existsSync(bak) && !fs.existsSync(DB_PATH)) {
-          fs.renameSync(bak, DB_PATH);
+          try {
+            fs.renameSync(bak, DB_PATH);
+          } catch {
+            fs.copyFileSync(bak, DB_PATH);
+          }
         }
         throw err;
       }
     } else {
-      fs.renameSync(tempDb, DB_PATH);
+      try {
+        fs.renameSync(tempDb, DB_PATH);
+      } catch {
+        fs.copyFileSync(tempDb, DB_PATH);
+        removeIfExists(tempDb);
+      }
     }
 
-    // Ensure no WAL from previous process overrides restored data
     clearSqliteSidecars();
 
-    // Restore uploads
     if (!fs.existsSync(UPLOADS_PATH)) {
       fs.mkdirSync(UPLOADS_PATH, { recursive: true });
     }
@@ -192,30 +253,29 @@ export async function restoreFromZipFile(zipPath: string): Promise<void> {
       fs.writeFileSync(dest, entry.getData());
     }
   } finally {
-    // Always try to reconnect so the server keeps working
     try {
       await prisma.$connect();
-      // Sanity query
       await prisma.$queryRawUnsafe("SELECT 1");
     } catch (err) {
       console.error("[Backup] Failed to reconnect after restore:", err);
-      throw new Error("Restore wrote files but database reconnect failed. Restart the server.");
+      throw new Error(
+        "Restore wrote files but database reconnect failed. Restart the app completely."
+      );
     }
   }
 
-  // Older backups may predate newer Prisma migrations (e.g. SaleReturn).
-  // Apply pending migrations so the app schema matches the restored DB.
   await applyPendingMigrations();
 }
 
-/**
- * Run `prisma migrate deploy` against the restored database.
- * Safe if already up to date; required when restoring older backups.
- */
 export async function applyPendingMigrations(): Promise<void> {
   const backendRoot = BACKEND_ROOT;
-  const prismaBin = path.join(backendRoot, "node_modules", ".bin", "prisma");
-  if (!fs.existsSync(prismaBin)) {
+  const prismaBin =
+    process.platform === "win32"
+      ? path.join(backendRoot, "node_modules", ".bin", "prisma.cmd")
+      : path.join(backendRoot, "node_modules", ".bin", "prisma");
+  const prismaJs = path.join(backendRoot, "node_modules", "prisma", "build", "index.js");
+
+  if (!fs.existsSync(prismaBin) && !fs.existsSync(prismaJs)) {
     console.warn("[Backup] prisma binary not found; skip migrate deploy");
     return;
   }
@@ -227,16 +287,30 @@ export async function applyPendingMigrations(): Promise<void> {
   }
 
   try {
-    const out = execFileSync(prismaBin, ["migrate", "deploy"], {
-      cwd: backendRoot,
-      encoding: "utf8",
-      env: process.env,
-      timeout: 120000
-    });
+    const env = {
+      ...process.env,
+      DATABASE_URL: process.env.DATABASE_URL || `file:${DB_PATH.replace(/\\/g, "/")}`,
+    };
+    let out: string;
+    if (fs.existsSync(prismaBin)) {
+      out = execFileSync(prismaBin, ["migrate", "deploy"], {
+        cwd: backendRoot,
+        encoding: "utf8",
+        env,
+        timeout: 120000,
+        shell: process.platform === "win32",
+      });
+    } else {
+      out = execFileSync(process.execPath, [prismaJs, "migrate", "deploy"], {
+        cwd: backendRoot,
+        encoding: "utf8",
+        env: { ...env, ELECTRON_RUN_AS_NODE: "1" },
+        timeout: 120000,
+      });
+    }
     console.log("[Backup] migrate deploy after restore:\n", out);
   } catch (err: any) {
     console.error("[Backup] migrate deploy failed after restore:", err?.message || err);
-    // Reconnect even if migrate failed so API still responds
   } finally {
     try {
       await prisma.$connect();
@@ -247,7 +321,6 @@ export async function applyPendingMigrations(): Promise<void> {
   }
 }
 
-/** List backup zip files in backups/ */
 export function listBackupFiles(): Array<{
   filename: string;
   size: number;
@@ -269,14 +342,19 @@ export function listBackupFiles(): Array<{
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
-/** Resolve a backup filename safely (no path traversal) */
 export function resolveBackupFilename(filename: string): string {
   const base = path.basename(filename);
   if (base !== filename || !base.endsWith(".zip") || base.includes("..")) {
     throw new Error("Invalid backup filename.");
   }
   const full = path.join(BACKUPS_DIR, base);
-  if (!full.startsWith(BACKUPS_DIR)) {
+  const resolved = path.resolve(full);
+  const backupsResolved = path.resolve(BACKUPS_DIR);
+  // Windows-safe path containment check
+  if (
+    resolved !== backupsResolved &&
+    !resolved.toLowerCase().startsWith(backupsResolved.toLowerCase() + path.sep)
+  ) {
     throw new Error("Invalid backup path.");
   }
   if (!fs.existsSync(full)) {
@@ -285,7 +363,6 @@ export function resolveBackupFilename(filename: string): string {
   return full;
 }
 
-/** Prune old auto backups, keep newest N */
 export function pruneAutoBackups(maxKeep = 5) {
   ensureBackupsDir();
   const autos = listBackupFiles().filter((f) => f.filename.startsWith("auto-backup-"));

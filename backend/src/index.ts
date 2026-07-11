@@ -22,8 +22,10 @@ const app = express();
 const PORT = Number(process.env.PORT || 5001);
 const HOST = process.env.HOST || "0.0.0.0";
 
-// Ensure upload directory exists
-const uploadsDir = path.join(__dirname, "../public/uploads");
+// Uploads: desktop app uses POS_USER_DATA (writable on Windows); dev uses public/uploads
+const uploadsDir = process.env.POS_USER_DATA
+  ? path.join(process.env.POS_USER_DATA, "uploads")
+  : path.join(__dirname, "../public/uploads");
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }

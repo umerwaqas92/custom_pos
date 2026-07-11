@@ -78,6 +78,19 @@ export default function Settings() {
 
   // ─── Danger Zone State ────────────────────────────────────────────────────
   const [resetting, setResetting] = useState(false);
+  /** Custom modals (window.prompt / confirm do not work reliably in Electron desktop) */
+  const [resetModalOpen, setResetModalOpen] = useState(false);
+  const [resetConfirmText, setResetConfirmText] = useState("");
+  const [confirmModal, setConfirmModal] = useState<{
+    title: string;
+    message: string;
+    danger?: boolean;
+    onConfirm: () => void;
+  } | null>(null);
+
+  const askConfirm = (title: string, message: string, onConfirm: () => void, danger = false) => {
+    setConfirmModal({ title, message, onConfirm, danger });
+  };
 
   // ─── Load ─────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -164,15 +177,22 @@ export default function Settings() {
     }
   };
 
-  const handleDeleteBranch = async (id: string, name: string) => {
-    if (!window.confirm(`Delete "${name}"? All stock records for this branch will be removed.`)) return;
-    try {
-      await axios.delete(`/api/auth/branches/${id}`);
-      addNotification("Shop deleted.", "success");
-      loadBranches();
-    } catch (err: any) {
-      addNotification(err.response?.data?.error || "Failed to delete branch.", "warning");
-    }
+  const handleDeleteBranch = (id: string, name: string) => {
+    askConfirm(
+      "Delete shop?",
+      `Delete "${name}"? All stock records for this branch will be removed.`,
+      async () => {
+        setConfirmModal(null);
+        try {
+          await axios.delete(`/api/auth/branches/${id}`);
+          addNotification("Shop deleted.", "success");
+          loadBranches();
+        } catch (err: any) {
+          addNotification(err.response?.data?.error || "Failed to delete branch.", "warning");
+        }
+      },
+      true
+    );
   };
 
   // ─── Backup ───────────────────────────────────────────────────────────────
@@ -216,22 +236,14 @@ export default function Settings() {
     }
   };
 
-  const handleImportBackup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedFile) return addNotification("Select a backup file first.", "warning");
-    if (
-      !window.confirm(
-        "WARNING: Restoring from backup will overwrite all current data. This cannot be undone. Continue?"
-      )
-    )
-      return;
+  const runImportBackup = async (file: File) => {
     const formData = new FormData();
-    formData.append("backup", selectedFile);
+    formData.append("backup", file);
     setImporting(true);
     try {
+      // Do NOT set Content-Type manually — browser/Electron must set multipart boundary
       const res = await axios.post("/api/auth/backup/import", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-        timeout: 120000
+        timeout: 180000,
       });
       addNotification(res.data.message || "Data restored from backup.", "success");
       setSelectedFile(null);
@@ -241,6 +253,21 @@ export default function Settings() {
     } finally {
       setImporting(false);
     }
+  };
+
+  const handleImportBackup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFile) return addNotification("Select a backup file first.", "warning");
+    const file = selectedFile;
+    askConfirm(
+      "Restore backup?",
+      "WARNING: Restoring will overwrite all current data. This cannot be undone. Continue?",
+      () => {
+        setConfirmModal(null);
+        runImportBackup(file);
+      },
+      true
+    );
   };
 
   const handleDownloadBackup = async (filename: string) => {
@@ -267,18 +294,12 @@ export default function Settings() {
     }
   };
 
-  const handleRestoreBackup = async (filename: string) => {
-    if (
-      !window.confirm(
-        `Restore system to backup "${filename}"?\n\nThis will overwrite all current data.`
-      )
-    )
-      return;
+  const runRestoreBackup = async (filename: string) => {
     setRestoringName(filename);
     addNotification("Restoring system data…", "info");
     try {
       const res = await axios.post(`/api/auth/backup/restore/${encodeURIComponent(filename)}`, null, {
-        timeout: 120000
+        timeout: 180000,
       });
       addNotification(res.data.message || "System data restored.", "success");
       setTimeout(() => window.location.reload(), 1500);
@@ -289,26 +310,53 @@ export default function Settings() {
     }
   };
 
+  const handleRestoreBackup = async (filename: string) => {
+    askConfirm(
+      "Restore backup?",
+      `Restore system to backup "${filename}"?\n\nThis will overwrite all current data.`,
+      () => {
+        setConfirmModal(null);
+        runRestoreBackup(filename);
+      },
+      true
+    );
+  };
+
   const handleDeleteBackup = async (filename: string) => {
-    if (!window.confirm(`Delete backup file "${filename}"?`)) return;
-    try {
-      await axios.delete(`/api/auth/backup/delete/${encodeURIComponent(filename)}`);
-      addNotification("Backup file deleted.", "success");
-      loadBackups();
-    } catch (err: any) {
-      addNotification(await parseApiError(err, "Failed to delete backup."), "warning");
-    }
+    askConfirm(
+      "Delete backup?",
+      `Delete backup file "${filename}"?`,
+      async () => {
+        setConfirmModal(null);
+        try {
+          await axios.delete(`/api/auth/backup/delete/${encodeURIComponent(filename)}`);
+          addNotification("Backup file deleted.", "success");
+          loadBackups();
+        } catch (err: any) {
+          addNotification(await parseApiError(err, "Failed to delete backup."), "warning");
+        }
+      },
+      true
+    );
   };
 
   // ─── Danger ───────────────────────────────────────────────────────────────
-  const handleResetTransactions = async () => {
-    if (!window.confirm("WARNING: This will permanently delete all sales, transactions, invoices, installments, expenses, and log history.\n\nMaster records (products, customers, staff, etc.) will be preserved.\n\nThis CANNOT be undone. Proceed?")) return;
-    const keyword = window.prompt("Type the word RESET to confirm:");
-    if (keyword !== "RESET") { addNotification("Reset cancelled.", "warning"); return; }
+  const handleResetTransactions = () => {
+    setResetConfirmText("");
+    setResetModalOpen(true);
+  };
+
+  const confirmResetTransactions = async () => {
+    if (resetConfirmText.trim() !== "RESET") {
+      addNotification('Type RESET exactly (all caps) to confirm.', "warning");
+      return;
+    }
     setResetting(true);
     try {
       const res = await axios.post("/api/auth/reset-transactions");
       addNotification(res.data.message || "Transactions cleared.", "success");
+      setResetModalOpen(false);
+      setResetConfirmText("");
       setTimeout(() => window.location.reload(), 1500);
     } catch (err: any) {
       addNotification(err.response?.data?.error || "Failed to clear data.", "warning");
@@ -826,6 +874,93 @@ export default function Settings() {
           </Field>
         </Modal>
       )}
+
+      {/* Generic confirm modal (Electron-safe; replaces window.confirm) */}
+      <PortalModal
+        isOpen={!!confirmModal}
+        onClose={() => setConfirmModal(null)}
+        backdropClass="bg-black/60 backdrop-blur-sm px-4"
+      >
+        <div className="bg-card border border-border w-full max-w-md p-6 rounded-2xl shadow-2xl space-y-4">
+          <h3 className="text-sm font-bold text-foreground">{confirmModal?.title}</h3>
+          <p className="text-xs text-muted-foreground whitespace-pre-line leading-relaxed">
+            {confirmModal?.message}
+          </p>
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setConfirmModal(null)}
+              className="px-4 py-2 border border-border text-xs rounded-xl hover:bg-secondary"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => confirmModal?.onConfirm()}
+              className={`px-4 py-2 text-xs font-bold rounded-xl text-white ${
+                confirmModal?.danger ? "bg-red-500 hover:bg-red-600" : "bg-primary hover:bg-primary/90"
+              }`}
+            >
+              Confirm
+            </button>
+          </div>
+        </div>
+      </PortalModal>
+
+      {/* RESET type-to-confirm (Electron-safe; replaces window.prompt) */}
+      <PortalModal
+        isOpen={resetModalOpen}
+        onClose={() => {
+          if (!resetting) {
+            setResetModalOpen(false);
+            setResetConfirmText("");
+          }
+        }}
+        backdropClass="bg-black/60 backdrop-blur-sm px-4"
+      >
+        <div className="bg-card border border-red-500/30 w-full max-w-md p-6 rounded-2xl shadow-2xl space-y-4">
+          <h3 className="text-sm font-bold text-red-400">Clear all transaction data?</h3>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            This permanently deletes sales, invoices, installments, expenses, and history.
+            Products, customers, brands, and staff are kept.
+          </p>
+          <p className="text-xs text-foreground">
+            Type <strong className="text-red-400">RESET</strong> below to confirm:
+          </p>
+          <input
+            type="text"
+            value={resetConfirmText}
+            onChange={(e) => setResetConfirmText(e.target.value)}
+            placeholder="Type RESET"
+            autoFocus
+            className="w-full bg-secondary border border-border px-3 py-2.5 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-red-500/40"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") confirmResetTransactions();
+            }}
+          />
+          <div className="flex justify-end gap-2 pt-1">
+            <button
+              type="button"
+              disabled={resetting}
+              onClick={() => {
+                setResetModalOpen(false);
+                setResetConfirmText("");
+              }}
+              className="px-4 py-2 border border-border text-xs rounded-xl hover:bg-secondary"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={resetting || resetConfirmText.trim() !== "RESET"}
+              onClick={confirmResetTransactions}
+              className="px-4 py-2 bg-red-500 hover:bg-red-600 disabled:opacity-40 text-white text-xs font-bold rounded-xl"
+            >
+              {resetting ? "Clearing…" : "Clear data"}
+            </button>
+          </div>
+        </div>
+      </PortalModal>
     </div>
   );
 }

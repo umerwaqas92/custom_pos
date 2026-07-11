@@ -141,6 +141,7 @@ function startBackend() {
   const dbFile = isDev ? path.join(backendDir, "prisma", "dev.db") : ensureDatabase();
   const dbUrl = "file:" + dbFile.replace(/\\/g, "/");
 
+  const userData = isDev ? "" : app.getPath("userData");
   const env = {
     ...process.env,
     PORT: String(API_PORT),
@@ -150,6 +151,8 @@ function startBackend() {
     ELECTRON: "1",
     POS_RESOURCES: root,
     FRONTEND_DIST: path.join(root, "frontend", "dist"),
+    // Writable data dir for backups/uploads on Windows (Program Files is read-only)
+    ...(userData ? { POS_USER_DATA: userData } : {}),
   };
 
   log("Starting backend", { isDev, port: API_PORT, backendDir, dbUrl });

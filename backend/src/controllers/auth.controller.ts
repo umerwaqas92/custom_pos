@@ -13,30 +13,35 @@ import {
   resolveBackupFilename,
   restoreFromZipFile,
   writeBackupToDisk,
-  ensureBackupsDir
+  ensureBackupsDir,
+  UPLOADS_PATH
 } from "../utils/backup";
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || "super-secret-key-change-in-prod";
 
-// Configure Multer for backup zip uploads
-const uploadDir = path.resolve(__dirname, "../../public/uploads");
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+// Multer temp uploads — must be writable (userData on desktop Windows, not Program Files)
+function getUploadDir() {
+  const dir = UPLOADS_PATH;
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  return dir;
 }
 
 const backupStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
+  destination: (_req, _file, cb) => {
+    cb(null, getUploadDir());
   },
-  filename: (req, file, cb) => {
+  filename: (_req, _file, cb) => {
     cb(null, `backup-import-${Date.now()}.zip`);
   }
 });
 
 const backupUpload = multer({
   storage: backupStorage,
-  fileFilter: (req, file, cb) => {
+  limits: { fileSize: 500 * 1024 * 1024 }, // 500MB
+  fileFilter: (_req, file, cb) => {
     const isZip = path.extname(file.originalname).toLowerCase() === ".zip";
     if (isZip) {
       cb(null, true);
