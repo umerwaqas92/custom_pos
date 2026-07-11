@@ -15,6 +15,9 @@ build/
 # PHP API secrets (never commit real DB password / JWT secret)
 api/config.php
 
+# Deploy secrets
+scripts/deploy.env
+
 # IDE
 .vscode/
 .idea/

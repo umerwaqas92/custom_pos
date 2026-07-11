@@ -22,7 +22,9 @@ import {
   BarChart3,
   AlertTriangle,
   Maximize2,
-  Minimize2
+  Minimize2,
+  Menu,
+  X
 } from "lucide-react";
 
 export default function Layout() {
@@ -45,7 +47,12 @@ export default function Layout() {
   const navigate = useNavigate();
   const [notifOpen, setNotifOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    setMobileSidebarOpen(false);
+  }, [location.pathname]);
 
   const isPosRoute = location.pathname === "/pos";
 
@@ -137,10 +144,10 @@ export default function Layout() {
     <div className="flex h-screen bg-background text-foreground transition-all duration-300 overflow-hidden">
       <ToastContainer />
 
-      {/* Sidebar */}
+      {/* Sidebar (Desktop) */}
       <aside
-        className={`${sidebarOpen ? "w-64" : "w-20"
-          } bg-card border-r border-border flex flex-col justify-between transition-all duration-300 relative z-30`}
+        className={`hidden md:flex flex-col justify-between ${sidebarOpen ? "w-64" : "w-20"
+          } bg-card border-r border-border transition-all duration-300 relative z-30`}
       >
         <div>
           {/* Logo Section */}
@@ -252,15 +259,142 @@ export default function Layout() {
         </div>
       </aside>
 
+      {/* Mobile Drawer Backdrop */}
+      {mobileSidebarOpen && (
+        <div
+          onClick={() => setMobileSidebarOpen(false)}
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
+        />
+      )}
+
+      {/* Mobile Sidebar Content */}
+      <aside
+        className={`fixed top-0 bottom-0 left-0 w-64 bg-card border-r border-border flex flex-col justify-between z-50 transition-transform duration-300 md:hidden ${
+          mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div>
+          {/* Logo Section */}
+          <div className="h-16 flex items-center justify-between border-b border-border px-5">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-xl bg-primary text-white flex-shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+                </svg>
+              </div>
+              <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
+                {activeBranch?.name || "POS"}
+              </span>
+            </div>
+            <button
+              onClick={() => setMobileSidebarOpen(false)}
+              className="bg-secondary hover:bg-secondary/80 p-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground transition"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Navigation Links */}
+          <nav className="p-3 space-y-1">
+            {navItems
+              .filter(item => user && item.roles.includes(user.role))
+              .map(item => {
+                const Icon = item.icon;
+                const isActive = location.pathname === item.path;
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition duration-150 ${isActive
+                        ? "bg-primary text-white shadow-lg shadow-primary/20"
+                        : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                      }`}
+                  >
+                    {item.iconSrc ? (
+                      <span
+                        className={`w-7 h-7 flex-shrink-0 rounded-lg flex items-center justify-center p-0.5 ${
+                          isActive ? "bg-white/20" : "bg-primary/10"
+                        }`}
+                      >
+                        <img
+                          src={`${item.iconSrc}?v=2`}
+                          alt=""
+                          className="w-full h-full object-contain"
+                          draggable={false}
+                        />
+                      </span>
+                    ) : (
+                      <Icon className="w-5 h-5 flex-shrink-0" />
+                    )}
+                    <span className="font-medium text-sm">{item.name}</span>
+                  </Link>
+                );
+              })}
+          </nav>
+        </div>
+
+        {/* User Card & Settings */}
+        <div className="border-t border-border p-4 space-y-4">
+          {user && (
+            <div className="flex items-center gap-3 p-2 bg-secondary/50 rounded-xl border border-border">
+              <div className="w-9 h-9 rounded-lg bg-primary/20 text-primary flex items-center justify-center font-bold">
+                {user.name.charAt(0)}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold truncate">{user.name}</p>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
+                  <span className="text-[10px] text-muted-foreground uppercase font-semibold">{user.role}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-1">
+            <button
+              onClick={toggleTheme}
+              className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-muted-foreground hover:bg-secondary hover:text-foreground transition"
+            >
+              {theme === "dark" ? (
+                <>
+                  <Sun className="w-5 h-5" />
+                  <span className="text-sm font-medium">Light Mode</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-5 h-5" />
+                  <span className="text-sm font-medium">Dark Mode</span>
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-destructive hover:bg-destructive/10 transition"
+            >
+              <LogOut className="w-5 h-5" />
+              <span className="text-sm font-medium">Logout</span>
+            </button>
+          </div>
+        </div>
+      </aside>
+
       {/* Main Workspace */}
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
 
         {/* Top Header */}
-        <header className="h-16 border-b border-border bg-card flex items-center justify-between px-6 z-20 relative">
+        <header className="h-16 border-b border-border bg-card flex items-center justify-between px-4 md:px-6 z-20 relative">
 
           {/* Active Branch Display */}
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-semibold text-muted-foreground">Store Branch:</span>
+          <div className="flex items-center gap-2 md:gap-3">
+            <button
+              onClick={() => setMobileSidebarOpen(true)}
+              className="p-2 rounded-xl bg-secondary hover:bg-secondary/80 border border-border text-foreground transition md:hidden flex-shrink-0"
+              title="Open menu"
+            >
+              <Menu className="w-4 h-4" />
+            </button>
+            <span className="text-xs md:text-sm font-semibold text-muted-foreground hidden sm:inline">Store Branch:</span>
             {user && (user.role === "OWNER" || user.role === "MANAGER") ? (
               <select
                 value={selectedBranchId || ""}
@@ -363,7 +497,7 @@ export default function Layout() {
         </header>
 
         {/* Dynamic Route Pages Content */}
-        <main className="flex-1 overflow-y-auto p-6 flex flex-col">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col">
           <Outlet />
         </main>
       </div>

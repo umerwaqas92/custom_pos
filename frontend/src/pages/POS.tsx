@@ -416,11 +416,35 @@ export default function POS() {
     if (barcodeInputRef.current) barcodeInputRef.current.value = "";
   };
 
+  const [mobileTab, setMobileTab] = useState<"catalog" | "cart">("catalog");
+
   return (
-    <div className="flex-1 flex gap-6 h-full min-h-0 overflow-hidden">
+    <div className="flex-1 flex flex-col md:flex-row gap-4 md:gap-6 h-full min-h-0 overflow-hidden">
+
+      {/* Mobile Tab Switcher */}
+      <div className="flex md:hidden bg-secondary border border-border p-1 rounded-xl shrink-0">
+        <button
+          type="button"
+          onClick={() => setMobileTab("catalog")}
+          className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+            mobileTab === "catalog" ? "bg-primary text-white shadow" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Catalog ({filteredProducts.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileTab("cart")}
+          className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+            mobileTab === "cart" ? "bg-primary text-white shadow" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Cart ({cart.reduce((sum, item) => sum + item.quantity, 0)})
+        </button>
+      </div>
 
       {/* Catalog / Left Panel */}
-      <div className="flex-1 flex flex-col min-w-0 bg-card border border-border rounded-2xl p-4 space-y-4 h-full min-h-0">
+      <div className={`${mobileTab === "catalog" ? "flex" : "hidden md:flex"} flex-1 flex flex-col min-w-0 bg-card border border-border rounded-2xl p-4 space-y-4 h-full min-h-0`}>
 
         {/* Search header controls */}
         <div className="flex flex-col sm:flex-row gap-3">
@@ -456,7 +480,7 @@ export default function POS() {
           </button>
         </div>
 
-        <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
+        <div className="hidden sm:flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
           <span>F2 / Ctrl/Cmd+B: Barcode</span>
           <span>Ctrl/Cmd+K: Search</span>
           <span>Ctrl/Cmd+Enter: Checkout</span>
@@ -533,7 +557,7 @@ export default function POS() {
       </div>
 
       {/* POS Cart / Right Panel */}
-      <div className="w-96 bg-card border border-border rounded-2xl flex flex-col p-4 overflow-hidden h-full min-h-0 max-h-full">
+      <div className={`${mobileTab === "cart" ? "flex" : "hidden md:flex"} w-full md:w-96 bg-card border border-border rounded-2xl flex flex-col p-4 overflow-hidden h-full min-h-0 max-h-full`}>
 
         {/* Cart Header */}
         <div className="flex items-center justify-between border-b border-border pb-3">
