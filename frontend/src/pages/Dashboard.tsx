@@ -209,7 +209,7 @@ export default function Dashboard() {
     {
       title: "30-Day Profit",
       value: money(stats?.netProfit),
-      to: "/reports",
+      to: "/sales-history",
       accent: "text-emerald-400",
       iconSrc: "/icons/dashboard/monthly-profit.png",
       iconBg: "bg-emerald-500/15 ring-emerald-500/25"
@@ -326,11 +326,10 @@ export default function Dashboard() {
 
       {/* Charts row 1: Sales trend + Daily revenue bar */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Link to="/reports" className="bg-card border border-border p-6 rounded-2xl flex flex-col h-96 hover:border-primary/40 hover:shadow-md transition cursor-pointer group">
+        <div className="bg-card border border-border p-6 rounded-2xl flex flex-col h-96">
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp className="w-5 h-5 text-primary" />
             <h3 className="font-bold text-sm text-foreground flex-1">Sales Trend (30 Days)</h3>
-            <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition" />
           </div>
           <div className="flex-1 w-full min-h-0">
             <ResponsiveContainer width="100%" height="100%">
@@ -349,7 +348,7 @@ export default function Dashboard() {
               </AreaChart>
             </ResponsiveContainer>
           </div>
-        </Link>
+        </div>
 
         <Link to="/sales-history" className="bg-card border border-border p-6 rounded-2xl flex flex-col h-96 hover:border-primary/40 hover:shadow-md transition cursor-pointer group">
           <div className="flex items-center gap-2 mb-4">
@@ -467,7 +466,7 @@ export default function Dashboard() {
 
       {/* Lists: Top products + Low stock */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Link to="/reports" className="bg-card border border-border p-6 rounded-2xl flex flex-col hover:border-primary/40 hover:shadow-md transition cursor-pointer group">
+        <Link to="/sales-history" className="bg-card border border-border p-6 rounded-2xl flex flex-col hover:border-primary/40 hover:shadow-md transition cursor-pointer group">
           <div className="flex items-center gap-2 mb-4">
             <Award className="w-5 h-5 text-green-400" />
             <h3 className="font-bold text-sm text-foreground flex-1">Top-Selling Products</h3>

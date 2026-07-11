@@ -125,7 +125,8 @@ export default function Layout() {
     { name: "Brands & Categories", path: "/categories-brands", icon: Layers, iconSrc: "/icons/sidebar/categories.png", roles: ["OWNER", "MANAGER"] },
     { name: "Contacts", path: "/contacts", icon: Users, iconSrc: "/icons/sidebar/contacts.png", roles: ["OWNER", "MANAGER", "CASHIER"] },
     { name: "Accounting", path: "/accounting", icon: Briefcase, iconSrc: "/icons/sidebar/accounting.png", roles: ["OWNER", "MANAGER"] },
-    { name: "Reports", path: "/reports", icon: BarChart3, iconSrc: "/icons/sidebar/reports.png", roles: ["OWNER", "MANAGER"] },
+    // Reports hidden — use Sales History / Accounting instead
+    // { name: "Reports", path: "/reports", icon: BarChart3, iconSrc: "/icons/sidebar/reports.png", roles: ["OWNER", "MANAGER"] },
     { name: "Settings", path: "/settings", icon: Settings, iconSrc: "/icons/sidebar/settings.png", roles: ["OWNER", "MANAGER"] }
   ];
 

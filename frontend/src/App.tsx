@@ -15,7 +15,6 @@ import Accounting from "./pages/Accounting";
 import CategoriesBrands from "./pages/CategoriesBrands";
 import SalesHistory from "./pages/SalesHistory";
 import Settings from "./pages/Settings";
-import Reports from "./pages/Reports";
 
 // Set Axios Base URL
 axios.defaults.baseURL = "http://localhost:5001";
@@ -313,15 +312,8 @@ export default function App() {
             }
           />
 
-          {/* Reports Dashboard (Owner, Manager) */}
-          <Route
-            path="reports"
-            element={
-              <RoleGuard allowedRoles={["OWNER", "MANAGER"]}>
-                <Reports />
-              </RoleGuard>
-            }
-          />
+          {/* Reports page hidden — redirect if bookmarked */}
+          <Route path="reports" element={<Navigate to="/" replace />} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
