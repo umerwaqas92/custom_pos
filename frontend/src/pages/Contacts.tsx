@@ -3,6 +3,7 @@ import axios from "axios";
 import { useSearchParams } from "react-router-dom";
 import { useStore } from "../store/useStore";
 import PortalModal from "../components/PortalModal";
+import CustomerStatementDialog from "../components/CustomerStatementDialog";
 import {
   Plus,
   UserCheck,
@@ -62,6 +63,14 @@ export default function Contacts() {
   const [repayment, setRepayment] = useState({
     amount: "", paymentMethod: "CASH", notes: ""
   });
+
+  const [statementOpen, setStatementOpen] = useState(false);
+  const [statementCustomerId, setStatementCustomerId] = useState<string | null>(null);
+
+  const openCustomerStatement = (customerId: string) => {
+    setStatementCustomerId(customerId);
+    setStatementOpen(true);
+  };
 
   const loadContacts = async () => {
     try {
@@ -442,7 +451,16 @@ export default function Contacts() {
                           className="accent-primary cursor-pointer"
                         />
                       </td>
-                      <td className="py-4 font-bold text-foreground">{c.name}</td>
+                      <td className="py-4 font-bold text-foreground">
+                        <button
+                          type="button"
+                          onClick={() => openCustomerStatement(c.id)}
+                          className="text-left text-primary hover:underline font-bold"
+                          title="View all sales & payments"
+                        >
+                          {c.name}
+                        </button>
+                      </td>
                       <td className="py-4 text-muted-foreground">{c.phone}</td>
                       <td className="py-4 text-left font-black text-foreground">
                         <span className={c.creditBalance > 0 ? "text-amber-400" : "text-green-400"}>
@@ -451,6 +469,14 @@ export default function Contacts() {
                       </td>
                       <td className="py-4 text-center">
                         <div className="flex justify-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => openCustomerStatement(c.id)}
+                            className="bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold px-2.5 py-1.5 rounded-lg transition"
+                            title="Sales & payments"
+                          >
+                            Statement
+                          </button>
                           <button
                             onClick={() => handleOpenEdit("CUSTOMER", c)}
                             className="p-1 text-muted-foreground hover:text-primary transition"
@@ -851,6 +877,15 @@ export default function Contacts() {
           </div>
         </PortalModal>
       )}
+
+      <CustomerStatementDialog
+        customerId={statementCustomerId}
+        isOpen={statementOpen}
+        onClose={() => {
+          setStatementOpen(false);
+          setStatementCustomerId(null);
+        }}
+      />
     </div>
   );
 }

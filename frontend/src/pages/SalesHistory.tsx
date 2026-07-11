@@ -51,7 +51,7 @@ export default function SalesHistory() {
   const [sales, setSales] = useState<any[]>([]);
   const [returns, setReturns] = useState<any[]>([]);
 
-  /** Open Contacts and search this customer */
+  /** Go to Contacts and search this customer (statement dialog lives on Contacts only) */
   const openCustomerInContacts = (customer: { id?: string; name?: string } | null | undefined) => {
     if (!customer?.name) return;
     const params = new URLSearchParams();

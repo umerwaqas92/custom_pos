@@ -17,6 +17,68 @@ router.get("/customers", protect, async (req, res) => {
   }
 });
 
+/**
+ * Full customer statement: profile + all sales (with line items) + credit repayments.
+ * GET /api/accounting/customers/:id/statement
+ */
+router.get("/customers/:id/statement", protect, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const customer = await prisma.customer.findUnique({ where: { id } });
+    if (!customer) return res.status(404).json({ error: "Customer not found." });
+
+    const [sales, creditPayments] = await Promise.all([
+      prisma.sale.findMany({
+        where: { customerId: id },
+        include: {
+          cashier: { select: { id: true, name: true } },
+          items: {
+            include: {
+              product: { select: { id: true, name: true, sku: true, model: true } },
+            },
+          },
+          returns: {
+            where: { status: "COMPLETED" },
+            select: { id: true, refundAmount: true, returnDate: true },
+          },
+        },
+        orderBy: { saleDate: "desc" },
+      }),
+      prisma.customerCreditPayment.findMany({
+        where: { customerId: id },
+        orderBy: { paymentDate: "desc" },
+      }),
+    ]);
+
+    const totalSales = sales.reduce((s, x) => s + (x.totalAmount || 0), 0);
+    const totalPayable = sales.reduce((s, x) => s + (x.payableAmount || 0), 0);
+    const totalPaidOnInvoices = sales.reduce((s, x) => s + (x.paidAmount || 0), 0);
+    const totalCreditRepayments = creditPayments.reduce((s, x) => s + (x.amount || 0), 0);
+    const outstandingOnInvoices = sales.reduce(
+      (s, x) => s + Math.max(0, (x.payableAmount || 0) - (x.paidAmount || 0)),
+      0
+    );
+
+    return res.json({
+      customer,
+      sales,
+      creditPayments,
+      summary: {
+        saleCount: sales.length,
+        totalSales,
+        totalPayable,
+        totalPaidOnInvoices,
+        totalCreditRepayments,
+        outstandingOnInvoices,
+        creditBalance: customer.creditBalance,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Failed to load customer statement." });
+  }
+});
+
 // Create Customer
 router.post("/customers", protect, async (req, res) => {
   const { name, phone, email, address, creditLimit, notes } = req.body;
