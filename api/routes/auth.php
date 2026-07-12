@@ -746,17 +746,26 @@ function auth_export_sql_dump(): string
 {
     $pdo = Database::pdo();
     $tables = $pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
-    $out = "-- MZK POS SQL backup " . date('c') . "\nSET NAMES utf8mb4;\nSET FOREIGN_KEY_CHECKS=0;\n\n";
+    $ownerId = tenant_owner_id();
+    $ownedTables = Tenant::OWNED_TABLES;
+
+    // Build a lookup for which tables have owner_id
+    $hasOwnerId = [];
+    foreach ($ownedTables as $t) {
+        $hasOwnerId[$t] = true;
+    }
+
+    $out = "-- MZK POS SQL backup " . date('c') . "\n";
+    $out .= "-- Owner-scoped (owner_id: {$ownerId})\n";
+    $out .= "SET NAMES utf8mb4;\nSET FOREIGN_KEY_CHECKS=0;\n\n";
 
     foreach ($tables as $table) {
         $table = (string) $table;
-        // Skip backup system tables if any
         $create = $pdo->query('SHOW CREATE TABLE `' . str_replace('`', '``', $table) . '`')->fetch(PDO::FETCH_ASSOC);
         if (!$create) {
             continue;
         }
-        $createSql = $create['Create Table'] ?? $create['Create Table'] ?? null;
-        // MySQL returns key "Create Table"
+        $createSql = $create['Create Table'] ?? null;
         foreach ($create as $k => $v) {
             if (stripos((string) $k, 'Create') !== false) {
                 $createSql = $v;
@@ -766,7 +775,15 @@ function auth_export_sql_dump(): string
         $out .= 'DROP TABLE IF EXISTS `' . str_replace('`', '``', $table) . "`;\n";
         $out .= $createSql . ";\n\n";
 
-        $rows = $pdo->query('SELECT * FROM `' . str_replace('`', '``', $table) . '`')->fetchAll(PDO::FETCH_ASSOC);
+        // Only export data scoped to this owner for owned tables
+        $isOwned = isset($hasOwnerId[$table]);
+        if ($isOwned) {
+            $stmt = $pdo->prepare('SELECT * FROM `' . str_replace('`', '``', $table) . '` WHERE owner_id = ?');
+            $stmt->execute([$ownerId]);
+            $rows = $stmt->fetchAll();
+        } else {
+            $rows = $pdo->query('SELECT * FROM `' . str_replace('`', '``', $table) . '`')->fetchAll(PDO::FETCH_ASSOC);
+        }
         foreach ($rows as $row) {
             $cols = array_map(static fn($c) => '`' . str_replace('`', '``', (string) $c) . '`', array_keys($row));
             $vals = array_map(static function ($v) use ($pdo) {
@@ -786,6 +803,12 @@ function auth_export_sql_dump(): string
 /**
  * Execute a full SQL dump (DROP/CREATE/INSERT) safely.
  */
+/**
+ * Import backup SQL, preserving other owners' data.
+ * - DROP TABLE statements are skipped (would destroy other shops)
+ * - Before INSERTing into an owner-scoped table, existing rows for this owner are removed
+ * - Schema-only statements (CREATE TABLE) still run
+ */
 function auth_import_sql_string(string $sql): void
 {
     $sql = trim($sql);
@@ -798,14 +821,22 @@ function auth_import_sql_string(string $sql): void
     }
 
     $pdo = Database::pdo();
-    // Prefer multi-query when available
+    $ownerId = tenant_owner_id();
+    $ownedTables = Tenant::OWNED_TABLES;
+    $ownedLookup = [];
+    foreach ($ownedTables as $t) {
+        $ownedLookup[$t] = true;
+    }
+
     $pdo->exec('SET FOREIGN_KEY_CHECKS=0');
     $pdo->exec('SET NAMES utf8mb4');
 
-    // Split on ";\n" while keeping it simple for our dumps
     $parts = preg_split('/;\s*[\r\n]+/', $sql) ?: [];
     $ran = 0;
     $errors = [];
+    $createdTables = [];
+    $insertBuffers = [];
+
     foreach ($parts as $stmt) {
         $stmt = trim($stmt);
         if ($stmt === '' || str_starts_with($stmt, '--')) {
@@ -821,22 +852,49 @@ function auth_import_sql_string(string $sql): void
                 continue;
             }
         }
-        // Strip leading SET we already applied (harmless if re-run)
+
+        // Skip DROP TABLE (would destroy other shops' data)
+        if (preg_match('/^DROP\s+TABLE/i', $stmt)) {
+            continue;
+        }
+
+        // Track CREATE TABLE so we can delete old owner data before inserts
+        if (preg_match('/^CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?`?(\w+)`?/i', $stmt, $m)) {
+            $tableName = $m[1];
+            $createdTables[$tableName] = true;
+            try {
+                $pdo->exec($stmt);
+                $ran++;
+            } catch (Throwable $e) {
+                $errors[] = 'CREATE: ' . substr($e->getMessage(), 0, 80);
+            }
+            continue;
+        }
+
+        // Before first INSERT into an owned table, delete this owner's existing data
+        if (preg_match('/^INSERT\s+INTO\s+`?(\w+)`?/i', $stmt, $m)) {
+            $tableName = $m[1];
+            if (isset($ownedLookup[$tableName]) && !isset($insertBuffers[$tableName])) {
+                $insertBuffers[$tableName] = true;
+                try {
+                    $pdo->prepare("DELETE FROM `{$tableName}` WHERE owner_id = ?")->execute([$ownerId]);
+                } catch (Throwable $e) {
+                    // table may not have owner_id column yet
+                }
+            }
+        }
+
         try {
             $pdo->exec($stmt);
             $ran++;
         } catch (Throwable $e) {
-            // Ignore "table doesn't exist" on DROP if race; collect real errors
-            $msg = $e->getMessage();
-            if (stripos($msg, 'Unknown table') !== false) {
-                continue;
-            }
-            $errors[] = $msg . ' @ ' . substr($stmt, 0, 80);
+            $errors[] = substr($e->getMessage(), 0, 80) . ' @ ' . substr($stmt, 0, 60);
             if (count($errors) > 15) {
                 break;
             }
         }
     }
+
     try {
         $pdo->exec('SET FOREIGN_KEY_CHECKS=1');
     } catch (Throwable $e) {
@@ -846,7 +904,6 @@ function auth_import_sql_string(string $sql): void
     if ($ran < 1) {
         throw new RuntimeException('No SQL statements executed. Invalid backup file.');
     }
-    // If almost everything failed, surface errors
     if (count($errors) > 0 && $ran < 3) {
         throw new RuntimeException('Restore failed: ' . $errors[0]);
     }
