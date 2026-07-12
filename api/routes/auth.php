@@ -12,6 +12,9 @@ function register_auth_routes(Router $router): void
     // GET /api/auth/me
     $router->get('auth/me', 'auth_me');
 
+    // PUT /api/auth/change-password (any authenticated user)
+    $router->put('auth/change-password', 'auth_change_password');
+
     // Users / staff (OWNER creates cashiers & techs)
     $router->get('auth/users', 'auth_users_list', false, ['OWNER', 'MANAGER', 'SUPER_ADMIN']);
     $router->post('auth/users', 'auth_users_create', false, ['OWNER']);
@@ -244,6 +247,39 @@ function auth_signup(array $params): void
     }
 }
 
+function auth_change_password(array $params): void
+{
+    $auth = Auth::requireUser();
+    $body = read_json_body();
+    $currentPassword = (string) ($body['currentPassword'] ?? '');
+    $newPassword = (string) ($body['newPassword'] ?? '');
+
+    if ($currentPassword === '' || $newPassword === '') {
+        json_error('Current password and new password are required.', 400);
+    }
+    if (strlen($newPassword) < 6) {
+        json_error('New password must be at least 6 characters.', 400);
+    }
+
+    $pdo = Database::pdo();
+    $stmt = $pdo->prepare('SELECT password_hash FROM users WHERE id = ? LIMIT 1');
+    $stmt->execute([$auth['id']]);
+    $row = $stmt->fetch();
+
+    if (!$row) {
+        json_error('User not found.', 404);
+    }
+    if (!password_verify($currentPassword, $row['password_hash'])) {
+        json_error('Current password is incorrect.', 400);
+    }
+
+    $hash = password_hash($newPassword, PASSWORD_BCRYPT);
+    $pdo->prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?')
+        ->execute([$hash, now_sql(), $auth['id']]);
+
+    json_response(['message' => 'Password changed successfully.']);
+}
+
 function auth_me(array $params): void
 {
     $auth = Auth::requireUser();
@@ -410,10 +446,16 @@ function auth_users_update(array $params): void
     if (array_key_exists('branchId', $body)) {
         $bid = $body['branchId'] ?: null;
         if ($bid) {
-            $bst = $pdo->prepare('SELECT id FROM branches WHERE id = ? AND owner_id = ? LIMIT 1');
-            $bst->execute([$bid, $ownerId]);
+            if ($authUser['role'] === 'SUPER_ADMIN') {
+                $bst = $pdo->prepare('SELECT id FROM branches WHERE id = ? LIMIT 1');
+                $bst->execute([$bid]);
+            } else {
+                $ownerId = tenant_owner_id();
+                $bst = $pdo->prepare('SELECT id FROM branches WHERE id = ? AND owner_id = ? LIMIT 1');
+                $bst->execute([$bid, $ownerId]);
+            }
             if (!$bst->fetch()) {
-                json_error('Branch not found for your shop.', 400);
+                json_error('Branch not found.', 400);
             }
         }
         $fields[] = 'branch_id = ?';
@@ -432,8 +474,13 @@ function auth_users_update(array $params): void
         $fields[] = 'updated_at = ?';
         $values[] = now_sql();
         $values[] = $id;
-        $values[] = $ownerId;
-        $sql = 'UPDATE users SET ' . implode(', ', $fields) . ' WHERE id = ? AND owner_id = ?';
+        if ($authUser['role'] === 'SUPER_ADMIN') {
+            $sql = 'UPDATE users SET ' . implode(', ', $fields) . ' WHERE id = ?';
+        } else {
+            $ownerId = tenant_owner_id();
+            $values[] = $ownerId;
+            $sql = 'UPDATE users SET ' . implode(', ', $fields) . ' WHERE id = ? AND owner_id = ?';
+        }
         $pdo->prepare($sql)->execute($values);
     }
 
@@ -446,20 +493,34 @@ function auth_users_toggle(array $params): void
 {
     $id = $params['id'];
     $pdo = Database::pdo();
-    $ownerId = tenant_owner_id();
-    $stmt = $pdo->prepare('SELECT is_active FROM users WHERE id = ? AND owner_id = ? LIMIT 1');
-    $stmt->execute([$id, $ownerId]);
+    $authUser = Auth::requireUser();
+    if ($authUser['role'] === 'SUPER_ADMIN') {
+        $stmt = $pdo->prepare('SELECT is_active FROM users WHERE id = ? LIMIT 1');
+        $stmt->execute([$id]);
+    } else {
+        $ownerId = tenant_owner_id();
+        $stmt = $pdo->prepare('SELECT is_active FROM users WHERE id = ? AND owner_id = ? LIMIT 1');
+        $stmt->execute([$id, $ownerId]);
+    }
     $user = $stmt->fetch();
     if (!$user) {
         json_error('User not found.', 404);
     }
-    // Do not allow deactivating the shop owner account via staff toggle
-    if ($id === $ownerId) {
-        json_error('Cannot deactivate the shop owner account.', 400);
+    if ($authUser['role'] !== 'SUPER_ADMIN') {
+        $ownerId = tenant_owner_id();
+        if ($id === $ownerId) {
+            json_error('Cannot deactivate the shop owner account.', 400);
+        }
     }
     $new = (int) $user['is_active'] ? 0 : 1;
-    $pdo->prepare('UPDATE users SET is_active = ?, updated_at = ? WHERE id = ? AND owner_id = ?')
-        ->execute([$new, now_sql(), $id, $ownerId]);
+    if ($authUser['role'] === 'SUPER_ADMIN') {
+        $pdo->prepare('UPDATE users SET is_active = ?, updated_at = ? WHERE id = ?')
+            ->execute([$new, now_sql(), $id]);
+    } else {
+        $ownerId = tenant_owner_id();
+        $pdo->prepare('UPDATE users SET is_active = ?, updated_at = ? WHERE id = ? AND owner_id = ?')
+            ->execute([$new, now_sql(), $id, $ownerId]);
+    }
     json_response([
         'message' => 'User status set to ' . ($new ? 'Active' : 'Inactive') . '.',
     ]);
