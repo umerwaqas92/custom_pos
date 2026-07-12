@@ -132,6 +132,37 @@ router.get("/me", auth_1.protect, async (req, res) => {
         return res.status(500).json({ error: "Internal server error." });
     }
 });
+// Change own password (any authenticated user)
+router.put("/change-password", auth_1.protect, async (req, res) => {
+    if (!req.user)
+        return res.status(401).json({ error: "Unauthorized." });
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+        return res.status(400).json({ error: "Current password and new password are required." });
+    }
+    if (newPassword.length < 6) {
+        return res.status(400).json({ error: "New password must be at least 6 characters." });
+    }
+    try {
+        const user = await db_1.default.user.findUnique({ where: { id: req.user.id } });
+        if (!user)
+            return res.status(404).json({ error: "User not found." });
+        const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+        if (!isValid)
+            return res.status(400).json({ error: "Current password is incorrect." });
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash(newPassword, salt);
+        await db_1.default.user.update({
+            where: { id: req.user.id },
+            data: { passwordHash }
+        });
+        return res.json({ message: "Password changed successfully." });
+    }
+    catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Failed to change password." });
+    }
+});
 // List all users (Staff Management)
 router.get("/users", auth_1.protect, (0, auth_1.restrictTo)("OWNER", "MANAGER", "SUPER_ADMIN"), async (req, res) => {
     try {

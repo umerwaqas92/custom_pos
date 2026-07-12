@@ -42,7 +42,8 @@ export default function Layout() {
     theme,
     toggleTheme,
     lowStockCount,
-    checkLowStock
+    checkLowStock,
+    addNotification
   } = useStore();
 
   const location = useLocation();
@@ -534,6 +535,91 @@ export default function Layout() {
           <Outlet />
         </main>
       </div>
+
+      {/* Change Password Modal */}
+      {passwordModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setPasswordModal(false)}>
+          <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-2xl mx-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-bold text-foreground">Change Password</h3>
+              <button onClick={() => setPasswordModal(false)} className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!pwCurrent || !pwNew || !pwConfirm) {
+                  addNotification("All fields are required.", "warning");
+                  return;
+                }
+                if (pwNew !== pwConfirm) {
+                  addNotification("New passwords do not match.", "warning");
+                  return;
+                }
+                if (pwNew.length < 6) {
+                  addNotification("Password must be at least 6 characters.", "warning");
+                  return;
+                }
+                setPwLoading(true);
+                try {
+                  await axios.put("/api/auth/change-password", {
+                    currentPassword: pwCurrent,
+                    newPassword: pwNew
+                  });
+                  addNotification("Password changed successfully.", "success");
+                  setPasswordModal(false);
+                } catch (err: any) {
+                  const msg = err.response?.data?.error || "Failed to change password.";
+                  addNotification(msg, "warning");
+                } finally {
+                  setPwLoading(false);
+                }
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Current Password</label>
+                <input
+                  type="password"
+                  value={pwCurrent}
+                  onChange={(e) => setPwCurrent(e.target.value)}
+                  className="w-full bg-secondary text-foreground border border-border px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  placeholder="Enter current password"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">New Password</label>
+                <input
+                  type="password"
+                  value={pwNew}
+                  onChange={(e) => setPwNew(e.target.value)}
+                  className="w-full bg-secondary text-foreground border border-border px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  placeholder="At least 6 characters"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Confirm New Password</label>
+                <input
+                  type="password"
+                  value={pwConfirm}
+                  onChange={(e) => setPwConfirm(e.target.value)}
+                  className="w-full bg-secondary text-foreground border border-border px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  placeholder="Repeat new password"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={pwLoading}
+                className="w-full bg-primary hover:bg-primary/95 text-white font-medium py-2.5 rounded-xl flex items-center justify-center transition disabled:opacity-50"
+              >
+                {pwLoading ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Update Password"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
