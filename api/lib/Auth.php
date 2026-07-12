@@ -158,6 +158,9 @@ final class Auth
     public static function restrictTo(string ...$roles): void
     {
         $user = self::requireUser();
+        if ($user['role'] === 'SUPER_ADMIN') {
+            return;
+        }
         if (!in_array($user['role'], $roles, true)) {
             json_error('You do not have permission to perform this action.', 403);
         }
