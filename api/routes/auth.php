@@ -632,13 +632,43 @@ function auth_reset_transactions(array $params): void
 
 /* ---- Backups: SQL dump (+ optional ZIP with uploads) ---- */
 
+/** Get owner_id prefix for backup filenames. */
+function backup_owner_prefix(): string
+{
+    $ownerId = tenant_owner_id();
+    return substr($ownerId, 0, 8);
+}
+
+function backup_owner_pattern(): string
+{
+    return backup_owner_prefix() . '-*';
+}
+
+/** Format backup filename with owner prefix so backups are tenant-isolated. */
+function backup_filename(string $prefix): string
+{
+    return backup_owner_prefix() . '-' . $prefix . '-' . date('Y-m-d-His');
+}
+
+/** Check if a backup filename belongs to the current owner. */
+function backup_is_owned(string $filename): bool
+{
+    return str_starts_with($filename, backup_owner_prefix() . '-');
+}
+
 function auth_backup_list(array $params): void
 {
     ensure_dir(backups_path());
     $files = [];
+    $ownerPrefix = backup_owner_prefix() . '-';
     foreach (glob(backups_path() . '/*.{sql,zip}', GLOB_BRACE) ?: [] as $full) {
+        $base = basename($full);
+        // Only show files belonging to this owner
+        if (!str_starts_with($base, $ownerPrefix)) {
+            continue;
+        }
         $files[] = [
-            'filename' => basename($full),
+            'filename' => $base,
             'size' => filesize($full),
             'createdAt' => date('c', filemtime($full) ?: time()),
         ];
@@ -672,8 +702,12 @@ function auth_write_backup_to_disk(string $prefix = 'manual-backup'): array
     $sql = auth_export_sql_dump();
     $stamp = date('Y-m-d-His');
 
+    // Prefix filename with owner_id for tenant isolation
+    $ownerPrefix = backup_owner_prefix();
+    $safePrefix = "{$ownerPrefix}-{$prefix}";
+
     if (class_exists('ZipArchive')) {
-        $filename = "{$prefix}-{$stamp}.zip";
+        $filename = "{$safePrefix}-{$stamp}.zip";
         $path = backups_path() . DIRECTORY_SEPARATOR . $filename;
         $zip = new ZipArchive();
         if ($zip->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
@@ -695,7 +729,7 @@ function auth_write_backup_to_disk(string $prefix = 'manual-backup'): array
         }
         $zip->close();
     } else {
-        $filename = "{$prefix}-{$stamp}.sql";
+        $filename = "{$safePrefix}-{$stamp}.sql";
         $path = backups_path() . DIRECTORY_SEPARATOR . $filename;
         file_put_contents($path, $sql);
     }
@@ -1069,7 +1103,7 @@ function auth_backup_download(array $params): void
 {
     $filename = basename($params['filename']);
     $full = backups_path() . DIRECTORY_SEPARATOR . $filename;
-    if (!is_file($full) || str_contains($filename, '..')) {
+    if (!is_file($full) || str_contains($filename, '..') || !backup_is_owned($filename)) {
         json_error('Backup not found.', 404);
     }
     $mime = str_ends_with(strtolower($filename), '.zip') ? 'application/zip' : 'application/sql';
@@ -1084,7 +1118,7 @@ function auth_backup_delete(array $params): void
 {
     $filename = basename($params['filename']);
     $full = backups_path() . DIRECTORY_SEPARATOR . $filename;
-    if (!is_file($full) || str_contains($filename, '..')) {
+    if (!is_file($full) || str_contains($filename, '..') || !backup_is_owned($filename)) {
         json_error('Backup not found.', 400);
     }
     unlink($full);
@@ -1141,7 +1175,7 @@ function auth_backup_restore(array $params): void
 {
     $filename = basename($params['filename'] ?? '');
     $full = backups_path() . DIRECTORY_SEPARATOR . $filename;
-    if ($filename === '' || str_contains($filename, '..') || !is_file($full)) {
+    if ($filename === '' || str_contains($filename, '..') || !is_file($full) || !backup_is_owned($filename)) {
         json_error('Backup not found.', 404);
     }
 
@@ -1172,8 +1206,11 @@ function auth_backup_auto(array $params): void
     }
 
     ensure_dir(backups_path());
-    // Skip if an auto-backup newer than 6 days exists
-    $autos = glob(backups_path() . '/auto-backup-*.{sql,zip}', GLOB_BRACE) ?: [];
+    $ownerPrefix = backup_owner_prefix();
+    $autoPattern = $ownerPrefix . '-auto-backup-*';
+
+    // Skip if an auto-backup newer than 6 days exists for THIS owner
+    $autos = glob(backups_path() . '/' . $autoPattern . '.{sql,zip}', GLOB_BRACE) ?: [];
     usort($autos, static fn($a, $b) => filemtime($b) <=> filemtime($a));
     if ($autos && (time() - (int) filemtime($autos[0])) < 6 * 24 * 3600) {
         json_response([
@@ -1185,8 +1222,8 @@ function auth_backup_auto(array $params): void
 
     try {
         $meta = auth_write_backup_to_disk('auto-backup');
-        // Keep last 5 auto backups
-        $all = glob(backups_path() . '/auto-backup-*.{sql,zip}', GLOB_BRACE) ?: [];
+        // Keep last 5 auto backups for THIS owner
+        $all = glob(backups_path() . '/' . $autoPattern . '.{sql,zip}', GLOB_BRACE) ?: [];
         usort($all, static fn($a, $b) => filemtime($b) <=> filemtime($a));
         foreach (array_slice($all, 5) as $old) {
             @unlink($old);

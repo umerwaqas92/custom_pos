@@ -25,7 +25,7 @@ VALUES (
   'admin',
   '$2y$12$1q7g9f6SMCJ8uiYjEMN4/.qTSPXxk0wziywN1f5xsxbcYkKVOE/5y',
   'OWNER',
-  NULL,
+  'admin@shop.com',
   NULL,
   1,
   @branch_id
