@@ -408,6 +408,232 @@ function sales_create(array $params): void
     }
 }
 
+/**
+ * Batch-hydrate many sales (avoids N+1: was ~5–8 queries per sale).
+ * @param list<array<string,mixed>> $sales
+ * @return list<array<string,mixed>>
+ */
+function sales_hydrate_many(PDO $pdo, array $sales, bool $full = true): array
+{
+    if (!$sales) {
+        return [];
+    }
+
+    $saleIds = array_column($sales, 'id');
+    $customerIds = array_values(array_unique(array_filter(array_column($sales, 'customer_id'))));
+    $cashierIds = array_values(array_unique(array_filter(array_column($sales, 'cashier_id'))));
+    $branchIds = array_values(array_unique(array_filter(array_column($sales, 'branch_id'))));
+
+    $in = static function (array $ids): string {
+        return implode(',', array_fill(0, count($ids), '?'));
+    };
+
+    $customers = [];
+    if ($customerIds) {
+        $st = $pdo->prepare('SELECT * FROM customers WHERE id IN (' . $in($customerIds) . ')');
+        $st->execute($customerIds);
+        foreach ($st->fetchAll() as $r) {
+            $customers[$r['id']] = Format::customer($r);
+        }
+    }
+    $cashiers = [];
+    if ($cashierIds) {
+        $st = $pdo->prepare('SELECT id, name, username, role FROM users WHERE id IN (' . $in($cashierIds) . ')');
+        $st->execute($cashierIds);
+        foreach ($st->fetchAll() as $r) {
+            $cashiers[$r['id']] = Format::userLite($r);
+        }
+    }
+    $branches = [];
+    if ($branchIds) {
+        $st = $pdo->prepare('SELECT * FROM branches WHERE id IN (' . $in($branchIds) . ')');
+        $st->execute($branchIds);
+        foreach ($st->fetchAll() as $r) {
+            $branches[$r['id']] = Format::branch($r);
+        }
+    }
+
+    // Items for all sales in one query
+    $itemsBySale = array_fill_keys($saleIds, []);
+    $st = $pdo->prepare(
+        'SELECT si.*, p.name AS p_name, p.sku AS p_sku, p.model AS p_model,
+                p.selling_price AS p_selling, p.purchase_price AS p_purchase
+         FROM sale_items si
+         LEFT JOIN products p ON p.id = si.product_id
+         WHERE si.sale_id IN (' . $in($saleIds) . ')'
+    );
+    $st->execute($saleIds);
+    foreach ($st->fetchAll() as $it) {
+        $itemsBySale[$it['sale_id']][] = [
+            'id' => $it['id'],
+            'saleId' => $it['sale_id'],
+            'productId' => $it['product_id'],
+            'quantity' => (int) $it['quantity'],
+            'unitPrice' => (float) $it['unit_price'],
+            'discount' => (float) $it['discount'],
+            'tax' => (float) $it['tax'],
+            'totalPrice' => (float) $it['total_price'],
+            'serialNumber' => $it['serial_number'],
+            'imei' => $it['imei'],
+            'product' => [
+                'id' => $it['product_id'],
+                'name' => $it['p_name'],
+                'sku' => $it['p_sku'],
+                'model' => $it['p_model'],
+                'sellingPrice' => $it['p_selling'] !== null ? (float) $it['p_selling'] : null,
+                'purchasePrice' => $it['p_purchase'] !== null ? (float) $it['p_purchase'] : null,
+            ],
+        ];
+    }
+
+    // EMI contracts + installments
+    $emiBySale = [];
+    $emiIds = [];
+    $st = $pdo->prepare('SELECT * FROM sale_emis WHERE sale_id IN (' . $in($saleIds) . ')');
+    $st->execute($saleIds);
+    foreach ($st->fetchAll() as $emiRow) {
+        $emiIds[] = $emiRow['id'];
+        $emiBySale[$emiRow['sale_id']] = [
+            'id' => $emiRow['id'],
+            'saleId' => $emiRow['sale_id'],
+            'guarantorName' => $emiRow['guarantor_name'],
+            'guarantorPhone' => $emiRow['guarantor_phone'],
+            'guarantorAddress' => $emiRow['guarantor_address'],
+            'cnicFrontPath' => $emiRow['cnic_front_path'],
+            'cnicBackPath' => $emiRow['cnic_back_path'],
+            'chequePath' => $emiRow['cheque_path'],
+            'months' => (int) $emiRow['months'],
+            'interestRate' => (float) $emiRow['interest_rate'],
+            'downPayment' => (float) $emiRow['down_payment'],
+            'totalPrincipal' => (float) $emiRow['total_principal'],
+            'monthlyPayment' => (float) $emiRow['monthly_payment'],
+            'status' => $emiRow['status'],
+            'installments' => [],
+            'createdAt' => $emiRow['created_at'],
+            'updatedAt' => $emiRow['updated_at'],
+        ];
+    }
+    if ($emiIds) {
+        $st = $pdo->prepare(
+            'SELECT * FROM emi_installments WHERE sale_emi_id IN (' . $in($emiIds) . ')
+             ORDER BY installment_number ASC'
+        );
+        $st->execute($emiIds);
+        $emiIdToSale = [];
+        foreach ($emiBySale as $sid => $e) {
+            $emiIdToSale[$e['id']] = $sid;
+        }
+        foreach ($st->fetchAll() as $i) {
+            $sid = $emiIdToSale[$i['sale_emi_id']] ?? null;
+            if (!$sid) {
+                continue;
+            }
+            $emiBySale[$sid]['installments'][] = [
+                'id' => $i['id'],
+                'saleEmiId' => $i['sale_emi_id'],
+                'installmentNumber' => (int) $i['installment_number'],
+                'dueDate' => $i['due_date'],
+                'amount' => (float) $i['amount'],
+                'amountPaid' => (float) $i['amount_paid'],
+                'paidDate' => $i['paid_date'],
+                'status' => $i['status'],
+                'createdAt' => $i['created_at'],
+                'updatedAt' => $i['updated_at'],
+            ];
+        }
+    }
+
+    // Returns (optional for list; full=true includes them)
+    $returnsBySale = array_fill_keys($saleIds, []);
+    if ($full) {
+        $st = $pdo->prepare(
+            "SELECT * FROM sale_returns WHERE status = 'COMPLETED' AND sale_id IN (" . $in($saleIds) . ')
+             ORDER BY return_date DESC'
+        );
+        $st->execute($saleIds);
+        $returnRows = $st->fetchAll();
+        $returnIds = array_column($returnRows, 'id');
+        $returnItems = [];
+        if ($returnIds) {
+            $st = $pdo->prepare(
+                'SELECT ri.*, p.name AS p_name, p.sku AS p_sku FROM sale_return_items ri
+                 LEFT JOIN products p ON p.id = ri.product_id
+                 WHERE ri.sale_return_id IN (' . $in($returnIds) . ')'
+            );
+            $st->execute($returnIds);
+            foreach ($st->fetchAll() as $ri) {
+                $returnItems[$ri['sale_return_id']][] = [
+                    'id' => $ri['id'],
+                    'saleReturnId' => $ri['sale_return_id'],
+                    'saleItemId' => $ri['sale_item_id'],
+                    'productId' => $ri['product_id'],
+                    'quantity' => (int) $ri['quantity'],
+                    'unitRefund' => (float) $ri['unit_refund'],
+                    'totalRefund' => (float) $ri['total_refund'],
+                    'reason' => $ri['reason'],
+                    'product' => ['id' => $ri['product_id'], 'name' => $ri['p_name'], 'sku' => $ri['p_sku']],
+                ];
+            }
+        }
+        $procIds = array_values(array_unique(array_filter(array_column($returnRows, 'processed_by_id'))));
+        $procs = [];
+        if ($procIds) {
+            $st = $pdo->prepare('SELECT id, name, username FROM users WHERE id IN (' . $in($procIds) . ')');
+            $st->execute($procIds);
+            foreach ($st->fetchAll() as $r) {
+                $procs[$r['id']] = Format::userLite($r);
+            }
+        }
+        foreach ($returnRows as $ret) {
+            $returnsBySale[$ret['sale_id']][] = [
+                'id' => $ret['id'],
+                'saleId' => $ret['sale_id'],
+                'processedById' => $ret['processed_by_id'],
+                'returnDate' => $ret['return_date'],
+                'refundAmount' => (float) $ret['refund_amount'],
+                'refundMethod' => $ret['refund_method'],
+                'reason' => $ret['reason'],
+                'notes' => $ret['notes'],
+                'status' => $ret['status'],
+                'createdAt' => $ret['created_at'],
+                'updatedAt' => $ret['updated_at'],
+                'items' => $returnItems[$ret['id']] ?? [],
+                'processedBy' => $procs[$ret['processed_by_id']] ?? null,
+            ];
+        }
+    }
+
+    $out = [];
+    foreach ($sales as $sale) {
+        $id = $sale['id'];
+        $out[] = [
+            'id' => $sale['id'],
+            'customerId' => $sale['customer_id'],
+            'cashierId' => $sale['cashier_id'],
+            'branchId' => $sale['branch_id'],
+            'saleDate' => $sale['sale_date'],
+            'totalAmount' => (float) $sale['total_amount'],
+            'discountAmount' => (float) $sale['discount_amount'],
+            'taxAmount' => (float) $sale['tax_amount'],
+            'payableAmount' => (float) $sale['payable_amount'],
+            'paidAmount' => (float) $sale['paid_amount'],
+            'paymentMethod' => $sale['payment_method'],
+            'paymentStatus' => $sale['payment_status'],
+            'returnStatus' => $sale['return_status'],
+            'notes' => $sale['notes'],
+            'createdAt' => $sale['created_at'],
+            'updatedAt' => $sale['updated_at'],
+            'customer' => $sale['customer_id'] ? ($customers[$sale['customer_id']] ?? null) : null,
+            'cashier' => $cashiers[$sale['cashier_id']] ?? null,
+            'branch' => $branches[$sale['branch_id']] ?? null,
+            'items' => $itemsBySale[$id] ?? [],
+            'emiDetails' => $emiBySale[$id] ?? null,
+            'returns' => $returnsBySale[$id] ?? [],
+        ];
+    }
+    return $out;
+}
+
 function sales_list(array $params): void
 {
     $q = query_params();
@@ -422,13 +648,16 @@ function sales_list(array $params): void
         $where[] = 'customer_id = ?';
         $args[] = $q['customerId'];
     }
-    $st = $pdo->prepare('SELECT * FROM sales WHERE ' . implode(' AND ', $where) . ' ORDER BY sale_date DESC LIMIT 500');
+    // Cap list size for speed (UI rarely needs >200 at once)
+    $limit = min(300, max(1, (int) ($q['limit'] ?? 200)));
+    $st = $pdo->prepare(
+        'SELECT * FROM sales WHERE ' . implode(' AND ', $where) . ' ORDER BY sale_date DESC LIMIT ' . $limit
+    );
     $st->execute($args);
-    $out = [];
-    foreach ($st->fetchAll() as $row) {
-        $out[] = sales_hydrate($pdo, $row, true);
-    }
-    json_response($out);
+    $rows = $st->fetchAll();
+    // List: include items + emi, skip nested returns detail for speed unless ?full=1
+    $full = isset($q['full']) && ($q['full'] === '1' || $q['full'] === 'true');
+    json_response(sales_hydrate_many($pdo, $rows, $full));
 }
 
 function sales_get(array $params): void
@@ -457,9 +686,80 @@ function sales_returns_list(array $params): void
     $sql .= ' ORDER BY r.return_date DESC LIMIT 300';
     $st = $pdo->prepare($sql);
     $st->execute($args);
+    $returnRows = $st->fetchAll();
+    if (!$returnRows) {
+        json_response([]);
+    }
+
+    // Batch hydrate returns (avoid N+1 per return + nested sale)
+    $in = static function (array $ids): string {
+        return implode(',', array_fill(0, count($ids), '?'));
+    };
+    $returnIds = array_column($returnRows, 'id');
+    $saleIds = array_values(array_unique(array_column($returnRows, 'sale_id')));
+
+    $returnItems = [];
+    $st = $pdo->prepare(
+        'SELECT ri.*, p.name AS p_name, p.sku AS p_sku FROM sale_return_items ri
+         LEFT JOIN products p ON p.id = ri.product_id
+         WHERE ri.sale_return_id IN (' . $in($returnIds) . ')'
+    );
+    $st->execute($returnIds);
+    foreach ($st->fetchAll() as $ri) {
+        $returnItems[$ri['sale_return_id']][] = [
+            'id' => $ri['id'],
+            'saleReturnId' => $ri['sale_return_id'],
+            'saleItemId' => $ri['sale_item_id'],
+            'productId' => $ri['product_id'],
+            'quantity' => (int) $ri['quantity'],
+            'unitRefund' => (float) $ri['unit_refund'],
+            'totalRefund' => (float) $ri['total_refund'],
+            'reason' => $ri['reason'],
+            'product' => ['id' => $ri['product_id'], 'name' => $ri['p_name'], 'sku' => $ri['p_sku']],
+        ];
+    }
+
+    $procIds = array_values(array_unique(array_filter(array_column($returnRows, 'processed_by_id'))));
+    $procs = [];
+    if ($procIds) {
+        $st = $pdo->prepare('SELECT id, name, username FROM users WHERE id IN (' . $in($procIds) . ')');
+        $st->execute($procIds);
+        foreach ($st->fetchAll() as $r) {
+            $procs[$r['id']] = Format::userLite($r);
+        }
+    }
+
+    $saleRows = [];
+    if ($saleIds) {
+        $st = $pdo->prepare('SELECT * FROM sales WHERE id IN (' . $in($saleIds) . ')');
+        $st->execute($saleIds);
+        foreach ($st->fetchAll() as $s) {
+            $saleRows[] = $s;
+        }
+    }
+    $salesById = [];
+    foreach (sales_hydrate_many($pdo, $saleRows, false) as $s) {
+        $salesById[$s['id']] = $s;
+    }
+
     $out = [];
-    foreach ($st->fetchAll() as $row) {
-        $out[] = sales_format_return($pdo, $row, true);
+    foreach ($returnRows as $ret) {
+        $out[] = [
+            'id' => $ret['id'],
+            'saleId' => $ret['sale_id'],
+            'processedById' => $ret['processed_by_id'],
+            'returnDate' => $ret['return_date'],
+            'refundAmount' => (float) $ret['refund_amount'],
+            'refundMethod' => $ret['refund_method'],
+            'reason' => $ret['reason'],
+            'notes' => $ret['notes'],
+            'status' => $ret['status'],
+            'createdAt' => $ret['created_at'],
+            'updatedAt' => $ret['updated_at'],
+            'items' => $returnItems[$ret['id']] ?? [],
+            'processedBy' => $procs[$ret['processed_by_id']] ?? null,
+            'sale' => $salesById[$ret['sale_id']] ?? null,
+        ];
     }
     json_response($out);
 }

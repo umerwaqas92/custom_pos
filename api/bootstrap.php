@@ -17,7 +17,7 @@ if ($origin && in_array($origin, $allowed, true)) {
     header('Access-Control-Allow-Origin: *');
 }
 header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Access-Token, X-Authorization');
 header('Access-Control-Max-Age: 86400');
 
 if (strtoupper($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
@@ -58,8 +58,15 @@ if (!function_exists('array_is_list')) {
     }
 }
 
-ensure_dir(uploads_path());
-ensure_dir(backups_path());
+// Do NOT mkdir on every request — only when upload/backup handlers need it.
+
+// Optional gzip for large JSON responses (shared hosts usually support zlib)
+if (!headers_sent() && extension_loaded('zlib') && !ini_get('zlib.output_compression')) {
+    $accept = $_SERVER['HTTP_ACCEPT_ENCODING'] ?? '';
+    if (str_contains($accept, 'gzip')) {
+        ob_start('ob_gzhandler');
+    }
+}
 
 set_exception_handler(static function (Throwable $e): void {
     global $APP_CONFIG;

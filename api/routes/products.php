@@ -425,34 +425,120 @@ function products_list(array $params): void
     $where = ['1=1'];
     $args = [];
     if (!empty($q['sku'])) {
-        $where[] = 'sku = ?';
+        $where[] = 'p.sku = ?';
         $args[] = (string) $q['sku'];
     }
     if (!empty($q['barcode'])) {
-        $where[] = 'barcode = ?';
+        $where[] = 'p.barcode = ?';
         $args[] = (string) $q['barcode'];
     }
     if (!empty($q['category'])) {
-        $where[] = 'category_id = ?';
+        $where[] = 'p.category_id = ?';
         $args[] = (string) $q['category'];
     }
     if (!empty($q['brand'])) {
-        $where[] = 'brand_id = ?';
+        $where[] = 'p.brand_id = ?';
         $args[] = (string) $q['brand'];
     }
     if (!empty($q['search'])) {
         $s = '%' . (string) $q['search'] . '%';
-        $where[] = '(name LIKE ? OR sku LIKE ? OR barcode LIKE ? OR model LIKE ? OR serial_number LIKE ? OR imei LIKE ?)';
+        $where[] = '(p.name LIKE ? OR p.sku LIKE ? OR p.barcode LIKE ? OR p.model LIKE ? OR p.serial_number LIKE ? OR p.imei LIKE ?)';
         array_push($args, $s, $s, $s, $s, $s, $s);
     }
 
-    $sql = 'SELECT * FROM products WHERE ' . implode(' AND ', $where) . ' ORDER BY name ASC';
+    // Single query with category/brand joins (avoids 2 queries per product)
+    $sql = 'SELECT p.*,
+                   c.id AS cat_id, c.name AS cat_name,
+                   b.id AS brand_join_id, b.name AS brand_name
+            FROM products p
+            LEFT JOIN categories c ON c.id = p.category_id
+            LEFT JOIN brands b ON b.id = p.brand_id
+            WHERE ' . implode(' AND ', $where) . '
+            ORDER BY p.name ASC
+            LIMIT 1000';
     $st = $pdo->prepare($sql);
     $st->execute($args);
     $rows = $st->fetchAll();
+    if (!$rows) {
+        json_response([]);
+    }
+
+    $productIds = array_column($rows, 'id');
+    $placeholders = implode(',', array_fill(0, count($productIds), '?'));
+
+    // Batch branch stocks
+    $stocksByProduct = array_fill_keys($productIds, []);
+    if ($branchFilter) {
+        $st = $pdo->prepare(
+            "SELECT bs.product_id, bs.branch_id, bs.quantity, br.name AS branch_name
+             FROM branch_stocks bs
+             LEFT JOIN branches br ON br.id = bs.branch_id
+             WHERE bs.branch_id = ? AND bs.product_id IN ($placeholders)"
+        );
+        $st->execute(array_merge([$branchFilter], $productIds));
+    } elseif (!$isLite) {
+        $st = $pdo->prepare(
+            "SELECT bs.product_id, bs.branch_id, bs.quantity, br.name AS branch_name
+             FROM branch_stocks bs
+             LEFT JOIN branches br ON br.id = bs.branch_id
+             WHERE bs.product_id IN ($placeholders)"
+        );
+        $st->execute($productIds);
+    } else {
+        $st = null;
+    }
+    if ($st) {
+        foreach ($st->fetchAll() as $bs) {
+            $stocksByProduct[$bs['product_id']][] = [
+                'branchId' => $bs['branch_id'],
+                'quantity' => (int) $bs['quantity'],
+                'branch' => $isLite ? null : ['id' => $bs['branch_id'], 'name' => $bs['branch_name']],
+            ];
+        }
+    }
+
+    // Optional suppliers batch (full mode only)
+    $suppliers = [];
+    if (!$isLite) {
+        $supplierIds = array_values(array_unique(array_filter(array_column($rows, 'supplier_id'))));
+        if ($supplierIds) {
+            $ph = implode(',', array_fill(0, count($supplierIds), '?'));
+            $st = $pdo->prepare("SELECT * FROM suppliers WHERE id IN ($ph)");
+            $st->execute($supplierIds);
+            foreach ($st->fetchAll() as $s) {
+                $suppliers[$s['id']] = [
+                    'id' => $s['id'],
+                    'company' => $s['company'],
+                    'contactPerson' => $s['contact_person'],
+                    'phone' => $s['phone'],
+                    'email' => $s['email'],
+                    'address' => $s['address'],
+                ];
+            }
+        }
+    }
+
     $out = [];
     foreach ($rows as $row) {
-        $out[] = products_attach_relations($pdo, $row, $branchFilter, $isLite);
+        $extras = [
+            'category' => !empty($row['cat_id'])
+                ? ['id' => $row['cat_id'], 'name' => $row['cat_name']]
+                : null,
+            'brand' => !empty($row['brand_join_id'])
+                ? ['id' => $row['brand_join_id'], 'name' => $row['brand_name']]
+                : null,
+            'branchStocks' => $stocksByProduct[$row['id']] ?? [],
+        ];
+        if (!$isLite) {
+            $extras['supplier'] = !empty($row['supplier_id'])
+                ? ($suppliers[$row['supplier_id']] ?? null)
+                : null;
+        }
+        // Prefer branch stock quantity when branch filtered + lite (POS stock display)
+        if ($branchFilter && !empty($extras['branchStocks'][0])) {
+            $row['stock_quantity'] = $extras['branchStocks'][0]['quantity'];
+        }
+        $out[] = products_format_product($row, $extras);
     }
     json_response($out);
 }

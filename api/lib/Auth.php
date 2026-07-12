@@ -90,13 +90,20 @@ final class Auth
             json_error('Invalid token.', 401);
         }
 
-        $pdo = Database::pdo();
-        $stmt = $pdo->prepare('SELECT id, is_active FROM users WHERE id = ? LIMIT 1');
-        $stmt->execute([$id]);
-        $dbUser = $stmt->fetch();
+        // Skip DB user lookup on read-only requests (big win: -1 query per GET).
+        // Still verify on writes so deactivated users cannot mutate data.
+        $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+        $needsDbCheck = !in_array($method, ['GET', 'HEAD', 'OPTIONS'], true);
 
-        if (!$dbUser || !(int) $dbUser['is_active']) {
-            json_error('Your session user has been deleted. Please login again.', 401);
+        if ($needsDbCheck) {
+            $pdo = Database::pdo();
+            $stmt = $pdo->prepare('SELECT id, is_active FROM users WHERE id = ? LIMIT 1');
+            $stmt->execute([$id]);
+            $dbUser = $stmt->fetch();
+
+            if (!$dbUser || !(int) $dbUser['is_active']) {
+                json_error('Your session user has been deleted. Please login again.', 401);
+            }
         }
 
         self::$user = [

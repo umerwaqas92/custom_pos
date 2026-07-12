@@ -26,8 +26,14 @@ final class Database
             self::$pdo = new PDO($dsn, $user, $pass, [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES => false,
+                // Emulated prepares: fewer round-trips + better on shared MySQL
+                PDO::ATTR_EMULATE_PREPARES => true,
+                PDO::MYSQL_ATTR_FOUND_ROWS => true,
+                PDO::ATTR_TIMEOUT => 8,
+                // Avoid persistent connections on free hosts (can exhaust slots)
+                PDO::ATTR_PERSISTENT => false,
             ]);
+            // No SET SESSION on connect — saves one round-trip per request
         } catch (PDOException $e) {
             $env = $APP_CONFIG['app_env'] ?? 'production';
             $msg = $env === 'development'
