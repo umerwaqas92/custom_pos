@@ -157,25 +157,37 @@ function inventory_alerts(array $params): void
     $ownerId = tenant_owner_id();
     $branchId = query_params()['branchId'] ?? '';
     $threshold = 3;
-    $st = $pdo->prepare(
-        'SELECT p.*, b.name AS brand_name, c.name AS cat_name
-         FROM products p
-         LEFT JOIN brands b ON b.id = p.brand_id
-         LEFT JOIN categories c ON c.id = p.category_id
-         WHERE p.owner_id = ?
-         ORDER BY p.stock_quantity ASC'
-    );
-    $st->execute([$ownerId]);
+    if ($branchId !== '') {
+        $st = $pdo->prepare(
+            'SELECT p.id, p.name, p.sku, p.min_stock,
+                    p.brand_id, p.category_id,
+                    COALESCE(bs.quantity, 0) AS qty,
+                    b.name AS brand_name, c.name AS cat_name
+             FROM products p
+             LEFT JOIN branch_stocks bs ON bs.product_id = p.id AND bs.branch_id = ?
+             LEFT JOIN brands b ON b.id = p.brand_id
+             LEFT JOIN categories c ON c.id = p.category_id
+             WHERE p.owner_id = ?
+             ORDER BY qty ASC'
+        );
+        $st->execute([$branchId, $ownerId]);
+    } else {
+        $st = $pdo->prepare(
+            'SELECT p.id, p.name, p.sku, p.stock_quantity AS qty, p.min_stock,
+                    p.brand_id, p.category_id,
+                    b.name AS brand_name, c.name AS cat_name
+             FROM products p
+             LEFT JOIN brands b ON b.id = p.brand_id
+             LEFT JOIN categories c ON c.id = p.category_id
+             WHERE p.owner_id = ?
+             ORDER BY p.stock_quantity ASC'
+        );
+        $st->execute([$ownerId]);
+    }
     $products = $st->fetchAll();
     $out = [];
     foreach ($products as $p) {
-        $qty = (int) $p['stock_quantity'];
-        if ($branchId) {
-            $bst = $pdo->prepare('SELECT quantity FROM branch_stocks WHERE branch_id = ? AND product_id = ?');
-            $bst->execute([$branchId, $p['id']]);
-            $bs = $bst->fetch();
-            $qty = $bs ? (int) $bs['quantity'] : 0;
-        }
+        $qty = (int) $p['qty'];
         $min = (int) $p['min_stock'];
         $level = 'OK';
         if ($qty <= 0) {

@@ -316,12 +316,12 @@ function products_brands_bulk_delete(array $params): void
 
 /* ---------- Products ---------- */
 
-function products_generate_sku(PDO $pdo, string $name, ?string $brandId, ?string $model): string
+function products_generate_sku(PDO $pdo, string $ownerId, string $name, ?string $brandId, ?string $model): string
 {
     $brandPrefix = '';
     if ($brandId) {
-        $st = $pdo->prepare('SELECT name FROM brands WHERE id = ?');
-        $st->execute([$brandId]);
+        $st = $pdo->prepare('SELECT name FROM brands WHERE id = ? AND owner_id = ? LIMIT 1');
+        $st->execute([$brandId, $ownerId]);
         $b = $st->fetch();
         if ($b) {
             $brandPrefix = strtoupper(preg_replace('/[^A-Z0-9]+/i', '', $b['name']) ?? '');
@@ -341,8 +341,8 @@ function products_generate_sku(PDO $pdo, string $name, ?string $brandId, ?string
         $suffix = strtoupper(base_convert((string) (int) (microtime(true) * 1000), 10, 36));
         $suffix = substr($suffix, -4) . strtoupper(substr(bin2hex(random_bytes(2)), 0, 2));
         $sku = substr($base . '-' . $suffix, 0, 40);
-        $check = $pdo->prepare('SELECT id FROM products WHERE sku = ? LIMIT 1');
-        $check->execute([$sku]);
+        $check = $pdo->prepare('SELECT id FROM products WHERE sku = ? AND owner_id = ? LIMIT 1');
+        $check->execute([$sku, $ownerId]);
         if (!$check->fetch()) {
             return $sku;
         }
@@ -352,18 +352,19 @@ function products_generate_sku(PDO $pdo, string $name, ?string $brandId, ?string
 
 function products_attach_relations(PDO $pdo, array $productRow, ?string $branchFilter = null, bool $lite = false): array
 {
+    $ownerId = $productRow['owner_id'] ?? tenant_owner_id();
     $extras = [];
     if (!empty($productRow['category_id'])) {
-        $st = $pdo->prepare('SELECT id, name FROM categories WHERE id = ?');
-        $st->execute([$productRow['category_id']]);
+        $st = $pdo->prepare('SELECT id, name FROM categories WHERE id = ? AND owner_id = ? LIMIT 1');
+        $st->execute([$productRow['category_id'], $ownerId]);
         $c = $st->fetch();
         $extras['category'] = $c ? ['id' => $c['id'], 'name' => $c['name']] : null;
     } else {
         $extras['category'] = null;
     }
     if (!empty($productRow['brand_id'])) {
-        $st = $pdo->prepare('SELECT id, name FROM brands WHERE id = ?');
-        $st->execute([$productRow['brand_id']]);
+        $st = $pdo->prepare('SELECT id, name FROM brands WHERE id = ? AND owner_id = ? LIMIT 1');
+        $st->execute([$productRow['brand_id'], $ownerId]);
         $b = $st->fetch();
         $extras['brand'] = $b ? ['id' => $b['id'], 'name' => $b['name']] : null;
     } else {
@@ -372,8 +373,8 @@ function products_attach_relations(PDO $pdo, array $productRow, ?string $branchF
 
     if (!$lite) {
         if (!empty($productRow['supplier_id'])) {
-            $st = $pdo->prepare('SELECT * FROM suppliers WHERE id = ?');
-            $st->execute([$productRow['supplier_id']]);
+            $st = $pdo->prepare('SELECT * FROM suppliers WHERE id = ? AND owner_id = ? LIMIT 1');
+            $st->execute([$productRow['supplier_id'], $ownerId]);
             $s = $st->fetch();
             if ($s) {
                 $extras['supplier'] = [
@@ -397,9 +398,9 @@ function products_attach_relations(PDO $pdo, array $productRow, ?string $branchF
             'SELECT bs.branch_id, bs.quantity, b.name AS branch_name
              FROM branch_stocks bs
              LEFT JOIN branches b ON b.id = bs.branch_id
-             WHERE bs.product_id = ? AND bs.branch_id = ?'
+             WHERE bs.product_id = ? AND bs.branch_id = ? AND bs.owner_id = ?'
         );
-        $st->execute([$productRow['id'], $branchFilter]);
+        $st->execute([$productRow['id'], $branchFilter, $ownerId]);
         $stocks = [];
         foreach ($st->fetchAll() as $bs) {
             $stocks[] = [
@@ -414,9 +415,9 @@ function products_attach_relations(PDO $pdo, array $productRow, ?string $branchF
             'SELECT bs.branch_id, bs.quantity, b.id AS b_id, b.name AS b_name
              FROM branch_stocks bs
              LEFT JOIN branches b ON b.id = bs.branch_id
-             WHERE bs.product_id = ?'
+             WHERE bs.product_id = ? AND bs.owner_id = ?'
         );
-        $st->execute([$productRow['id']]);
+        $st->execute([$productRow['id'], $ownerId]);
         $stocks = [];
         foreach ($st->fetchAll() as $bs) {
             $stocks[] = [
@@ -589,7 +590,7 @@ function products_create(array $params): void
     $model = $body['model'] ?? null;
     $finalSku = isset($body['sku']) && is_string($body['sku']) ? trim($body['sku']) : '';
     if ($finalSku === '') {
-        $finalSku = products_generate_sku($pdo, $name, $brandId ?: null, $model ? (string) $model : null);
+        $finalSku = products_generate_sku($pdo, $ownerId, $name, $brandId ?: null, $model ? (string) $model : null);
     }
 
     $chk = $pdo->prepare('SELECT id FROM products WHERE sku = ? AND owner_id = ? LIMIT 1');

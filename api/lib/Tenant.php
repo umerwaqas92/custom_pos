@@ -8,6 +8,7 @@ declare(strict_types=1);
  */
 final class Tenant
 {
+    private const SCHEMA_VERSION = 2;
     private static bool $migrated = false;
 
     /** Tables that store owner_id for isolation. */
@@ -46,6 +47,9 @@ final class Tenant
             if (!$pdo) {
                 return;
             }
+            if (self::migrationUpToDate($pdo)) {
+                return;
+            }
             self::runMigration($pdo);
         } catch (Throwable $e) {
             error_log('[MZK POS Tenant migrate] ' . $e->getMessage());
@@ -75,6 +79,7 @@ final class Tenant
 
         // Per-owner uniqueness (drop global uniques that break multi-shop)
         self::relaxUniques($pdo);
+        self::addPerformanceIndexes($pdo);
 
         // Backfill users: each OWNER owns themselves
         try {
@@ -122,6 +127,68 @@ final class Tenant
                     "UPDATE `{$table}` SET owner_id = " . $pdo->quote($primaryOwnerId) .
                     " WHERE owner_id IS NULL OR owner_id = ''"
                 );
+            } catch (Throwable $e) {
+            }
+        }
+
+        self::setSchemaVersion($pdo, self::SCHEMA_VERSION);
+    }
+
+    private static function migrationUpToDate(PDO $pdo): bool
+    {
+        try {
+            $st = $pdo->prepare(
+                'SELECT meta_value FROM app_meta WHERE meta_key = ? LIMIT 1'
+            );
+            $st->execute(['tenant_schema_version']);
+            $version = $st->fetchColumn();
+            return $version !== false && (int) $version >= self::SCHEMA_VERSION;
+        } catch (Throwable $e) {
+            return false;
+        }
+    }
+
+    private static function setSchemaVersion(PDO $pdo, int $version): void
+    {
+        try {
+            $pdo->exec(
+                'CREATE TABLE IF NOT EXISTS app_meta (
+                    meta_key VARCHAR(128) NOT NULL PRIMARY KEY,
+                    meta_value VARCHAR(255) NOT NULL,
+                    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+            );
+            $st = $pdo->prepare(
+                'REPLACE INTO app_meta (meta_key, meta_value, updated_at) VALUES (?, ?, ?)'
+            );
+            $st->execute(['tenant_schema_version', (string) $version, date('Y-m-d H:i:s')]);
+        } catch (Throwable $e) {
+        }
+    }
+
+    private static function addPerformanceIndexes(PDO $pdo): void
+    {
+        $indexes = [
+            ['sales', 'idx_sales_owner_date', '(owner_id, sale_date)'],
+            ['sales', 'idx_sales_owner_branch_date', '(owner_id, branch_id, sale_date)'],
+            ['expenses', 'idx_exp_owner_date', '(owner_id, date)'],
+            ['products', 'idx_products_owner_stock', '(owner_id, stock_quantity)'],
+            ['customers', 'idx_customers_owner_created', '(owner_id, created_at)'],
+            ['stock_movements', 'idx_sm_owner_created', '(owner_id, created_at)'],
+            ['repair_jobs', 'idx_rj_owner_created', '(owner_id, created_at)'],
+            ['purchase_orders', 'idx_po_owner_date', '(owner_id, order_date)'],
+            ['bank_accounts', 'idx_ba_owner_active_type', '(owner_id, is_active, type)'],
+            ['transactions', 'idx_tx_account_created', '(bank_account_id, created_at)'],
+            ['sale_items', 'idx_si_sale_product', '(sale_id, product_id)'],
+            ['sale_returns', 'idx_sr_sale_status_date', '(sale_id, status, return_date)'],
+        ];
+
+        foreach ($indexes as [$table, $index, $cols]) {
+            if (!self::tableExists($pdo, $table)) {
+                continue;
+            }
+            try {
+                $pdo->exec("ALTER TABLE `{$table}` ADD INDEX `{$index}` {$cols}");
             } catch (Throwable $e) {
             }
         }

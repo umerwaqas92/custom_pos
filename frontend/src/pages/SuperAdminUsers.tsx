@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useStore } from "../store/useStore";
-import { Search, Users, RefreshCw, Lock, X } from "lucide-react";
+import { Search, Users, RefreshCw, Lock, Edit3, X } from "lucide-react";
 
 export default function SuperAdminUsers() {
   const { addNotification } = useStore();
@@ -9,9 +9,11 @@ export default function SuperAdminUsers() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedRole, setSelectedRole] = useState("");
-  const [resetTarget, setResetTarget] = useState<any>(null);
-  const [newPassword, setNewPassword] = useState("");
-  const [pwLoading, setPwLoading] = useState(false);
+  const [branches, setBranches] = useState<any[]>([]);
+  const [editTarget, setEditTarget] = useState<any>(null);
+  const [editForm, setEditForm] = useState({ name: "", email: "", phone: "", role: "", branchId: "", isActive: true });
+  const [editPassword, setEditPassword] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -25,8 +27,16 @@ export default function SuperAdminUsers() {
     }
   };
 
+  const fetchBranches = async () => {
+    try {
+      const res = await axios.get("/api/auth/branches");
+      setBranches(Array.isArray(res.data) ? res.data : []);
+    } catch {}
+  };
+
   useEffect(() => {
     fetchUsers();
+    fetchBranches();
   }, []);
 
   const filteredUsers = users.filter((u) => {
@@ -139,13 +149,26 @@ export default function SuperAdminUsers() {
                       </span>
                     </td>
                     <td className="px-5 py-4 text-right">
-                      <button
-                        onClick={() => { setResetTarget(u); setNewPassword(""); }}
-                        title="Reset Password"
-                        className="p-1.5 rounded-lg text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10 transition"
-                      >
-                        <Lock className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => {
+                            setEditTarget(u);
+                            setEditForm({
+                              name: u.name || "",
+                              email: u.email || "",
+                              phone: u.phone || "",
+                              role: u.role || "CASHIER",
+                              branchId: u.branchId || "",
+                              isActive: u.isActive !== false
+                            });
+                            setEditPassword("");
+                          }}
+                          title="Edit User"
+                          className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -162,16 +185,16 @@ export default function SuperAdminUsers() {
         )}
       </div>
 
-      {/* Password Reset Modal */}
-      {resetTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setResetTarget(null)}>
-          <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-2xl mx-4" onClick={(e) => e.stopPropagation()}>
+      {/* Edit User Modal */}
+      {editTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setEditTarget(null)}>
+          <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-2xl mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h3 className="text-lg font-bold text-foreground">Reset Password</h3>
-                <p className="text-xs text-muted-foreground mt-1">{resetTarget.name} ({resetTarget.username})</p>
+                <h3 className="text-lg font-bold text-foreground">Edit User</h3>
+                <p className="text-xs text-muted-foreground mt-1">{editTarget.name} ({editTarget.username})</p>
               </div>
-              <button onClick={() => setResetTarget(null)} className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition">
+              <button onClick={() => setEditTarget(null)} className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -179,42 +202,97 @@ export default function SuperAdminUsers() {
             <form
               onSubmit={async (e) => {
                 e.preventDefault();
-                if (!newPassword || newPassword.length < 6) {
-                  addNotification("Password must be at least 6 characters.", "warning");
+                if (!editForm.name.trim()) {
+                  addNotification("Name is required.", "warning");
                   return;
                 }
-                setPwLoading(true);
+                setSaving(true);
                 try {
-                  await axios.put(`/api/auth/users/${resetTarget.id}`, { password: newPassword });
-                  addNotification(`Password reset for ${resetTarget.name}.`, "success");
-                  setResetTarget(null);
+                  const payload: any = { ...editForm };
+                  if (editPassword) {
+                    if (editPassword.length < 6) {
+                      addNotification("Password must be at least 6 characters.", "warning");
+                      setSaving(false);
+                      return;
+                    }
+                    payload.password = editPassword;
+                  }
+                  await axios.put(`/api/auth/users/${editTarget.id}`, payload);
+                  addNotification(`User ${editTarget.name} updated.`, "success");
+                  setEditTarget(null);
+                  fetchUsers();
                 } catch (err: any) {
-                  const msg = err.response?.data?.error || "Failed to reset password.";
+                  const msg = err.response?.data?.error || "Failed to update user.";
                   addNotification(msg, "warning");
                 } finally {
-                  setPwLoading(false);
+                  setSaving(false);
                 }
               }}
               className="space-y-4"
             >
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">New Password</label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full bg-secondary text-foreground border border-border px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  placeholder="At least 6 characters"
-                  autoFocus
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Name</label>
+                  <input type="text" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    className="w-full bg-secondary text-foreground border border-border px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Email</label>
+                  <input type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                    className="w-full bg-secondary text-foreground border border-border px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Phone</label>
+                  <input type="text" value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                    className="w-full bg-secondary text-foreground border border-border px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50" />
+                </div>
               </div>
-              <button
-                type="submit"
-                disabled={pwLoading}
-                className="w-full bg-primary hover:bg-primary/95 text-white font-medium py-2.5 rounded-xl flex items-center justify-center transition disabled:opacity-50"
-              >
-                {pwLoading ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Reset Password"}
-              </button>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Role</label>
+                  <select value={editForm.role} onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
+                    className="w-full bg-secondary text-foreground border border-border px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50">
+                    <option value="OWNER">Owner</option>
+                    <option value="MANAGER">Manager</option>
+                    <option value="CASHIER">Cashier</option>
+                    <option value="TECHNICIAN">Technician</option>
+                    <option value="WAREHOUSE">Warehouse</option>
+                    <option value="SUPER_ADMIN">Super Admin</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Branch</label>
+                  <select value={editForm.branchId} onChange={(e) => setEditForm({ ...editForm, branchId: e.target.value })}
+                    className="w-full bg-secondary text-foreground border border-border px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50">
+                    <option value="">— No Branch —</option>
+                    {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={editForm.isActive}
+                    onChange={(e) => setEditForm({ ...editForm, isActive: e.target.checked })}
+                    className="w-4 h-4 rounded border-border accent-primary" />
+                  <span className="text-xs font-semibold text-muted-foreground">Active</span>
+                </label>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
+                  New Password <span className="text-[10px] font-normal normal-case text-muted-foreground">(leave blank to keep current)</span>
+                </label>
+                <input type="password" value={editPassword} onChange={(e) => setEditPassword(e.target.value)}
+                  className="w-full bg-secondary text-foreground border border-border px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  placeholder="At least 6 characters" />
+              </div>
+              <div className="flex gap-3">
+                <button type="button" onClick={() => setEditTarget(null)}
+                  className="flex-1 bg-secondary hover:bg-secondary/80 text-foreground font-medium py-2.5 rounded-xl transition">Cancel</button>
+                <button type="submit" disabled={saving}
+                  className="flex-[2] bg-primary hover:bg-primary/95 text-white font-medium py-2.5 rounded-xl flex items-center justify-center transition disabled:opacity-50">
+                  {saving ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Save Changes"}
+                </button>
+              </div>
             </form>
           </div>
         </div>

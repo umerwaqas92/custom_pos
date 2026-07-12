@@ -14,7 +14,25 @@ function register_reports_routes(Router $router): void
 function reports_date_bounds(?string $startDate, ?string $endDate): array
 {
     $start = $startDate ? date('Y-m-d 00:00:00', strtotime($startDate)) : null;
-    $end = $endDate ? date('Y-m-d 23:59:59', strtotime($endDate)) : null;
+    $end = $endDate ? reports_day_after(date('Y-m-d 23:59:59', strtotime($endDate))) : null;
+    return [$start, $end];
+}
+
+function reports_day_after(string $dateTime): string
+{
+    return date('Y-m-d H:i:s', strtotime('+1 day', strtotime($dateTime)));
+}
+
+function reports_month_bounds(int $year, ?int $month = null): array
+{
+    if ($month !== null) {
+        $start = sprintf('%04d-%02d-01 00:00:00', $year, $month);
+        $end = date('Y-m-d H:i:s', strtotime($start . ' +1 month'));
+        return [$start, $end];
+    }
+
+    $start = sprintf('%04d-01-01 00:00:00', $year);
+    $end = sprintf('%04d-01-01 00:00:00', $year + 1);
     return [$start, $end];
 }
 
@@ -36,7 +54,7 @@ function reports_compile(string $type, ?string $startDate, ?string $endDate, ?st
         $saleArgs[] = $start;
     }
     if ($end) {
-        $saleDateSql .= ' AND s.sale_date <= ?';
+        $saleDateSql .= ' AND s.sale_date < ?';
         $saleArgs[] = $end;
     }
     if ($branchId) {
@@ -121,14 +139,14 @@ function reports_compile(string $type, ?string $startDate, ?string $endDate, ?st
             $st = $pdo->prepare($sql);
             $st->execute($saleArgs);
             $sales = $st->fetch();
-            $expSql = 'SELECT COUNT(*) AS cnt, COALESCE(SUM(amount),0) AS total FROM expenses WHERE 1=1';
-            $expArgs = [];
+            $expSql = 'SELECT COUNT(*) AS cnt, COALESCE(SUM(amount),0) AS total FROM expenses WHERE owner_id = ?';
+            $expArgs = [$ownerId];
             if ($start) {
                 $expSql .= ' AND date >= ?';
                 $expArgs[] = $start;
             }
             if ($end) {
-                $expSql .= ' AND date <= ?';
+                $expSql .= ' AND date < ?';
                 $expArgs[] = $end;
             }
             $st = $pdo->prepare($expSql);
@@ -147,12 +165,12 @@ function reports_compile(string $type, ?string $startDate, ?string $endDate, ?st
             $sql = 'SELECT bs.quantity, p.sku, p.name, p.wholesale_price, p.selling_price, p.purchase_price,
                            c.name AS cat_name, br.name AS brand_name, b.name AS branch_name
                     FROM branch_stocks bs
-                    JOIN products p ON p.id = bs.product_id
+                    JOIN products p ON p.id = bs.product_id AND p.owner_id = ?
                     LEFT JOIN categories c ON c.id = p.category_id
                     LEFT JOIN brands br ON br.id = p.brand_id
                     LEFT JOIN branches b ON b.id = bs.branch_id
                     WHERE 1=1';
-            $args = [];
+            $args = [$ownerId];
             if ($branchId) {
                 $sql .= ' AND bs.branch_id = ?';
                 $args[] = $branchId;
@@ -184,15 +202,15 @@ function reports_compile(string $type, ?string $startDate, ?string $endDate, ?st
         case 'low-stock': {
             if ($branchId) {
                 $st = $pdo->prepare(
-                    'SELECT bs.quantity, p.sku, p.name, c.name AS cat_name, br.name AS brand_name, b.name AS branch_name
-                     FROM branch_stocks bs
-                     JOIN products p ON p.id = bs.product_id
+                    'SELECT COALESCE(bs.quantity, 0) AS quantity, p.sku, p.name, c.name AS cat_name, br.name AS brand_name, b.name AS branch_name
+                     FROM products p
+                     LEFT JOIN branch_stocks bs ON bs.product_id = p.id AND bs.branch_id = ?
                      LEFT JOIN categories c ON c.id = p.category_id
                      LEFT JOIN brands br ON br.id = p.brand_id
                      LEFT JOIN branches b ON b.id = bs.branch_id
-                     WHERE bs.branch_id = ? AND bs.quantity <= ?'
+                     WHERE p.owner_id = ? AND COALESCE(bs.quantity, 0) <= ?'
                 );
-                $st->execute([$branchId, $LOW]);
+                $st->execute([$branchId, $ownerId, $LOW]);
                 $out = [];
                 foreach ($st->fetchAll() as $r) {
                     $out[] = [
@@ -212,9 +230,9 @@ function reports_compile(string $type, ?string $startDate, ?string $endDate, ?st
                  FROM products p
                  LEFT JOIN categories c ON c.id = p.category_id
                  LEFT JOIN brands br ON br.id = p.brand_id
-                 WHERE p.stock_quantity <= ?'
+                 WHERE p.owner_id = ? AND p.stock_quantity <= ?'
             );
-            $st->execute([$LOW]);
+            $st->execute([$ownerId, $LOW]);
             $out = [];
             foreach ($st->fetchAll() as $r) {
                 $out[] = [
@@ -230,32 +248,27 @@ function reports_compile(string $type, ?string $startDate, ?string $endDate, ?st
         }
 
         case 'best-selling': {
-            $sql = "SELECT si.product_id, SUM(si.quantity) AS qty, SUM(si.total_price) AS rev
+            $sql = "SELECT si.product_id, p.sku, p.name, c.name AS cat_name, br.name AS brand_name,
+                           SUM(si.quantity) AS qty, SUM(si.total_price) AS rev
                     FROM sale_items si
                     JOIN sales s ON s.id = si.sale_id
+                    JOIN products p ON p.id = si.product_id AND p.owner_id = ?
+                    LEFT JOIN categories c ON c.id = p.category_id
+                    LEFT JOIN brands br ON br.id = p.brand_id
                     WHERE 1=1 {$saleDateSql}
-                    GROUP BY si.product_id
+                    GROUP BY si.product_id, p.sku, p.name, c.name, br.name
                     ORDER BY qty DESC
                     LIMIT 15";
             $st = $pdo->prepare($sql);
-            $st->execute($saleArgs);
+            $st->execute(array_merge([$ownerId], $saleArgs));
             $rows = $st->fetchAll();
             $out = [];
             foreach ($rows as $row) {
-                $p = $pdo->prepare(
-                    'SELECT p.sku, p.name, c.name AS cat_name, br.name AS brand_name
-                     FROM products p
-                     LEFT JOIN categories c ON c.id = p.category_id
-                     LEFT JOIN brands br ON br.id = p.brand_id
-                     WHERE p.id = ?'
-                );
-                $p->execute([$row['product_id']]);
-                $prod = $p->fetch() ?: [];
                 $out[] = [
-                    'sku' => $prod['sku'] ?? '',
-                    'productName' => $prod['name'] ?? 'Unknown',
-                    'category' => $prod['cat_name'] ?? 'N/A',
-                    'brand' => $prod['brand_name'] ?? 'N/A',
+                    'sku' => $row['sku'] ?? '',
+                    'productName' => $row['name'] ?? 'Unknown',
+                    'category' => $row['cat_name'] ?? 'N/A',
+                    'brand' => $row['brand_name'] ?? 'N/A',
                     'itemsSold' => (int) $row['qty'],
                     'revenueGenerated' => (float) $row['rev'],
                 ];
@@ -274,12 +287,15 @@ function reports_compile(string $type, ?string $startDate, ?string $endDate, ?st
             foreach ($st->fetchAll() as $r) {
                 $soldMap[$r['product_id']] = (int) $r['qty'];
             }
-            $products = $pdo->query(
+            $st = $pdo->prepare(
                 'SELECT p.id, p.sku, p.name, p.stock_quantity, c.name AS cat_name, br.name AS brand_name
                  FROM products p
                  LEFT JOIN categories c ON c.id = p.category_id
-                 LEFT JOIN brands br ON br.id = p.brand_id'
-            )->fetchAll();
+                 LEFT JOIN brands br ON br.id = p.brand_id
+                 WHERE p.owner_id = ?'
+            );
+            $st->execute([$ownerId]);
+            $products = $st->fetchAll();
             $out = [];
             foreach ($products as $p) {
                 $out[] = [
@@ -299,13 +315,13 @@ function reports_compile(string $type, ?string $startDate, ?string $endDate, ?st
             $sql = "SELECT COALESCE(br.name, 'Generic') AS brand, SUM(si.quantity) AS qty, SUM(si.total_price) AS rev
                     FROM sale_items si
                     JOIN sales s ON s.id = si.sale_id
-                    JOIN products p ON p.id = si.product_id
+                    JOIN products p ON p.id = si.product_id AND p.owner_id = ?
                     LEFT JOIN brands br ON br.id = p.brand_id
                     WHERE 1=1 {$saleDateSql}
                     GROUP BY brand
                     ORDER BY rev DESC";
             $st = $pdo->prepare($sql);
-            $st->execute($saleArgs);
+            $st->execute(array_merge([$ownerId], $saleArgs));
             $out = [];
             foreach ($st->fetchAll() as $r) {
                 $out[] = [
@@ -321,13 +337,13 @@ function reports_compile(string $type, ?string $startDate, ?string $endDate, ?st
             $sql = "SELECT COALESCE(c.name, 'Uncategorized') AS category, SUM(si.quantity) AS qty, SUM(si.total_price) AS rev
                     FROM sale_items si
                     JOIN sales s ON s.id = si.sale_id
-                    JOIN products p ON p.id = si.product_id
+                    JOIN products p ON p.id = si.product_id AND p.owner_id = ?
                     LEFT JOIN categories c ON c.id = p.category_id
                     WHERE 1=1 {$saleDateSql}
                     GROUP BY category
                     ORDER BY rev DESC";
             $st = $pdo->prepare($sql);
-            $st->execute($saleArgs);
+            $st->execute(array_merge([$ownerId], $saleArgs));
             $out = [];
             foreach ($st->fetchAll() as $r) {
                 $out[] = [
@@ -344,21 +360,18 @@ function reports_compile(string $type, ?string $startDate, ?string $endDate, ?st
                            COUNT(po.id) AS orders_count,
                            COALESCE(SUM(po.total_amount),0) AS total_purchased
                     FROM suppliers s
-                    LEFT JOIN purchase_orders po ON po.supplier_id = s.id';
+                    LEFT JOIN purchase_orders po ON po.supplier_id = s.id AND po.owner_id = s.owner_id';
             $args = [];
-            $conds = [];
             if ($start) {
-                $conds[] = 'po.order_date >= ?';
+                $sql .= ' AND po.order_date >= ?';
                 $args[] = $start;
             }
             if ($end) {
-                $conds[] = 'po.order_date <= ?';
+                $sql .= ' AND po.order_date < ?';
                 $args[] = $end;
             }
-            // Only constrain purchase join dates when provided
-            if ($conds) {
-                $sql .= ' AND (' . implode(' AND ', $conds) . ' OR po.id IS NULL)';
-            }
+            $sql .= ' WHERE s.owner_id = ?';
+            $args[] = $ownerId;
             $sql .= ' GROUP BY s.id, s.company, s.contact_person, s.phone ORDER BY total_purchased DESC';
             $st = $pdo->prepare($sql);
             $st->execute($args);
@@ -380,24 +393,22 @@ function reports_compile(string $type, ?string $startDate, ?string $endDate, ?st
                            COUNT(s.id) AS sales_count,
                            COALESCE(SUM(s.payable_amount),0) AS volume
                     FROM customers c
-                    LEFT JOIN sales s ON s.customer_id = c.id';
+                    LEFT JOIN sales s ON s.customer_id = c.id AND s.owner_id = c.owner_id';
             $args = [];
-            if ($start || $end || $branchId) {
-                $parts = [];
-                if ($start) {
-                    $parts[] = 's.sale_date >= ?';
-                    $args[] = $start;
-                }
-                if ($end) {
-                    $parts[] = 's.sale_date <= ?';
-                    $args[] = $end;
-                }
-                if ($branchId) {
-                    $parts[] = 's.branch_id = ?';
-                    $args[] = $branchId;
-                }
-                $sql .= ' AND (s.id IS NULL OR (' . implode(' AND ', $parts) . '))';
+            if ($start) {
+                $sql .= ' AND s.sale_date >= ?';
+                $args[] = $start;
             }
+            if ($end) {
+                $sql .= ' AND s.sale_date < ?';
+                $args[] = $end;
+            }
+            if ($branchId) {
+                $sql .= ' AND s.branch_id = ?';
+                $args[] = $branchId;
+            }
+            $sql .= ' WHERE c.owner_id = ?';
+            $args[] = $ownerId;
             $sql .= ' GROUP BY c.id, c.name, c.phone, c.reward_points, c.credit_balance ORDER BY volume DESC';
             $st = $pdo->prepare($sql);
             $st->execute($args);
@@ -416,39 +427,35 @@ function reports_compile(string $type, ?string $startDate, ?string $endDate, ?st
         }
 
         case 'technician-performance': {
-            $sql = "SELECT u.id, u.name, u.username FROM users u WHERE u.role = 'TECHNICIAN'";
-            $techs = $pdo->query($sql)->fetchAll();
+            $sql = "SELECT u.id, u.name, u.username,
+                           COALESCE(SUM(CASE WHEN r.id IS NOT NULL AND r.status IN ('DELIVERED', 'READY') THEN 1 ELSE 0 END),0) AS completed_count,
+                           COALESCE(SUM(CASE WHEN r.id IS NOT NULL AND r.status NOT IN ('DELIVERED', 'READY') THEN 1 ELSE 0 END),0) AS pending_count,
+                           COALESCE(SUM(CASE WHEN r.id IS NOT NULL AND r.status IN ('DELIVERED', 'READY') THEN r.repair_cost + r.service_charge ELSE 0 END),0) AS revenue_generated
+                    FROM users u
+                    LEFT JOIN repair_jobs r ON r.technician_id = u.id AND r.owner_id = u.owner_id";
+            $args = [];
+            if ($start) {
+                $sql .= ' AND r.created_at >= ?';
+                $args[] = $start;
+            }
+            if ($end) {
+                $sql .= ' AND r.created_at < ?';
+                $args[] = $end;
+            }
+            $sql .= " WHERE u.role = 'TECHNICIAN' AND u.owner_id = ?
+                      GROUP BY u.id, u.name, u.username
+                      ORDER BY revenue_generated DESC";
+            $args[] = $ownerId;
+            $st = $pdo->prepare($sql);
+            $st->execute($args);
             $out = [];
-            foreach ($techs as $u) {
-                $jSql = 'SELECT status, repair_cost, service_charge FROM repair_jobs WHERE technician_id = ?';
-                $jArgs = [$u['id']];
-                if ($start) {
-                    $jSql .= ' AND created_at >= ?';
-                    $jArgs[] = $start;
-                }
-                if ($end) {
-                    $jSql .= ' AND created_at <= ?';
-                    $jArgs[] = $end;
-                }
-                $st = $pdo->prepare($jSql);
-                $st->execute($jArgs);
-                $completed = 0;
-                $pending = 0;
-                $rev = 0.0;
-                foreach ($st->fetchAll() as $j) {
-                    if ($j['status'] === 'DELIVERED' || $j['status'] === 'READY') {
-                        $completed++;
-                        $rev += (float) $j['repair_cost'] + (float) $j['service_charge'];
-                    } else {
-                        $pending++;
-                    }
-                }
+            foreach ($st->fetchAll() as $u) {
                 $out[] = [
                     'technician' => $u['name'],
                     'username' => $u['username'],
-                    'completedCount' => $completed,
-                    'pendingCount' => $pending,
-                    'revenueGenerated' => $rev,
+                    'completedCount' => (int) $u['completed_count'],
+                    'pendingCount' => (int) $u['pending_count'],
+                    'revenueGenerated' => (float) $u['revenue_generated'],
                 ];
             }
             usort($out, static fn($a, $b) => $b['revenueGenerated'] <=> $a['revenueGenerated']);
@@ -458,17 +465,17 @@ function reports_compile(string $type, ?string $startDate, ?string $endDate, ?st
         case 'warranty-summary': {
             $sql = 'SELECT w.*, c.name AS customer_name, p.name AS product_name, p.sku AS product_sku
                     FROM warranty_claims w
-                    LEFT JOIN sales s ON s.id = w.sale_id
-                    LEFT JOIN customers c ON c.id = s.customer_id
-                    LEFT JOIN products p ON p.id = w.product_id
-                    WHERE 1=1';
-            $args = [];
+                    LEFT JOIN sales s ON s.id = w.sale_id AND s.owner_id = w.owner_id
+                    LEFT JOIN customers c ON c.id = s.customer_id AND c.owner_id = w.owner_id
+                    LEFT JOIN products p ON p.id = w.product_id AND p.owner_id = w.owner_id
+                    WHERE w.owner_id = ?';
+            $args = [$ownerId];
             if ($start) {
                 $sql .= ' AND w.created_at >= ?';
                 $args[] = $start;
             }
             if ($end) {
-                $sql .= ' AND w.created_at <= ?';
+                $sql .= ' AND w.created_at < ?';
                 $args[] = $end;
             }
             $sql .= ' ORDER BY w.created_at DESC';
@@ -698,8 +705,8 @@ function reports_dashboard_period_filter(): array
             $args[] = date('Y-m-d 00:00:00', strtotime($startDate));
         }
         if ($endDate) {
-            $where .= ' AND sale_date <= ?';
-            $args[] = date('Y-m-d 23:59:59', strtotime($endDate));
+            $where .= ' AND sale_date < ?';
+            $args[] = reports_day_after(date('Y-m-d 23:59:59', strtotime($endDate)));
         }
         $label = ($startDate ?: '…') . ' → ' . ($endDate ?: '…');
         return [$where, $args, $label];
@@ -708,25 +715,29 @@ function reports_dashboard_period_filter(): array
     // Month / year chips (same semantics as Sales History)
     if ($month !== null || $year !== null) {
         if ($year !== null) {
-            $where .= ' AND YEAR(sale_date) = ?';
-            $args[] = (int) $year;
-        }
-        if ($month !== null) {
-            $where .= ' AND MONTH(sale_date) = ?';
-            $args[] = (int) $month;
+            [$start, $end] = reports_month_bounds((int) $year, $month !== null ? (int) $month : null);
+            $where .= ' AND sale_date >= ? AND sale_date < ?';
+            $args[] = $start;
+            $args[] = $end;
+        } elseif ($month !== null) {
+            // Month without year is ambiguous; keep the old behavior narrow by using the current year.
+            [$start, $end] = reports_month_bounds((int) date('Y'), (int) $month);
+            $where .= ' AND sale_date >= ? AND sale_date < ?';
+            $args[] = $start;
+            $args[] = $end;
         }
         $months = [1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep', 10 => 'Oct', 11 => 'Nov', 12 => 'Dec'];
         $mLabel = $month !== null ? ($months[(int) $month] ?? $month) : 'All months';
-        $yLabel = $year !== null ? $year : 'all years';
+        $yLabel = $year !== null ? $year : (string) date('Y');
         $label = "{$mLabel} · {$yLabel}";
         return [$where, $args, $label];
     }
 
     // Quick ranges
     if ($range === 'TODAY') {
-        $where .= ' AND sale_date >= ? AND sale_date <= ?';
+        $where .= ' AND sale_date >= ? AND sale_date < ?';
         $args[] = date('Y-m-d 00:00:00');
-        $args[] = date('Y-m-d 23:59:59');
+        $args[] = reports_day_after(date('Y-m-d 23:59:59'));
         $label = 'Today';
     } elseif ($range === '7_DAYS') {
         $where .= ' AND sale_date >= ?';
@@ -759,26 +770,29 @@ function reports_expense_period_filter(): array
             $args[] = date('Y-m-d 00:00:00', strtotime($startDate));
         }
         if ($endDate) {
-            $where .= ' AND date <= ?';
-            $args[] = date('Y-m-d 23:59:59', strtotime($endDate));
+            $where .= ' AND date < ?';
+            $args[] = reports_day_after(date('Y-m-d 23:59:59', strtotime($endDate)));
         }
         return [$where, $args];
     }
     if ($month !== null || $year !== null) {
         if ($year !== null) {
-            $where .= ' AND YEAR(date) = ?';
-            $args[] = (int) $year;
-        }
-        if ($month !== null) {
-            $where .= ' AND MONTH(date) = ?';
-            $args[] = (int) $month;
+            [$start, $end] = reports_month_bounds((int) $year, $month !== null ? (int) $month : null);
+            $where .= ' AND date >= ? AND date < ?';
+            $args[] = $start;
+            $args[] = $end;
+        } elseif ($month !== null) {
+            [$start, $end] = reports_month_bounds((int) date('Y'), (int) $month);
+            $where .= ' AND date >= ? AND date < ?';
+            $args[] = $start;
+            $args[] = $end;
         }
         return [$where, $args];
     }
     if ($range === 'TODAY') {
-        $where .= ' AND date >= ? AND date <= ?';
+        $where .= ' AND date >= ? AND date < ?';
         $args[] = date('Y-m-d 00:00:00');
-        $args[] = date('Y-m-d 23:59:59');
+        $args[] = reports_day_after(date('Y-m-d 23:59:59'));
     } elseif ($range === '7_DAYS') {
         $where .= ' AND date >= ?';
         $args[] = date('Y-m-d 00:00:00', strtotime('-7 days'));
@@ -979,21 +993,34 @@ function reports_charts(array $params): void
     $profitTrend = [];
 
     if (!$hasCustom) {
-        // Default: last 14 days
+        // Default: last 14 days, but still tenant-scoped and grouped in SQL.
+        $start = date('Y-m-d 00:00:00', strtotime('-13 days'));
+        $end = reports_day_after(date('Y-m-d 23:59:59'));
+
+        $salesSql = "SELECT DATE(s.sale_date) AS d, COALESCE(SUM(s.payable_amount),0) AS rev
+                     FROM sales s WHERE {$saleWhereS} AND s.sale_date >= ? AND s.sale_date < ?
+                     GROUP BY DATE(s.sale_date) ORDER BY d ASC";
+        $st = $pdo->prepare($salesSql);
+        $st->execute(array_merge($saleArgs, [$start, $end]));
+        $salesByDay = [];
+        foreach ($st->fetchAll() as $r) {
+            $salesByDay[$r['d']] = (float) $r['rev'];
+        }
+
+        $expSql = "SELECT DATE(date) AS d, COALESCE(SUM(amount),0) AS exp
+                   FROM expenses WHERE {$expWhere} AND date >= ? AND date < ?
+                   GROUP BY DATE(date) ORDER BY d ASC";
+        $st = $pdo->prepare($expSql);
+        $st->execute(array_merge($expArgs, [$start, $end]));
+        $expByDay = [];
+        foreach ($st->fetchAll() as $r) {
+            $expByDay[$r['d']] = (float) $r['exp'];
+        }
+
         for ($i = 13; $i >= 0; $i--) {
             $day = date('Y-m-d', strtotime("-{$i} days"));
-            $start = $day . ' 00:00:00';
-            $end = $day . ' 23:59:59';
-            $st = $pdo->prepare(
-                'SELECT COALESCE(SUM(payable_amount),0) AS rev FROM sales WHERE sale_date BETWEEN ? AND ?'
-            );
-            $st->execute([$start, $end]);
-            $rev = (float) $st->fetchColumn();
-            $st = $pdo->prepare(
-                'SELECT COALESCE(SUM(amount),0) AS exp FROM expenses WHERE date BETWEEN ? AND ?'
-            );
-            $st->execute([$start, $end]);
-            $exp = (float) $st->fetchColumn();
+            $rev = $salesByDay[$day] ?? 0.0;
+            $exp = $expByDay[$day] ?? 0.0;
             $label = date('M j', strtotime($day));
             $salesTrend[] = ['date' => $label, 'fullDate' => $day, 'revenue' => $rev];
             $dailyRevenue[] = ['date' => $label, 'fullDate' => $day, 'revenue' => $rev];
