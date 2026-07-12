@@ -105,6 +105,7 @@ function auth_token_user_response(array $row): array
     $token = Auth::issueToken([
         'id' => $row['id'],
         'username' => $row['username'],
+        'email' => $row['email'],
         'role' => $row['role'],
         'branchId' => $row['branch_id'],
         'ownerId' => $ownerId,
@@ -128,24 +129,24 @@ function auth_token_user_response(array $row): array
 function auth_login(array $params): void
 {
     $body = read_json_body();
-    $username = trim((string) ($body['username'] ?? ''));
+    $email = trim((string) ($body['email'] ?? ''));
     $password = (string) ($body['password'] ?? '');
 
-    if ($username === '' || $password === '') {
-        json_error('Username and password are required.', 400);
+    if ($email === '' || $password === '') {
+        json_error('Email and password are required.', 400);
     }
 
     $pdo = Database::pdo();
-    $stmt = $pdo->prepare(auth_user_select_sql() . ' WHERE u.username = ? LIMIT 1');
-    $stmt->execute([$username]);
+    $stmt = $pdo->prepare(auth_user_select_sql() . ' WHERE u.email = ? LIMIT 1');
+    $stmt->execute([$email]);
     $row = $stmt->fetch();
 
     if (!$row || !(int) $row['is_active']) {
-        json_error('Invalid username or password.', 401);
+        json_error('Invalid email or password.', 401);
     }
 
     if (!password_verify($password, $row['password_hash'])) {
-        json_error('Invalid username or password.', 401);
+        json_error('Invalid email or password.', 401);
     }
 
     json_response(auth_token_user_response($row));
@@ -158,30 +159,26 @@ function auth_signup(array $params): void
 {
     $body = read_json_body();
     $name = trim((string) ($body['name'] ?? ''));
-    $username = trim((string) ($body['username'] ?? ''));
     $password = (string) ($body['password'] ?? '');
     $shopName = trim((string) ($body['shopName'] ?? $body['shop_name'] ?? ''));
     $phone = trim((string) ($body['phone'] ?? ''));
     $email = trim((string) ($body['email'] ?? ''));
 
-    if ($name === '' || $username === '' || $password === '') {
-        json_error('Name, username, and password are required.', 400);
+    if ($name === '' || $email === '' || $password === '') {
+        json_error('Name, email, and password are required.', 400);
     }
-    if (strlen($username) < 3) {
-        json_error('Username must be at least 3 characters.', 400);
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        json_error('Please enter a valid email address.', 400);
     }
     if (strlen($password) < 6) {
         json_error('Password must be at least 6 characters.', 400);
     }
-    if (!preg_match('/^[a-zA-Z0-9._-]+$/', $username)) {
-        json_error('Username may only contain letters, numbers, dots, dashes, and underscores.', 400);
-    }
 
     $pdo = Database::pdo();
-    $check = $pdo->prepare('SELECT id FROM users WHERE username = ? LIMIT 1');
-    $check->execute([$username]);
+    $check = $pdo->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
+    $check->execute([$email]);
     if ($check->fetch()) {
-        json_error('Username already taken. Choose another or sign in.', 400);
+        json_error('Email already registered. Please sign in instead.', 400);
     }
 
     try {
@@ -205,6 +202,8 @@ function auth_signup(array $params): void
             $now,
         ]);
 
+        // Use email prefix as display username for backward compatibility
+        $generatedUsername = explode('@', $email, 2)[0];
         $hash = password_hash($password, PASSWORD_BCRYPT);
         $pdo->prepare(
             'INSERT INTO users (id, name, username, password_hash, role, email, phone, is_active, branch_id, owner_id, created_at, updated_at)
@@ -212,10 +211,10 @@ function auth_signup(array $params): void
         )->execute([
             $userId,
             $name,
-            $username,
+            $generatedUsername,
             $hash,
             'OWNER',
-            $email !== '' ? $email : null,
+            $email,
             $phone !== '' ? $phone : null,
             $branchId,
             $ownerId,
@@ -274,15 +273,17 @@ function auth_users_create(array $params): void
 {
     $body = read_json_body();
     $name = trim((string) ($body['name'] ?? ''));
-    $username = trim((string) ($body['username'] ?? ''));
     $password = (string) ($body['password'] ?? '');
     $role = strtoupper(trim((string) ($body['role'] ?? '')));
-    $email = $body['email'] ?? null;
+    $email = trim((string) ($body['email'] ?? ''));
     $phone = $body['phone'] ?? null;
     $branchId = $body['branchId'] ?? null;
 
-    if ($name === '' || $username === '' || $password === '' || $role === '') {
-        json_error('Name, username, password, and role are required.', 400);
+    if ($name === '' || $email === '' || $password === '' || $role === '') {
+        json_error('Name, email, password, and role are required.', 400);
+    }
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        json_error('Please enter a valid email address.', 400);
     }
     if (strlen($password) < 4) {
         json_error('Password must be at least 4 characters.', 400);
@@ -304,10 +305,10 @@ function auth_users_create(array $params): void
     $actor = Auth::requireUser();
     $ownerId = tenant_owner_id();
     $pdo = Database::pdo();
-    $check = $pdo->prepare('SELECT id FROM users WHERE username = ? LIMIT 1');
-    $check->execute([$username]);
+    $check = $pdo->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
+    $check->execute([$email]);
     if ($check->fetch()) {
-        json_error('Username already exists.', 400);
+        json_error('Email already exists.', 400);
     }
 
     if ($branchId) {
@@ -336,6 +337,7 @@ function auth_users_create(array $params): void
     $id = uuid_v4();
     $hash = password_hash($password, PASSWORD_BCRYPT);
     $now = now_sql();
+    $generatedUsername = explode('@', $email, 2)[0];
 
     $stmt = $pdo->prepare(
         'INSERT INTO users (id, name, username, password_hash, role, email, phone, is_active, branch_id, owner_id, created_at, updated_at)
@@ -344,10 +346,10 @@ function auth_users_create(array $params): void
     $stmt->execute([
         $id,
         $name,
-        $username,
+        $generatedUsername,
         $hash,
         $role,
-        $email ?: null,
+        $email,
         $phone ?: null,
         $branchId ?: null,
         $ownerId,
@@ -378,6 +380,17 @@ function auth_users_update(array $params): void
 
     foreach (['name' => 'name', 'role' => 'role', 'email' => 'email', 'phone' => 'phone'] as $json => $col) {
         if (array_key_exists($json, $body)) {
+            // Check email uniqueness when changing email
+            if ($col === 'email') {
+                $newEmail = trim((string) $body[$json]);
+                if ($newEmail !== '') {
+                    $chk = $pdo->prepare('SELECT id FROM users WHERE email = ? AND id <> ? LIMIT 1');
+                    $chk->execute([$newEmail, $id]);
+                    if ($chk->fetch()) {
+                        json_error('Email is already in use by another user.', 400);
+                    }
+                }
+            }
             $fields[] = "{$col} = ?";
             $values[] = $body[$json];
         }

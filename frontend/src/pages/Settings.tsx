@@ -91,7 +91,7 @@ export default function Settings() {
   const [savingStaff, setSavingStaff] = useState(false);
   const [newStaff, setNewStaff] = useState({
     name: "",
-    username: "",
+    email: "",
     password: "",
     role: "CASHIER" as "CASHIER" | "TECHNICIAN",
     phone: "",
@@ -131,15 +131,15 @@ export default function Settings() {
 
   const handleCreateStaff = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newStaff.name.trim() || !newStaff.username.trim() || !newStaff.password) {
-      addNotification("Name, username, and password are required.", "warning");
+    if (!newStaff.name.trim() || !newStaff.email.trim() || !newStaff.password) {
+      addNotification("Name, email, and password are required.", "warning");
       return;
     }
     setSavingStaff(true);
     try {
       await axios.post("/api/auth/users", {
         name: newStaff.name.trim(),
-        username: newStaff.username.trim(),
+        email: newStaff.email.trim(),
         password: newStaff.password,
         role: newStaff.role,
         phone: newStaff.phone.trim() || undefined,
@@ -147,7 +147,7 @@ export default function Settings() {
       });
       addNotification(`${newStaff.role === "TECHNICIAN" ? "Technician" : "Cashier"} created.`, "success");
       setStaffModalOpen(false);
-      setNewStaff({ name: "", username: "", password: "", role: "CASHIER", phone: "", branchId: "" });
+      setNewStaff({ name: "", email: "", password: "", role: "CASHIER", phone: "", branchId: "" });
       loadStaff();
     } catch (err: any) {
       addNotification(err.response?.data?.error || "Failed to create staff.", "warning");
@@ -788,7 +788,7 @@ export default function Settings() {
             onClick={() => {
               setNewStaff({
                 name: "",
-                username: "",
+                email: "",
                 password: "",
                 role: "CASHIER",
                 phone: "",
@@ -822,7 +822,7 @@ export default function Settings() {
               <thead>
                 <tr className="border-b border-border bg-secondary/40 text-[10px] uppercase tracking-wider text-muted-foreground">
                   <th className="px-4 py-3 font-bold">Name</th>
-                  <th className="px-4 py-3 font-bold">Username</th>
+                  <th className="px-4 py-3 font-bold">Email</th>
                   <th className="px-4 py-3 font-bold">Role</th>
                   <th className="px-4 py-3 font-bold">Branch</th>
                   <th className="px-4 py-3 font-bold">Status</th>
@@ -833,7 +833,7 @@ export default function Settings() {
                 {staff.map((u) => (
                   <tr key={u.id} className="border-b border-border/60 last:border-0 hover:bg-secondary/20">
                     <td className="px-4 py-3 font-semibold text-foreground">{u.name}</td>
-                    <td className="px-4 py-3 font-mono text-muted-foreground">{u.username}</td>
+                    <td className="px-4 py-3 font-mono text-muted-foreground">{u.email || u.username}</td>
                     <td className="px-4 py-3">
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border ${roleBadge(u.role)}`}>
                         {u.role}
@@ -993,13 +993,13 @@ export default function Settings() {
               className={inputCls}
             />
           </Field>
-          <Field label="Username *">
+          <Field label="Email *">
             <input
               required
-              type="text"
-              value={newStaff.username}
-              onChange={(e) => setNewStaff({ ...newStaff, username: e.target.value })}
-              placeholder="e.g. cashier1"
+              type="email"
+              value={newStaff.email}
+              onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })}
+              placeholder="cashier@shop.com"
               className={inputCls}
             />
           </Field>

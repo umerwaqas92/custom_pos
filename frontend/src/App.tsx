@@ -41,7 +41,7 @@ axios.interceptors.request.use((config) => {
 function Login() {
   const { login, addNotification, theme } = useStore();
   const [mode, setMode] = useState<"login" | "signup">("login");
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [shopName, setShopName] = useState("");
@@ -56,13 +56,13 @@ function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username || !password) {
-      addNotification("Please enter both username and password.", "warning");
+    if (!email || !password) {
+      addNotification("Please enter both email and password.", "warning");
       return;
     }
     setLoading(true);
     try {
-      const response = await axios.post("/api/auth/login", { username, password });
+      const response = await axios.post("/api/auth/login", { email, password });
       const { token, user } = response.data;
       login(token, user);
       addNotification(`Welcome back, ${user.name}!`, "success");
@@ -76,8 +76,8 @@ function Login() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !username.trim() || !password) {
-      addNotification("Name, username, and password are required.", "warning");
+    if (!name.trim() || !email.trim() || !password) {
+      addNotification("Name, email, and password are required.", "warning");
       return;
     }
     if (password.length < 6) {
@@ -88,7 +88,7 @@ function Login() {
     try {
       const response = await axios.post("/api/auth/signup", {
         name: name.trim(),
-        username: username.trim(),
+        email: email.trim(),
         password,
         shopName: shopName.trim() || undefined,
         phone: phone.trim() || undefined
@@ -97,7 +97,7 @@ function Login() {
       login(token, user);
       addNotification(`Welcome, ${user.name}! Your admin account is ready.`, "success");
     } catch (err: any) {
-      const msg = err.response?.data?.error || "Signup failed. Try a different username.";
+      const msg = err.response?.data?.error || "Signup failed. Please try a different email.";
       addNotification(msg, "warning");
     } finally {
       setLoading(false);
@@ -151,8 +151,8 @@ function Login() {
         {mode === "login" ? (
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Username</label>
-              <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="admin" className={inputCls} autoComplete="username" />
+              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Email</label>
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@shop.com" className={inputCls} autoComplete="email" />
             </div>
             <div>
               <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Password</label>
@@ -173,8 +173,8 @@ function Login() {
               <input type="text" value={shopName} onChange={(e) => setShopName(e.target.value)} placeholder="Default Store (optional)" className={inputCls} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Username *</label>
-              <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="admin" className={inputCls} required autoComplete="username" />
+              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Email *</label>
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@shop.com" className={inputCls} required autoComplete="email" />
             </div>
             <div>
               <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Password * (min 6)</label>

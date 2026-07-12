@@ -8,7 +8,7 @@ declare(strict_types=1);
  */
 final class Auth
 {
-    /** @var array{id:string,username:string,role:string,branchId:?string,ownerId:?string}|null */
+    /** @var array{id:string,username:string,email:?string,role:string,branchId:?string,ownerId:?string}|null */
     public static ?array $user = null;
 
     public static function issueToken(array $payload): string
@@ -67,7 +67,7 @@ final class Auth
 
     /**
      * Require valid Bearer JWT and active user.
-     * @return array{id:string,username:string,role:string,branchId:?string,ownerId:?string}
+     * @return array{id:string,username:string,email:?string,role:string,branchId:?string,ownerId:?string}
      */
     public static function requireUser(): array
     {
@@ -138,6 +138,7 @@ final class Auth
         self::$user = [
             'id' => (string) $decoded['id'],
             'username' => (string) ($decoded['username'] ?? ''),
+            'email' => isset($decoded['email']) && $decoded['email'] !== '' ? (string) $decoded['email'] : null,
             'role' => $role,
             'branchId' => isset($decoded['branchId']) && $decoded['branchId'] !== ''
                 ? (string) $decoded['branchId']
