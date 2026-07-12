@@ -51,6 +51,11 @@ export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [passwordModal, setPasswordModal] = useState(false);
+  const [pwCurrent, setPwCurrent] = useState("");
+  const [pwNew, setPwNew] = useState("");
+  const [pwConfirm, setPwConfirm] = useState("");
+  const [pwLoading, setPwLoading] = useState(false);
 
   useEffect(() => {
     setMobileSidebarOpen(false);
@@ -225,7 +230,7 @@ export default function Layout() {
               <div className="w-9 h-9 rounded-lg bg-primary/20 text-primary flex items-center justify-center font-bold">
                 {user.name.charAt(0)}
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="text-xs font-bold truncate">{user.name}</p>
                 <div className="flex items-center gap-1 mt-0.5">
                   <ShieldCheck className={`w-3.5 h-3.5 ${user.role === "SUPER_ADMIN" ? "text-amber-500" : "text-blue-400"}`} />
@@ -238,6 +243,15 @@ export default function Layout() {
                   )}
                 </div>
               </div>
+              {user.role === "SUPER_ADMIN" && (
+                <button
+                  onClick={() => { setPasswordModal(true); setPwCurrent(""); setPwNew(""); setPwConfirm(""); }}
+                  title="Change Password"
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10 transition"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           )}
 
