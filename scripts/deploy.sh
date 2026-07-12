@@ -189,7 +189,7 @@ ftp_upload() {
   FTP_HOST="$FTP_HOST" FTP_USER="$FTP_USER" FTP_PASS="$FTP_PASS" \
   FTP_REMOTE_ROOT="$FTP_REMOTE_ROOT" ROOT="$ROOT" \
   python3 <<'PY'
-import os, sys, time
+import os, sys, time, json, hashlib
 from pathlib import Path
 from ftplib import FTP, error_perm
 
@@ -233,6 +233,23 @@ if up.is_file():
 
 print(f"  files: {len(pairs)}")
 
+# Load deploy cache
+cache_file = ROOT / "scripts" / ".deploy_cache.json"
+cache = {}
+if cache_file.is_file():
+    try:
+        with open(cache_file, "r") as f:
+            cache = json.load(f)
+    except:
+        pass
+
+def get_md5(path):
+    h = hashlib.md5()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(65536), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
 def connect():
     ftp = FTP()
     ftp.connect(HOST, 21, timeout=120)
@@ -256,15 +273,26 @@ def ensure_dir(ftp, path):
                 except error_perm as e:
                     raise e
 
-ftp = connect()
+ftp = None
 ok = 0
+skipped = 0
+
 for i, (local, remote) in enumerate(sorted(pairs, key=lambda x: x[1]), 1):
+    local_hash = get_md5(local)
+    if cache.get(remote) == local_hash:
+        skipped += 1
+        continue
+
+    if ftp is None:
+        ftp = connect()
+
     ensure_dir(ftp, remote.rsplit("/", 1)[0])
     for attempt in range(1, 4):
         try:
             with open(local, "rb") as f:
                 ftp.storbinary(f"STOR {remote}", f, blocksize=8192)
             ok += 1
+            cache[remote] = local_hash
             break
         except Exception as e:
             if attempt == 3:
@@ -280,13 +308,24 @@ for i, (local, remote) in enumerate(sorted(pairs, key=lambda x: x[1]), 1):
                     pass
             ftp = connect()
             ensure_dir(ftp, remote.rsplit("/", 1)[0])
-    if i % 25 == 0 or i == len(pairs):
-        print(f"  [{i}/{len(pairs)}]")
+
+    if (ok + skipped) % 25 == 0 or (ok + skipped) == len(pairs):
+        print(f"  [{ok + skipped}/{len(pairs)}]")
+
+if ftp is not None:
+    try:
+        ftp.quit()
+    except Exception:
+        pass
+
+# Save deploy cache
 try:
-    ftp.quit()
-except Exception:
+    with open(cache_file, "w") as f:
+        json.dump(cache, f, indent=2)
+except:
     pass
-print(f"  uploaded {ok}/{len(pairs)}")
+
+print(f"  uploaded {ok}/{len(pairs)} (skipped {skipped} unchanged files)")
 if KEEP_CFG:
     print("  (kept remote api/config.php)")
 PY
