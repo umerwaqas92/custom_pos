@@ -41,21 +41,23 @@ function register_accounting_routes(Router $router): void
 
 function acct_customers_list(array $p): void
 {
-    $rows = Database::pdo()->query('SELECT * FROM customers ORDER BY name ASC')->fetchAll();
-    json_response(array_map([Format::class, 'customer'], $rows));
+    $st = Database::pdo()->prepare('SELECT * FROM customers WHERE owner_id = ? ORDER BY name ASC');
+    $st->execute([tenant_owner_id()]);
+    json_response(array_map([Format::class, 'customer'], $st->fetchAll()));
 }
 
 function acct_customer_statement(array $p): void
 {
     $pdo = Database::pdo();
-    $st = $pdo->prepare('SELECT * FROM customers WHERE id = ?');
-    $st->execute([$p['id']]);
+    $ownerId = tenant_owner_id();
+    $st = $pdo->prepare('SELECT * FROM customers WHERE id = ? AND owner_id = ?');
+    $st->execute([$p['id'], $ownerId]);
     $customer = $st->fetch();
     if (!$customer) {
         json_error('Customer not found.', 404);
     }
-    $st = $pdo->prepare('SELECT * FROM sales WHERE customer_id = ? ORDER BY sale_date DESC');
-    $st->execute([$p['id']]);
+    $st = $pdo->prepare('SELECT * FROM sales WHERE customer_id = ? AND owner_id = ? ORDER BY sale_date DESC');
+    $st->execute([$p['id'], $ownerId]);
     $sales = [];
     $totalSales = $totalPayable = $totalPaid = $outstanding = 0.0;
     foreach ($st->fetchAll() as $row) {
@@ -109,19 +111,20 @@ function acct_customers_create(array $p): void
         json_error('Name and phone number are required.', 400);
     }
     $pdo = Database::pdo();
-    $st = $pdo->prepare('SELECT id FROM customers WHERE phone = ?');
-    $st->execute([$b['phone']]);
+    $ownerId = tenant_owner_id();
+    $st = $pdo->prepare('SELECT id FROM customers WHERE phone = ? AND owner_id = ?');
+    $st->execute([$b['phone'], $ownerId]);
     if ($st->fetch()) {
         json_error('Customer with this phone number already exists.', 400);
     }
     $id = uuid_v4();
     $now = now_sql();
     $pdo->prepare(
-        'INSERT INTO customers (id, name, phone, email, address, reward_points, credit_balance, credit_limit, notes, created_at, updated_at)
-         VALUES (?,?,?,?,?,0,0,?,?,?,?)'
+        'INSERT INTO customers (id, name, phone, email, address, reward_points, credit_balance, credit_limit, notes, owner_id, created_at, updated_at)
+         VALUES (?,?,?,?,?,0,0,?,?,?,?,?)'
     )->execute([
         $id, $b['name'], $b['phone'], $b['email'] ?? null, $b['address'] ?? null,
-        isset($b['creditLimit']) ? (float) $b['creditLimit'] : 0, $b['notes'] ?? null, $now, $now,
+        isset($b['creditLimit']) ? (float) $b['creditLimit'] : 0, $b['notes'] ?? null, $ownerId, $now, $now,
     ]);
     $st = $pdo->prepare('SELECT * FROM customers WHERE id = ?');
     $st->execute([$id]);
@@ -132,18 +135,19 @@ function acct_customers_update(array $p): void
 {
     $b = read_json_body();
     $pdo = Database::pdo();
+    $ownerId = tenant_owner_id();
     $pdo->prepare(
         'UPDATE customers SET name = COALESCE(?, name), phone = COALESCE(?, phone), email = ?, address = ?,
-         credit_limit = COALESCE(?, credit_limit), notes = ?, updated_at = ? WHERE id = ?'
+         credit_limit = COALESCE(?, credit_limit), notes = ?, updated_at = ? WHERE id = ? AND owner_id = ?'
     )->execute([
         $b['name'] ?? null, $b['phone'] ?? null, $b['email'] ?? null, $b['address'] ?? null,
-        isset($b['creditLimit']) ? (float) $b['creditLimit'] : null, $b['notes'] ?? null, now_sql(), $p['id'],
+        isset($b['creditLimit']) ? (float) $b['creditLimit'] : null, $b['notes'] ?? null, now_sql(), $p['id'], $ownerId,
     ]);
-    $st = $pdo->prepare('SELECT * FROM customers WHERE id = ?');
-    $st->execute([$p['id']]);
+    $st = $pdo->prepare('SELECT * FROM customers WHERE id = ? AND owner_id = ?');
+    $st->execute([$p['id'], $ownerId]);
     $row = $st->fetch();
     if (!$row) {
-        json_error('Failed to update customer.', 500);
+        json_error('Customer not found.', 404);
     }
     json_response(Format::customer($row));
 }
@@ -159,8 +163,9 @@ function acct_customer_repay(array $p): void
     $pdo = Database::pdo();
     try {
         Database::begin();
-        $st = $pdo->prepare('SELECT * FROM customers WHERE id = ? FOR UPDATE');
-        $st->execute([$p['id']]);
+        $ownerId = tenant_owner_id();
+        $st = $pdo->prepare('SELECT * FROM customers WHERE id = ? AND owner_id = ? FOR UPDATE');
+        $st->execute([$p['id'], $ownerId]);
         $c = $st->fetch();
         if (!$c) {
             throw new RuntimeException('Customer not found.');
@@ -171,21 +176,26 @@ function acct_customer_repay(array $p): void
         $pdo->prepare(
             'INSERT INTO customer_credit_payments (id, customer_id, amount, payment_date, payment_method, notes) VALUES (?,?,?,?,?,?)'
         )->execute([$id, $p['id'], $amount, $now, $method, $b['notes'] ?? null]);
-        $pdo->prepare('UPDATE customers SET credit_balance = ?, updated_at = ? WHERE id = ?')
-            ->execute([$newBal, $now, $p['id']]);
+        $pdo->prepare('UPDATE customers SET credit_balance = ?, updated_at = ? WHERE id = ? AND owner_id = ?')
+            ->execute([$newBal, $now, $p['id'], $ownerId]);
 
         $map = ['CASH' => 'CASH', 'CARD' => 'BANK', 'MOBILE' => 'MOBILE_WALLET'];
         $type = $map[strtoupper((string) $method)] ?? 'CASH';
-        $st = $pdo->prepare('SELECT id FROM bank_accounts WHERE type = ? AND is_active = 1 LIMIT 1');
-        $st->execute([$type]);
-        $acc = $st->fetch() ?: $pdo->query("SELECT id FROM bank_accounts WHERE type='CASH' AND is_active=1 LIMIT 1")->fetch();
+        $st = $pdo->prepare('SELECT id FROM bank_accounts WHERE type = ? AND is_active = 1 AND owner_id = ? LIMIT 1');
+        $st->execute([$type, $ownerId]);
+        $acc = $st->fetch();
+        if (!$acc) {
+            $st = $pdo->prepare("SELECT id FROM bank_accounts WHERE type='CASH' AND is_active=1 AND owner_id = ? LIMIT 1");
+            $st->execute([$ownerId]);
+            $acc = $st->fetch();
+        }
         if ($acc) {
             $pdo->prepare(
-                'INSERT INTO transactions (id, bank_account_id, type, category, amount, reference_type, reference_id, description, created_at)
-                 VALUES (?,?,?,?,?,?,?,?,?)'
-            )->execute([uuid_v4(), $acc['id'], 'INCOME', 'CREDIT_PAYMENT', $amount, 'CREDIT_PAYMENT', $id, 'Customer credit repayment', $now]);
-            $pdo->prepare('UPDATE bank_accounts SET balance = balance + ?, updated_at = ? WHERE id = ?')
-                ->execute([$amount, $now, $acc['id']]);
+                'INSERT INTO transactions (id, bank_account_id, type, category, amount, reference_type, reference_id, description, owner_id, created_at)
+                 VALUES (?,?,?,?,?,?,?,?,?,?)'
+            )->execute([uuid_v4(), $acc['id'], 'INCOME', 'CREDIT_PAYMENT', $amount, 'CREDIT_PAYMENT', $id, 'Customer credit repayment', $ownerId, $now]);
+            $pdo->prepare('UPDATE bank_accounts SET balance = balance + ?, updated_at = ? WHERE id = ? AND owner_id = ?')
+                ->execute([$amount, $now, $acc['id'], $ownerId]);
         }
         Database::commit();
         json_response([
@@ -204,8 +214,9 @@ function acct_customer_repay(array $p): void
 function acct_customers_delete(array $p): void
 {
     $pdo = Database::pdo();
+    $ownerId = tenant_owner_id();
     $pdo->prepare('DELETE FROM customer_credit_payments WHERE customer_id = ?')->execute([$p['id']]);
-    $pdo->prepare('DELETE FROM customers WHERE id = ?')->execute([$p['id']]);
+    $pdo->prepare('DELETE FROM customers WHERE id = ? AND owner_id = ?')->execute([$p['id'], $ownerId]);
     json_response(['message' => 'Customer deleted successfully.']);
 }
 
@@ -217,15 +228,17 @@ function acct_customers_bulk_delete(array $p): void
     }
     $ph = implode(',', array_fill(0, count($ids), '?'));
     $pdo = Database::pdo();
+    $ownerId = tenant_owner_id();
     $pdo->prepare("DELETE FROM customer_credit_payments WHERE customer_id IN ($ph)")->execute($ids);
-    $pdo->prepare("DELETE FROM customers WHERE id IN ($ph)")->execute($ids);
+    $pdo->prepare("DELETE FROM customers WHERE id IN ($ph) AND owner_id = ?")->execute(array_merge($ids, [$ownerId]));
     json_response(['message' => count($ids) . ' customers deleted successfully.']);
 }
 
 function acct_suppliers_list(array $p): void
 {
-    $rows = Database::pdo()->query('SELECT * FROM suppliers ORDER BY company ASC')->fetchAll();
-    json_response(array_map([Format::class, 'supplier'], $rows));
+    $st = Database::pdo()->prepare('SELECT * FROM suppliers WHERE owner_id = ? ORDER BY company ASC');
+    $st->execute([tenant_owner_id()]);
+    json_response(array_map([Format::class, 'supplier'], $st->fetchAll()));
 }
 
 function acct_suppliers_create(array $p): void
@@ -236,9 +249,10 @@ function acct_suppliers_create(array $p): void
     }
     $id = uuid_v4();
     $now = now_sql();
+    $ownerId = tenant_owner_id();
     Database::pdo()->prepare(
-        'INSERT INTO suppliers (id, company, contact_person, phone, email, address, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)'
-    )->execute([$id, $b['company'], $b['contactPerson'] ?? null, $b['phone'] ?? null, $b['email'] ?? null, $b['address'] ?? null, $now, $now]);
+        'INSERT INTO suppliers (id, company, contact_person, phone, email, address, owner_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)'
+    )->execute([$id, $b['company'], $b['contactPerson'] ?? null, $b['phone'] ?? null, $b['email'] ?? null, $b['address'] ?? null, $ownerId, $now, $now]);
     $st = Database::pdo()->prepare('SELECT * FROM suppliers WHERE id = ?');
     $st->execute([$id]);
     json_response(Format::supplier($st->fetch()), 201);
@@ -247,19 +261,25 @@ function acct_suppliers_create(array $p): void
 function acct_suppliers_update(array $p): void
 {
     $b = read_json_body();
+    $ownerId = tenant_owner_id();
     Database::pdo()->prepare(
-        'UPDATE suppliers SET company = COALESCE(?, company), contact_person = ?, phone = ?, email = ?, address = ?, updated_at = ? WHERE id = ?'
-    )->execute([$b['company'] ?? null, $b['contactPerson'] ?? null, $b['phone'] ?? null, $b['email'] ?? null, $b['address'] ?? null, now_sql(), $p['id']]);
-    $st = Database::pdo()->prepare('SELECT * FROM suppliers WHERE id = ?');
-    $st->execute([$p['id']]);
-    json_response(Format::supplier($st->fetch()));
+        'UPDATE suppliers SET company = COALESCE(?, company), contact_person = ?, phone = ?, email = ?, address = ?, updated_at = ? WHERE id = ? AND owner_id = ?'
+    )->execute([$b['company'] ?? null, $b['contactPerson'] ?? null, $b['phone'] ?? null, $b['email'] ?? null, $b['address'] ?? null, now_sql(), $p['id'], $ownerId]);
+    $st = Database::pdo()->prepare('SELECT * FROM suppliers WHERE id = ? AND owner_id = ?');
+    $st->execute([$p['id'], $ownerId]);
+    $row = $st->fetch();
+    if (!$row) {
+        json_error('Supplier not found.', 404);
+    }
+    json_response(Format::supplier($row));
 }
 
 function acct_suppliers_delete(array $p): void
 {
     $pdo = Database::pdo();
+    $ownerId = tenant_owner_id();
     $pdo->prepare('DELETE FROM supplier_payments WHERE supplier_id = ?')->execute([$p['id']]);
-    $pdo->prepare('DELETE FROM suppliers WHERE id = ?')->execute([$p['id']]);
+    $pdo->prepare('DELETE FROM suppliers WHERE id = ? AND owner_id = ?')->execute([$p['id'], $ownerId]);
     json_response(['message' => 'Supplier deleted successfully.']);
 }
 
@@ -271,8 +291,9 @@ function acct_suppliers_bulk_delete(array $p): void
     }
     $ph = implode(',', array_fill(0, count($ids), '?'));
     $pdo = Database::pdo();
+    $ownerId = tenant_owner_id();
     $pdo->prepare("DELETE FROM supplier_payments WHERE supplier_id IN ($ph)")->execute($ids);
-    $pdo->prepare("DELETE FROM suppliers WHERE id IN ($ph)")->execute($ids);
+    $pdo->prepare("DELETE FROM suppliers WHERE id IN ($ph) AND owner_id = ?")->execute(array_merge($ids, [$ownerId]));
     json_response(['message' => count($ids) . ' suppliers deleted successfully.']);
 }
 
@@ -315,7 +336,9 @@ function acct_format_purchase(PDO $pdo, array $po): array
 function acct_purchases_list(array $p): void
 {
     $pdo = Database::pdo();
-    $rows = $pdo->query('SELECT * FROM purchase_orders ORDER BY order_date DESC')->fetchAll();
+    $st = $pdo->prepare('SELECT * FROM purchase_orders WHERE owner_id = ? ORDER BY order_date DESC');
+    $st->execute([tenant_owner_id()]);
+    $rows = $st->fetchAll();
     json_response(array_map(static fn($r) => acct_format_purchase($pdo, $r), $rows));
 }
 
@@ -330,12 +353,13 @@ function acct_purchases_create(array $p): void
         $total += (float) $it['costPrice'] * (int) $it['quantity'];
     }
     $pdo = Database::pdo();
+    $ownerId = tenant_owner_id();
     $id = uuid_v4();
     $now = now_sql();
     $pdo->prepare(
-        'INSERT INTO purchase_orders (id, supplier_id, order_date, status, total_amount, notes, created_at, updated_at)
-         VALUES (?,?,?,?,?,?,?,?)'
-    )->execute([$id, $b['supplierId'], $now, 'PENDING', $total, $b['notes'] ?? null, $now, $now]);
+        'INSERT INTO purchase_orders (id, supplier_id, order_date, status, total_amount, notes, owner_id, created_at, updated_at)
+         VALUES (?,?,?,?,?,?,?,?,?)'
+    )->execute([$id, $b['supplierId'], $now, 'PENDING', $total, $b['notes'] ?? null, $ownerId, $now, $now]);
     $ins = $pdo->prepare(
         'INSERT INTO purchase_items (id, purchase_order_id, product_id, quantity, cost_price) VALUES (?,?,?,?,?)'
     );
@@ -356,10 +380,11 @@ function acct_purchases_status(array $p): void
         json_error('Status is required.', 400);
     }
     $pdo = Database::pdo();
+    $ownerId = tenant_owner_id();
     try {
         Database::begin();
-        $st = $pdo->prepare('SELECT * FROM purchase_orders WHERE id = ? FOR UPDATE');
-        $st->execute([$p['id']]);
+        $st = $pdo->prepare('SELECT * FROM purchase_orders WHERE id = ? AND owner_id = ? FOR UPDATE');
+        $st->execute([$p['id'], $ownerId]);
         $po = $st->fetch();
         if (!$po) {
             throw new RuntimeException('Purchase order not found.');
@@ -368,10 +393,16 @@ function acct_purchases_status(array $p): void
             throw new RuntimeException('Purchase order items have already been received.');
         }
         $now = now_sql();
-        $pdo->prepare('UPDATE purchase_orders SET status = ?, updated_at = ? WHERE id = ?')->execute([$status, $now, $p['id']]);
+        $pdo->prepare('UPDATE purchase_orders SET status = ?, updated_at = ? WHERE id = ? AND owner_id = ?')
+            ->execute([$status, $now, $p['id'], $ownerId]);
         if ($status === 'RECEIVED') {
             if (!$branchId) {
                 throw new RuntimeException('A destination branch must be provided to receive items into stock.');
+            }
+            $bst = $pdo->prepare('SELECT id FROM branches WHERE id = ? AND owner_id = ? LIMIT 1');
+            $bst->execute([$branchId, $ownerId]);
+            if (!$bst->fetch()) {
+                throw new RuntimeException('Branch not found for your shop.');
             }
             $st = $pdo->prepare('SELECT * FROM purchase_items WHERE purchase_order_id = ?');
             $st->execute([$p['id']]);
@@ -385,20 +416,20 @@ function acct_purchases_status(array $p): void
                     $pdo->prepare('INSERT INTO branch_stocks (id, branch_id, product_id, quantity) VALUES (?,?,?,?)')
                         ->execute([uuid_v4(), $branchId, $item['product_id'], (int) $item['quantity']]);
                 }
-                $pdo->prepare('UPDATE products SET stock_quantity = stock_quantity + ?, purchase_price = ?, updated_at = ? WHERE id = ?')
-                    ->execute([(int) $item['quantity'], (float) $item['cost_price'], $now, $item['product_id']]);
+                $pdo->prepare('UPDATE products SET stock_quantity = stock_quantity + ?, purchase_price = ?, updated_at = ? WHERE id = ? AND owner_id = ?')
+                    ->execute([(int) $item['quantity'], (float) $item['cost_price'], $now, $item['product_id'], $ownerId]);
                 $pdo->prepare(
-                    'INSERT INTO stock_movements (id, product_id, quantity, type, branch_id, reference_id, notes, created_at)
-                     VALUES (?,?,?,?,?,?,?,?)'
+                    'INSERT INTO stock_movements (id, product_id, quantity, type, branch_id, reference_id, notes, owner_id, created_at)
+                     VALUES (?,?,?,?,?,?,?,?,?)'
                 )->execute([
                     uuid_v4(), $item['product_id'], (int) $item['quantity'], 'IN', $branchId, $p['id'],
-                    'Items received from Purchase Order ' . $p['id'], $now,
+                    'Items received from Purchase Order ' . $p['id'], $ownerId, $now,
                 ]);
             }
         }
         Database::commit();
-        $st = $pdo->prepare('SELECT * FROM purchase_orders WHERE id = ?');
-        $st->execute([$p['id']]);
+        $st = $pdo->prepare('SELECT * FROM purchase_orders WHERE id = ? AND owner_id = ?');
+        $st->execute([$p['id'], $ownerId]);
         json_response(acct_format_purchase($pdo, $st->fetch()));
     } catch (Throwable $e) {
         Database::rollBack();
@@ -408,7 +439,9 @@ function acct_purchases_status(array $p): void
 
 function acct_expenses_list(array $p): void
 {
-    $rows = Database::pdo()->query('SELECT * FROM expenses ORDER BY date DESC')->fetchAll();
+    $st = Database::pdo()->prepare('SELECT * FROM expenses WHERE owner_id = ? ORDER BY date DESC');
+    $st->execute([tenant_owner_id()]);
+    $rows = $st->fetchAll();
     $out = [];
     foreach ($rows as $r) {
         $out[] = [
@@ -430,22 +463,28 @@ function acct_expenses_create(array $p): void
     $now = now_sql();
     $amount = (float) $b['amount'];
     $pdo = Database::pdo();
+    $ownerId = tenant_owner_id();
     $pdo->prepare(
-        'INSERT INTO expenses (id, category, amount, date, description, payment_method, created_at) VALUES (?,?,?,?,?,?,?)'
-    )->execute([$id, $b['category'], $amount, $now, $b['description'] ?? null, $b['paymentMethod'], $now]);
+        'INSERT INTO expenses (id, category, amount, date, description, payment_method, owner_id, created_at) VALUES (?,?,?,?,?,?,?,?)'
+    )->execute([$id, $b['category'], $amount, $now, $b['description'] ?? null, $b['paymentMethod'], $ownerId, $now]);
 
     $map = ['CASH' => 'CASH', 'CARD' => 'BANK', 'MOBILE' => 'MOBILE_WALLET'];
     $type = $map[strtoupper((string) $b['paymentMethod'])] ?? 'CASH';
-    $st = $pdo->prepare('SELECT id FROM bank_accounts WHERE type = ? AND is_active = 1 LIMIT 1');
-    $st->execute([$type]);
-    $acc = $st->fetch() ?: $pdo->query("SELECT id FROM bank_accounts WHERE type='CASH' AND is_active=1 LIMIT 1")->fetch();
+    $st = $pdo->prepare('SELECT id FROM bank_accounts WHERE type = ? AND is_active = 1 AND owner_id = ? LIMIT 1');
+    $st->execute([$type, $ownerId]);
+    $acc = $st->fetch();
+    if (!$acc) {
+        $st = $pdo->prepare("SELECT id FROM bank_accounts WHERE type='CASH' AND is_active=1 AND owner_id = ? LIMIT 1");
+        $st->execute([$ownerId]);
+        $acc = $st->fetch();
+    }
     if ($acc) {
         $pdo->prepare(
-            'INSERT INTO transactions (id, bank_account_id, type, category, amount, reference_type, reference_id, description, created_at)
-             VALUES (?,?,?,?,?,?,?,?,?)'
-        )->execute([uuid_v4(), $acc['id'], 'EXPENSE', 'EXPENSE', $amount, 'EXPENSE', $id, $b['category'], $now]);
-        $pdo->prepare('UPDATE bank_accounts SET balance = balance - ?, updated_at = ? WHERE id = ?')
-            ->execute([$amount, $now, $acc['id']]);
+            'INSERT INTO transactions (id, bank_account_id, type, category, amount, reference_type, reference_id, description, owner_id, created_at)
+             VALUES (?,?,?,?,?,?,?,?,?,?)'
+        )->execute([uuid_v4(), $acc['id'], 'EXPENSE', 'EXPENSE', $amount, 'EXPENSE', $id, $b['category'], $ownerId, $now]);
+        $pdo->prepare('UPDATE bank_accounts SET balance = balance - ?, updated_at = ? WHERE id = ? AND owner_id = ?')
+            ->execute([$amount, $now, $acc['id'], $ownerId]);
     }
     json_response([
         'id' => $id, 'category' => $b['category'], 'amount' => $amount, 'date' => $now,
@@ -456,7 +495,9 @@ function acct_expenses_create(array $p): void
 function acct_banks_list(array $p): void
 {
     $pdo = Database::pdo();
-    $rows = $pdo->query('SELECT * FROM bank_accounts ORDER BY created_at ASC')->fetchAll();
+    $st = $pdo->prepare('SELECT * FROM bank_accounts WHERE owner_id = ? ORDER BY created_at ASC');
+    $st->execute([tenant_owner_id()]);
+    $rows = $st->fetchAll();
     $out = [];
     foreach ($rows as $r) {
         $acc = Format::bankAccount($r);
@@ -481,9 +522,9 @@ function acct_banks_create(array $p): void
     $id = uuid_v4();
     $now = now_sql();
     Database::pdo()->prepare(
-        'INSERT INTO bank_accounts (id, name, type, account_number, bank_name, balance, is_active, notes, created_at, updated_at)
-         VALUES (?,?,?,?,?,0,1,?,?,?)'
-    )->execute([$id, $b['name'], $b['type'], $b['accountNumber'] ?? null, $b['bankName'] ?? null, $b['notes'] ?? null, $now, $now]);
+        'INSERT INTO bank_accounts (id, name, type, account_number, bank_name, balance, is_active, notes, owner_id, created_at, updated_at)
+         VALUES (?,?,?,?,?,0,1,?,?,?,?)'
+    )->execute([$id, $b['name'], $b['type'], $b['accountNumber'] ?? null, $b['bankName'] ?? null, $b['notes'] ?? null, tenant_owner_id(), $now, $now]);
     $st = Database::pdo()->prepare('SELECT * FROM bank_accounts WHERE id = ?');
     $st->execute([$id]);
     json_response(Format::bankAccount($st->fetch()), 201);
@@ -494,10 +535,10 @@ function acct_banks_update(array $p): void
     $b = read_json_body();
     Database::pdo()->prepare(
         'UPDATE bank_accounts SET name = COALESCE(?, name), type = COALESCE(?, type), account_number = ?, bank_name = ?,
-         notes = ?, is_active = COALESCE(?, is_active), updated_at = ? WHERE id = ?'
+         notes = ?, is_active = COALESCE(?, is_active), updated_at = ? WHERE id = ? AND owner_id = ?'
     )->execute([
         $b['name'] ?? null, $b['type'] ?? null, $b['accountNumber'] ?? null, $b['bankName'] ?? null,
-        $b['notes'] ?? null, isset($b['isActive']) ? ($b['isActive'] ? 1 : 0) : null, now_sql(), $p['id'],
+        $b['notes'] ?? null, isset($b['isActive']) ? ($b['isActive'] ? 1 : 0) : null, now_sql(), $p['id'], tenant_owner_id(),
     ]);
     $st = Database::pdo()->prepare('SELECT * FROM bank_accounts WHERE id = ?');
     $st->execute([$p['id']]);
@@ -507,8 +548,9 @@ function acct_banks_update(array $p): void
 function acct_tx_list(array $p): void
 {
     $q = query_params();
-    $where = ['1=1'];
-    $args = [];
+    $where = ['(t.owner_id = ? OR b.owner_id = ?)'];
+    $oid = tenant_owner_id();
+    $args = [$oid, $oid];
     if (!empty($q['bankAccountId'])) {
         $where[] = 't.bank_account_id = ?';
         $args[] = $q['bankAccountId'];
@@ -558,24 +600,25 @@ function acct_tx_create(array $p): void
     $pdo = Database::pdo();
     try {
         Database::begin();
-        $st = $pdo->prepare('SELECT * FROM bank_accounts WHERE id = ? FOR UPDATE');
-        $st->execute([$b['bankAccountId']]);
+        $ownerId = tenant_owner_id();
+        $st = $pdo->prepare('SELECT * FROM bank_accounts WHERE id = ? AND owner_id = ? FOR UPDATE');
+        $st->execute([$b['bankAccountId'], $ownerId]);
         $acc = $st->fetch();
         if (!$acc) {
             throw new RuntimeException('Bank account not found.');
         }
         $amt = (float) $b['amount'];
         $newBal = $b['type'] === 'INCOME' ? (float) $acc['balance'] + $amt : (float) $acc['balance'] - $amt;
-        $pdo->prepare('UPDATE bank_accounts SET balance = ?, updated_at = ? WHERE id = ?')
-            ->execute([$newBal, now_sql(), $b['bankAccountId']]);
+        $pdo->prepare('UPDATE bank_accounts SET balance = ?, updated_at = ? WHERE id = ? AND owner_id = ?')
+            ->execute([$newBal, now_sql(), $b['bankAccountId'], $ownerId]);
         $id = uuid_v4();
         $now = now_sql();
         $pdo->prepare(
-            'INSERT INTO transactions (id, bank_account_id, type, category, amount, description, branch_id, created_by, created_at)
-             VALUES (?,?,?,?,?,?,?,?,?)'
+            'INSERT INTO transactions (id, bank_account_id, type, category, amount, description, branch_id, created_by, owner_id, created_at)
+             VALUES (?,?,?,?,?,?,?,?,?,?)'
         )->execute([
             $id, $b['bankAccountId'], $b['type'], $b['category'] ?? 'ADJUSTMENT', $amt,
-            $b['description'] ?? null, $b['branchId'] ?? null, $user['id'], $now,
+            $b['description'] ?? null, $b['branchId'] ?? null, $user['id'], $ownerId, $now,
         ]);
         Database::commit();
         json_response([
@@ -599,10 +642,11 @@ function acct_tx_transfer(array $p): void
     $pdo = Database::pdo();
     try {
         Database::begin();
-        $st = $pdo->prepare('SELECT * FROM bank_accounts WHERE id = ? FOR UPDATE');
-        $st->execute([$b['fromAccountId']]);
+        $ownerId = tenant_owner_id();
+        $st = $pdo->prepare('SELECT * FROM bank_accounts WHERE id = ? AND owner_id = ? FOR UPDATE');
+        $st->execute([$b['fromAccountId'], $ownerId]);
         $from = $st->fetch();
-        $st->execute([$b['toAccountId']]);
+        $st->execute([$b['toAccountId'], $ownerId]);
         $to = $st->fetch();
         if (!$from || !$to) {
             throw new RuntimeException('One or both accounts not found.');
@@ -641,9 +685,10 @@ function acct_profit_loss(array $p): void
     $branch = $q['branchId'] ?? null;
     $pdo = Database::pdo();
 
+    $ownerId = tenant_owner_id();
     $saleSql = 'SELECT COUNT(*) AS cnt, COALESCE(SUM(payable_amount),0) AS rev, COALESCE(SUM(tax_amount),0) AS tax, COALESCE(SUM(discount_amount),0) AS disc
-                FROM sales WHERE sale_date BETWEEN ? AND ?';
-    $args = [$start, $end];
+                FROM sales WHERE owner_id = ? AND sale_date BETWEEN ? AND ?';
+    $args = [$ownerId, $start, $end];
     if ($branch) {
         $saleSql .= ' AND branch_id = ?';
         $args[] = $branch;
@@ -654,8 +699,8 @@ function acct_profit_loss(array $p): void
 
     $cogsSql = 'SELECT COALESCE(SUM(p.purchase_price * si.quantity),0) AS cogs FROM sale_items si
                 JOIN sales s ON s.id = si.sale_id JOIN products p ON p.id = si.product_id
-                WHERE s.sale_date BETWEEN ? AND ?';
-    $cargs = [$start, $end];
+                WHERE s.owner_id = ? AND s.sale_date BETWEEN ? AND ?';
+    $cargs = [$ownerId, $start, $end];
     if ($branch) {
         $cogsSql .= ' AND s.branch_id = ?';
         $cargs[] = $branch;
@@ -664,8 +709,8 @@ function acct_profit_loss(array $p): void
     $st->execute($cargs);
     $cogs = (float) $st->fetchColumn();
 
-    $st = $pdo->prepare('SELECT category, COALESCE(SUM(amount),0) AS total FROM expenses WHERE date BETWEEN ? AND ? GROUP BY category');
-    $st->execute([$start, $end]);
+    $st = $pdo->prepare('SELECT category, COALESCE(SUM(amount),0) AS total FROM expenses WHERE owner_id = ? AND date BETWEEN ? AND ? GROUP BY category');
+    $st->execute([$ownerId, $start, $end]);
     $byCat = [];
     $totalExp = 0.0;
     foreach ($st->fetchAll() as $r) {
@@ -696,7 +741,9 @@ function acct_profit_loss(array $p): void
 
 function acct_closings_list(array $p): void
 {
-    $rows = Database::pdo()->query('SELECT * FROM daily_closings ORDER BY closing_date DESC LIMIT 30')->fetchAll();
+    $st = Database::pdo()->prepare('SELECT * FROM daily_closings WHERE owner_id = ? ORDER BY closing_date DESC LIMIT 30');
+    $st->execute([tenant_owner_id()]);
+    $rows = $st->fetchAll();
     $out = [];
     foreach ($rows as $r) {
         $out[] = keys_to_camel($r);

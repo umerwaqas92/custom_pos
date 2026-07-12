@@ -41,6 +41,7 @@ $APP_CONFIG = require $configFile;
 require_once __DIR__ . '/lib/helpers.php';
 require_once __DIR__ . '/lib/Database.php';
 require_once __DIR__ . '/lib/Auth.php';
+require_once __DIR__ . '/lib/Tenant.php';
 require_once __DIR__ . '/lib/Router.php';
 require_once __DIR__ . '/lib/Format.php';
 

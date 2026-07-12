@@ -27,9 +27,10 @@ function reports_compile(string $type, ?string $startDate, ?string $endDate, ?st
     $pdo = Database::pdo();
     [$start, $end] = reports_date_bounds($startDate, $endDate);
     $LOW = 3;
+    $ownerId = tenant_owner_id();
 
-    $saleDateSql = '';
-    $saleArgs = [];
+    $saleDateSql = ' AND s.owner_id = ?';
+    $saleArgs = [$ownerId];
     if ($start) {
         $saleDateSql .= ' AND s.sale_date >= ?';
         $saleArgs[] = $start;
@@ -681,8 +682,8 @@ function reports_dashboard_period_filter(): array
     $year = isset($q['year']) && $q['year'] !== '' && $q['year'] !== 'ALL' ? (string) $q['year'] : null;
     $range = isset($q['range']) ? strtoupper((string) $q['range']) : 'ALL';
 
-    $where = '1=1';
-    $args = [];
+    $where = 'owner_id = ?';
+    $args = [tenant_owner_id()];
     $label = 'All time';
 
     if ($branchId) {
@@ -750,8 +751,8 @@ function reports_expense_period_filter(): array
     $year = isset($q['year']) && $q['year'] !== '' && $q['year'] !== 'ALL' ? (string) $q['year'] : null;
     $range = isset($q['range']) ? strtoupper((string) $q['range']) : 'ALL';
 
-    $where = '1=1';
-    $args = [];
+    $where = 'owner_id = ?';
+    $args = [tenant_owner_id()];
     if ($startDate || $endDate) {
         if ($startDate) {
             $where .= ' AND date >= ?';
@@ -811,10 +812,11 @@ function reports_dashboard_stats(array $params): void
     };
 
     // Always keep "today" snapshot (branch only)
+    $ownerId = tenant_owner_id();
     $today = $q(
         $pdo,
-        "SELECT COALESCE(SUM(payable_amount),0) AS total, COUNT(*) AS cnt FROM sales WHERE sale_date >= ?{$branchOnly}",
-        array_merge([$todayStart], $branchArgs)
+        "SELECT COALESCE(SUM(payable_amount),0) AS total, COUNT(*) AS cnt FROM sales WHERE owner_id = ? AND sale_date >= ?{$branchOnly}",
+        array_merge([$ownerId, $todayStart], $branchArgs)
     );
 
     // Period sales (filtered)
@@ -827,25 +829,29 @@ function reports_dashboard_stats(array $params): void
     // Calendar month MTD (branch) for comparison card
     $month = $q(
         $pdo,
-        "SELECT COALESCE(SUM(payable_amount),0) AS total, COUNT(*) AS cnt FROM sales WHERE sale_date >= ?{$branchOnly}",
-        array_merge([$monthStart], $branchArgs)
+        "SELECT COALESCE(SUM(payable_amount),0) AS total, COUNT(*) AS cnt FROM sales WHERE owner_id = ? AND sale_date >= ?{$branchOnly}",
+        array_merge([$ownerId, $monthStart], $branchArgs)
     );
 
     $expensesPeriod = $q($pdo, "SELECT COALESCE(SUM(amount),0) AS total FROM expenses WHERE {$expWhere}", $expArgs);
-    $expensesMonth = $q($pdo, "SELECT COALESCE(SUM(amount),0) AS total FROM expenses WHERE date >= ?", [$monthStart]);
-    $expensesAll = $q($pdo, "SELECT COALESCE(SUM(amount),0) AS total FROM expenses");
+    $ownerId = tenant_owner_id();
+    $expensesMonth = $q($pdo, "SELECT COALESCE(SUM(amount),0) AS total FROM expenses WHERE owner_id = ? AND date >= ?", [$ownerId, $monthStart]);
+    $expensesAll = $q($pdo, "SELECT COALESCE(SUM(amount),0) AS total FROM expenses WHERE owner_id = ?", [$ownerId]);
 
     $products = $q(
         $pdo,
         "SELECT COUNT(*) AS cnt, COALESCE(SUM(stock_quantity),0) AS units,
                 SUM(CASE WHEN stock_quantity <= min_stock AND stock_quantity > 0 THEN 1 ELSE 0 END) AS low,
                 SUM(CASE WHEN stock_quantity <= 0 THEN 1 ELSE 0 END) AS outq
-         FROM products"
+         FROM products WHERE owner_id = ?",
+        [$ownerId]
     );
-    $customers = $q($pdo, "SELECT COUNT(*) AS cnt FROM customers");
-    $balances = $pdo->query(
-        "SELECT type, COALESCE(SUM(balance),0) AS bal FROM bank_accounts WHERE is_active = 1 GROUP BY type"
-    )->fetchAll();
+    $customers = $q($pdo, "SELECT COUNT(*) AS cnt FROM customers WHERE owner_id = ?", [$ownerId]);
+    $bst = $pdo->prepare(
+        "SELECT type, COALESCE(SUM(balance),0) AS bal FROM bank_accounts WHERE is_active = 1 AND owner_id = ? GROUP BY type"
+    );
+    $bst->execute([$ownerId]);
+    $balances = $bst->fetchAll();
     $cash = $bank = $wallet = 0.0;
     foreach ($balances as $b) {
         $t = strtoupper((string) $b['type']);
@@ -866,9 +872,13 @@ function reports_dashboard_stats(array $params): void
     $monthlyExpenses = (float) ($expensesMonth['total'] ?? 0);
     $totalExpenses = (float) ($expensesAll['total'] ?? 0);
 
+    // Qualify columns so owner_id is not ambiguous with customers.owner_id
+    $saleWhereRecent = preg_replace('/\bowner_id\b/', 's.owner_id', $saleWhere);
+    $saleWhereRecent = preg_replace('/\bbranch_id\b/', 's.branch_id', $saleWhereRecent);
+    $saleWhereRecent = preg_replace('/\bsale_date\b/', 's.sale_date', $saleWhereRecent);
     $recentSql = "SELECT s.id, s.payable_amount, s.sale_date, s.payment_method, c.name AS customer_name
                   FROM sales s LEFT JOIN customers c ON c.id = s.customer_id
-                  WHERE {$saleWhere} ORDER BY s.sale_date DESC LIMIT 8";
+                  WHERE {$saleWhereRecent} ORDER BY s.sale_date DESC LIMIT 8";
     $st = $pdo->prepare($recentSql);
     $st->execute($saleArgs);
     $recentSales = [];
@@ -882,7 +892,8 @@ function reports_dashboard_stats(array $params): void
         ];
     }
 
-    $st = $pdo->query("SELECT id, name, phone, created_at FROM customers ORDER BY created_at DESC LIMIT 8");
+    $st = $pdo->prepare("SELECT id, name, phone, created_at FROM customers WHERE owner_id = ? ORDER BY created_at DESC LIMIT 8");
+    $st->execute([$ownerId]);
     $recentCustomers = [];
     foreach ($st->fetchAll() as $row) {
         $recentCustomers[] = [
@@ -894,15 +905,19 @@ function reports_dashboard_stats(array $params): void
     }
 
     // Years/months that have sales (for UI chips)
-    $yearRows = $pdo->query(
+    $yst = $pdo->prepare(
         "SELECT YEAR(sale_date) AS y, COUNT(*) AS c FROM sales
-         WHERE YEAR(sale_date) <= YEAR(CURDATE())+1
+         WHERE owner_id = ? AND YEAR(sale_date) <= YEAR(CURDATE())+1
          GROUP BY y ORDER BY c DESC, y DESC"
-    )->fetchAll();
+    );
+    $yst->execute([$ownerId]);
+    $yearRows = $yst->fetchAll();
     $years = array_map(static fn($r) => (int) $r['y'], $yearRows);
-    $monthRows = $pdo->query(
-        'SELECT MONTH(sale_date) AS m, COUNT(*) AS c FROM sales GROUP BY m'
-    )->fetchAll();
+    $mst = $pdo->prepare(
+        'SELECT MONTH(sale_date) AS m, COUNT(*) AS c FROM sales WHERE owner_id = ? GROUP BY m'
+    );
+    $mst->execute([$ownerId]);
+    $monthRows = $mst->fetchAll();
     $monthsWithSales = [];
     foreach ($monthRows as $r) {
         $key = str_pad((string) $r['m'], 2, '0', STR_PAD_LEFT);

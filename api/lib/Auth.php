@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 /**
  * Minimal HS256 JWT + role checks (parity with Node middleware).
+ * JWT includes ownerId so each shop's data stays isolated.
  */
 final class Auth
 {
-    /** @var array{id:string,username:string,role:string,branchId:?string}|null */
+    /** @var array{id:string,username:string,role:string,branchId:?string,ownerId:?string}|null */
     public static ?array $user = null;
 
     public static function issueToken(array $payload): string
@@ -66,7 +67,7 @@ final class Auth
 
     /**
      * Require valid Bearer JWT and active user.
-     * @return array{id:string,username:string,role:string,branchId:?string}
+     * @return array{id:string,username:string,role:string,branchId:?string,ownerId:?string}
      */
     public static function requireUser(): array
     {
@@ -90,29 +91,58 @@ final class Auth
             json_error('Invalid token.', 401);
         }
 
-        // Skip DB user lookup on read-only requests (big win: -1 query per GET).
-        // Still verify on writes so deactivated users cannot mutate data.
         $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
         $needsDbCheck = !in_array($method, ['GET', 'HEAD', 'OPTIONS'], true);
 
+        $ownerId = isset($decoded['ownerId']) && $decoded['ownerId'] !== ''
+            ? (string) $decoded['ownerId']
+            : null;
+        $role = (string) ($decoded['role'] ?? '');
+
         if ($needsDbCheck) {
             $pdo = Database::pdo();
-            $stmt = $pdo->prepare('SELECT id, is_active FROM users WHERE id = ? LIMIT 1');
+            $stmt = $pdo->prepare('SELECT id, is_active, owner_id, role FROM users WHERE id = ? LIMIT 1');
             $stmt->execute([$id]);
             $dbUser = $stmt->fetch();
 
             if (!$dbUser || !(int) $dbUser['is_active']) {
                 json_error('Your session user has been deleted. Please login again.', 401);
             }
+            if (!$ownerId) {
+                $ownerId = !empty($dbUser['owner_id'])
+                    ? (string) $dbUser['owner_id']
+                    : (($dbUser['role'] ?? '') === 'OWNER' ? (string) $id : null);
+            }
+            $role = (string) ($dbUser['role'] ?? $role);
+        } elseif (!$ownerId) {
+            // Old tokens without ownerId: OWNER is self; staff need DB
+            if ($role === 'OWNER') {
+                $ownerId = (string) $id;
+            } else {
+                $pdo = Database::pdo();
+                $stmt = $pdo->prepare('SELECT owner_id, role FROM users WHERE id = ? LIMIT 1');
+                $stmt->execute([$id]);
+                $dbUser = $stmt->fetch();
+                if ($dbUser && !empty($dbUser['owner_id'])) {
+                    $ownerId = (string) $dbUser['owner_id'];
+                } elseif ($dbUser && ($dbUser['role'] ?? '') === 'OWNER') {
+                    $ownerId = (string) $id;
+                }
+            }
+        }
+
+        if (!$ownerId && $role === 'OWNER') {
+            $ownerId = (string) $id;
         }
 
         self::$user = [
             'id' => (string) $decoded['id'],
             'username' => (string) ($decoded['username'] ?? ''),
-            'role' => (string) ($decoded['role'] ?? ''),
+            'role' => $role,
             'branchId' => isset($decoded['branchId']) && $decoded['branchId'] !== ''
                 ? (string) $decoded['branchId']
                 : null,
+            'ownerId' => $ownerId,
         ];
 
         return self::$user;
@@ -124,5 +154,10 @@ final class Auth
         if (!in_array($user['role'], $roles, true)) {
             json_error('You do not have permission to perform this action.', 403);
         }
+    }
+
+    public static function ownerId(): string
+    {
+        return Tenant::ownerId();
     }
 }

@@ -17,8 +17,22 @@ function register_sales_routes(Router $router): void
 
 function sales_fetch_sale(PDO $pdo, string $id, bool $full = true): ?array
 {
-    $st = $pdo->prepare('SELECT * FROM sales WHERE id = ?');
-    $st->execute([$id]);
+    // Prefer tenant-scoped lookup when authenticated
+    $ownerId = null;
+    try {
+        if (Auth::$user !== null || get_bearer_token()) {
+            $ownerId = tenant_owner_id();
+        }
+    } catch (Throwable $e) {
+        $ownerId = null;
+    }
+    if ($ownerId) {
+        $st = $pdo->prepare('SELECT * FROM sales WHERE id = ? AND owner_id = ?');
+        $st->execute([$id, $ownerId]);
+    } else {
+        $st = $pdo->prepare('SELECT * FROM sales WHERE id = ?');
+        $st->execute([$id]);
+    }
     $sale = $st->fetch();
     if (!$sale) {
         return null;
@@ -211,30 +225,37 @@ function sales_create(array $params): void
         json_error('Missing checkout parameters.', 400);
     }
 
+    $ownerId = tenant_owner_id();
     $branchId = $body['branchId'] ?? $user['branchId'];
     $cashierId = $user['id'];
     $customerId = $body['customerId'] ?? null;
     $pdo = Database::pdo();
 
     if ($branchId) {
-        $st = $pdo->prepare('SELECT id FROM branches WHERE id = ?');
-        $st->execute([$branchId]);
+        $st = $pdo->prepare('SELECT id FROM branches WHERE id = ? AND owner_id = ?');
+        $st->execute([$branchId, $ownerId]);
         if (!$st->fetch()) {
             $branchId = $user['branchId'];
         }
     }
     if (!$branchId) {
+        $st = $pdo->prepare('SELECT id FROM branches WHERE owner_id = ? ORDER BY created_at ASC LIMIT 1');
+        $st->execute([$ownerId]);
+        $branchId = $st->fetchColumn() ?: null;
+    }
+    if (!$branchId) {
         json_error('Cashier session lacks a designated branch location.', 400);
     }
-    $st = $pdo->prepare('SELECT id FROM branches WHERE id = ?');
-    $st->execute([$branchId]);
+    $st = $pdo->prepare('SELECT id FROM branches WHERE id = ? AND owner_id = ?');
+    $st->execute([$branchId, $ownerId]);
     if (!$st->fetch()) {
-        json_error('Designated branch location does not exist in database.', 400);
+        json_error('Designated branch location does not exist for your shop.', 400);
     }
 
     $gstEnabled = false;
     $gstRate = 0.0;
-    $st = $pdo->query("SELECT `key`, value FROM system_settings WHERE `key` IN ('gstEnabled','gstRate')");
+    $st = $pdo->prepare("SELECT `key`, value FROM system_settings WHERE owner_id = ? AND `key` IN ('gstEnabled','gstRate')");
+    $st->execute([$ownerId]);
     foreach ($st->fetchAll() as $row) {
         if ($row['key'] === 'gstEnabled') {
             $gstEnabled = $row['value'] === 'true';
@@ -255,8 +276,8 @@ function sales_create(array $params): void
         foreach ($items as $item) {
             $productId = (string) $item['productId'];
             $qty = (int) $item['quantity'];
-            $st = $pdo->prepare('SELECT id, name, selling_price FROM products WHERE id = ? FOR UPDATE');
-            $st->execute([$productId]);
+            $st = $pdo->prepare('SELECT id, name, selling_price FROM products WHERE id = ? AND owner_id = ? FOR UPDATE');
+            $st->execute([$productId, $ownerId]);
             $prod = $st->fetch();
             if (!$prod) {
                 throw new RuntimeException("Product not found: {$productId}");
@@ -326,8 +347,8 @@ function sales_create(array $params): void
         }
 
         if ($debt > 0 && $customerId) {
-            $st = $pdo->prepare('SELECT * FROM customers WHERE id = ? FOR UPDATE');
-            $st->execute([$customerId]);
+            $st = $pdo->prepare('SELECT * FROM customers WHERE id = ? AND owner_id = ? FOR UPDATE');
+            $st->execute([$customerId, $ownerId]);
             $customer = $st->fetch();
             if (!$customer) {
                 throw new RuntimeException('Customer profile not found.');
@@ -350,11 +371,11 @@ function sales_create(array $params): void
         $now = now_sql();
         $pdo->prepare(
             'INSERT INTO sales (id, customer_id, cashier_id, branch_id, sale_date, total_amount, discount_amount, tax_amount,
-             payable_amount, paid_amount, payment_method, payment_status, return_status, notes, created_at, updated_at)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+             payable_amount, paid_amount, payment_method, payment_status, return_status, notes, owner_id, created_at, updated_at)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
         )->execute([
             $saleId, $customerId ?: null, $cashierId, $branchId, $now, $subtotal, $normalizedDiscount, $computedTax,
-            $payable, $normalizedPaid, $paymentMethod, $paymentStatus, 'NONE', $body['notes'] ?? null, $now, $now,
+            $payable, $normalizedPaid, $paymentMethod, $paymentStatus, 'NONE', $body['notes'] ?? null, $ownerId, $now, $now,
         ]);
 
         $insItem = $pdo->prepare(
@@ -362,8 +383,8 @@ function sales_create(array $params): void
              VALUES (?,?,?,?,?,?,?,?,?,?)'
         );
         $insMv = $pdo->prepare(
-            'INSERT INTO stock_movements (id, product_id, quantity, type, branch_id, reference_id, notes, created_at)
-             VALUES (?,?,?,?,?,?,?,?)'
+            'INSERT INTO stock_movements (id, product_id, quantity, type, branch_id, reference_id, notes, owner_id, created_at)
+             VALUES (?,?,?,?,?,?,?,?,?)'
         );
         foreach ($itemsToCreate as $it) {
             $insItem->execute([
@@ -371,7 +392,7 @@ function sales_create(array $params): void
                 $it['tax'], $it['totalPrice'], $it['serialNumber'], $it['imei'],
             ]);
             $insMv->execute([
-                uuid_v4(), $it['productId'], -$it['quantity'], 'OUT', $branchId, $saleId, 'POS sale checkout', $now,
+                uuid_v4(), $it['productId'], -$it['quantity'], 'OUT', $branchId, $saleId, 'POS sale checkout', $ownerId, $now,
             ]);
         }
 
@@ -379,23 +400,24 @@ function sales_create(array $params): void
         if ($normalizedPaid > 0 && $paymentMethod !== 'CREDIT') {
             $typeMap = ['CASH' => 'CASH', 'CARD' => 'BANK', 'MOBILE' => 'MOBILE_WALLET', 'SPLIT' => 'CASH', 'EMI' => 'CASH'];
             $accType = $typeMap[$paymentMethod] ?? 'CASH';
-            $st = $pdo->prepare('SELECT id FROM bank_accounts WHERE type = ? AND is_active = 1 LIMIT 1');
-            $st->execute([$accType]);
+            $st = $pdo->prepare('SELECT id FROM bank_accounts WHERE type = ? AND is_active = 1 AND owner_id = ? LIMIT 1');
+            $st->execute([$accType, $ownerId]);
             $acc = $st->fetch();
             if (!$acc) {
-                $st = $pdo->query("SELECT id FROM bank_accounts WHERE type = 'CASH' AND is_active = 1 LIMIT 1");
+                $st = $pdo->prepare("SELECT id FROM bank_accounts WHERE type = 'CASH' AND is_active = 1 AND owner_id = ? LIMIT 1");
+                $st->execute([$ownerId]);
                 $acc = $st->fetch();
             }
             if ($acc) {
                 $pdo->prepare(
-                    'INSERT INTO transactions (id, bank_account_id, type, category, amount, reference_type, reference_id, description, branch_id, created_by, created_at)
-                     VALUES (?,?,?,?,?,?,?,?,?,?,?)'
+                    'INSERT INTO transactions (id, bank_account_id, type, category, amount, reference_type, reference_id, description, branch_id, created_by, owner_id, created_at)
+                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)'
                 )->execute([
                     uuid_v4(), $acc['id'], 'INCOME', 'SALE', $normalizedPaid, 'SALE', $saleId,
-                    'Sale payment Invoice #' . substr($saleId, 0, 8), $branchId, $cashierId, $now,
+                    'Sale payment Invoice #' . substr($saleId, 0, 8), $branchId, $cashierId, $ownerId, $now,
                 ]);
-                $pdo->prepare('UPDATE bank_accounts SET balance = balance + ?, updated_at = ? WHERE id = ?')
-                    ->execute([$normalizedPaid, $now, $acc['id']]);
+                $pdo->prepare('UPDATE bank_accounts SET balance = balance + ?, updated_at = ? WHERE id = ? AND owner_id = ?')
+                    ->execute([$normalizedPaid, $now, $acc['id'], $ownerId]);
             }
         }
 
@@ -638,8 +660,8 @@ function sales_list(array $params): void
 {
     $q = query_params();
     $pdo = Database::pdo();
-    $where = ['1=1'];
-    $args = [];
+    $where = ['owner_id = ?'];
+    $args = [tenant_owner_id()];
     if (!empty($q['branchId'])) {
         $where[] = 'branch_id = ?';
         $args[] = $q['branchId'];
@@ -673,8 +695,8 @@ function sales_returns_list(array $params): void
 {
     $q = query_params();
     $pdo = Database::pdo();
-    $sql = 'SELECT r.* FROM sale_returns r JOIN sales s ON s.id = r.sale_id WHERE r.status = ?';
-    $args = ['COMPLETED'];
+    $sql = 'SELECT r.* FROM sale_returns r JOIN sales s ON s.id = r.sale_id WHERE r.status = ? AND s.owner_id = ?';
+    $args = ['COMPLETED', tenant_owner_id()];
     if (!empty($q['saleId'])) {
         $sql .= ' AND r.sale_id = ?';
         $args[] = $q['saleId'];

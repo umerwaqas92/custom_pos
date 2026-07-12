@@ -59,15 +59,16 @@ function repairs_create(array $p): void
     }
     $id = uuid_v4();
     $now = now_sql();
+    $ownerId = tenant_owner_id();
     Database::pdo()->prepare(
         'INSERT INTO repair_jobs (id, device_name, imei, serial_number, customer_id, fault_description, technician_id,
-         parts_used, repair_cost, service_charge, status, estimated_delivery, notes, photos, created_at, updated_at)
-         VALUES (?,?,?,?,?,?,?,?,0,0,?,?,?,?,?,?)'
+         parts_used, repair_cost, service_charge, status, estimated_delivery, notes, photos, owner_id, created_at, updated_at)
+         VALUES (?,?,?,?,?,?,?,?,0,0,?,?,?,?,?,?,?)'
     )->execute([
         $id, $b['deviceName'], $b['imei'] ?? null, $b['serialNumber'] ?? null, $b['customerId'],
         $b['faultDescription'], $b['technicianId'] ?? null, json_encode([]), 'RECEIVED',
         !empty($b['estimatedDelivery']) ? date('Y-m-d H:i:s', strtotime($b['estimatedDelivery'])) : null,
-        $b['notes'] ?? null, json_encode([]), $now, $now,
+        $b['notes'] ?? null, json_encode([]), $ownerId, $now, $now,
     ]);
     $st = Database::pdo()->prepare('SELECT * FROM repair_jobs WHERE id = ?');
     $st->execute([$id]);
@@ -77,8 +78,8 @@ function repairs_create(array $p): void
 function repairs_list(array $p): void
 {
     $q = query_params();
-    $where = ['1=1'];
-    $args = [];
+    $where = ['owner_id = ?'];
+    $args = [tenant_owner_id()];
     if (!empty($q['status'])) {
         $where[] = 'status = ?';
         $args[] = $q['status'];
@@ -101,8 +102,8 @@ function repairs_list(array $p): void
 
 function repairs_get(array $p): void
 {
-    $st = Database::pdo()->prepare('SELECT * FROM repair_jobs WHERE id = ?');
-    $st->execute([$p['id']]);
+    $st = Database::pdo()->prepare('SELECT * FROM repair_jobs WHERE id = ? AND owner_id = ?');
+    $st->execute([$p['id'], tenant_owner_id()]);
     $row = $st->fetch();
     if (!$row) {
         json_error('Repair ticket not found.', 404);

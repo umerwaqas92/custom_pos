@@ -43,15 +43,28 @@ function register_auth_routes(Router $router): void
 function auth_user_select_sql(): string
 {
     return 'SELECT u.id, u.name, u.username, u.password_hash, u.role, u.email, u.phone,
-                   u.is_active, u.branch_id, u.created_at, u.updated_at,
+                   u.is_active, u.branch_id, u.owner_id, u.created_at, u.updated_at,
                    b.id AS b_id, b.name AS b_name, b.address AS b_address, b.phone AS b_phone,
                    b.created_at AS b_created_at, b.updated_at AS b_updated_at
             FROM users u
             LEFT JOIN branches b ON b.id = u.branch_id';
 }
 
+/** Resolve shop owner id from a users row. */
+function auth_row_owner_id(array $row): string
+{
+    if (!empty($row['owner_id'])) {
+        return (string) $row['owner_id'];
+    }
+    if (($row['role'] ?? '') === 'OWNER') {
+        return (string) $row['id'];
+    }
+    return (string) ($row['id'] ?? '');
+}
+
 function auth_format_user(array $row, bool $includePassword = false): array
 {
+    $ownerId = auth_row_owner_id($row);
     $user = [
         'id' => $row['id'],
         'name' => $row['name'],
@@ -61,6 +74,7 @@ function auth_format_user(array $row, bool $includePassword = false): array
         'phone' => $row['phone'],
         'isActive' => (bool) (int) $row['is_active'],
         'branchId' => $row['branch_id'],
+        'ownerId' => $ownerId,
         'createdAt' => $row['created_at'],
         'updatedAt' => $row['updated_at'],
         'branch' => null,
@@ -87,11 +101,13 @@ function auth_format_user(array $row, bool $includePassword = false): array
 function auth_token_user_response(array $row): array
 {
     $user = auth_format_user($row);
+    $ownerId = auth_row_owner_id($row);
     $token = Auth::issueToken([
         'id' => $row['id'],
         'username' => $row['username'],
         'role' => $row['role'],
         'branchId' => $row['branch_id'],
+        'ownerId' => $ownerId,
     ]);
     return [
         'token' => $token,
@@ -104,6 +120,7 @@ function auth_token_user_response(array $row): array
             'phone' => $user['phone'],
             'branch' => $user['branch'],
             'branchId' => $user['branchId'],
+            'ownerId' => $ownerId,
         ],
     ];
 }
@@ -170,42 +187,28 @@ function auth_signup(array $params): void
     try {
         Database::begin();
         $now = now_sql();
-        $branchId = null;
-
-        // Prefer first existing branch; otherwise create shop branch
-        $existingBranch = $pdo->query('SELECT id FROM branches ORDER BY created_at ASC LIMIT 1')->fetch();
-        if ($existingBranch) {
-            $branchId = $existingBranch['id'];
-        } else {
-            $branchId = uuid_v4();
-            $pdo->prepare(
-                'INSERT INTO branches (id, name, address, phone, created_at, updated_at) VALUES (?,?,?,?,?,?)'
-            )->execute([
-                $branchId,
-                $shopName !== '' ? $shopName : 'Main Showroom',
-                null,
-                $phone !== '' ? $phone : null,
-                $now,
-                $now,
-            ]);
-        }
-
-        // If shop name given and we reused a branch with default name, optionally leave as-is
-        if ($shopName !== '' && $existingBranch) {
-            // create additional branch only if user provided distinct shop name and no branches named that
-            $st = $pdo->prepare('SELECT id FROM branches WHERE name = ? LIMIT 1');
-            $st->execute([$shopName]);
-            $named = $st->fetch();
-            if ($named) {
-                $branchId = $named['id'];
-            }
-        }
-
         $userId = uuid_v4();
+        // New shop = new owner_id (self). Never attach to another admin's data.
+        $ownerId = $userId;
+
+        $branchId = uuid_v4();
+        $pdo->prepare(
+            'INSERT INTO branches (id, name, address, phone, owner_id, created_at, updated_at)
+             VALUES (?,?,?,?,?,?,?)'
+        )->execute([
+            $branchId,
+            $shopName !== '' ? $shopName : 'Main Showroom',
+            null,
+            $phone !== '' ? $phone : null,
+            $ownerId,
+            $now,
+            $now,
+        ]);
+
         $hash = password_hash($password, PASSWORD_BCRYPT);
         $pdo->prepare(
-            'INSERT INTO users (id, name, username, password_hash, role, email, phone, is_active, branch_id, created_at, updated_at)
-             VALUES (?,?,?,?,?,?,?,1,?,?,?)'
+            'INSERT INTO users (id, name, username, password_hash, role, email, phone, is_active, branch_id, owner_id, created_at, updated_at)
+             VALUES (?,?,?,?,?,?,?,1,?,?,?,?)'
         )->execute([
             $userId,
             $name,
@@ -215,20 +218,20 @@ function auth_signup(array $params): void
             $email !== '' ? $email : null,
             $phone !== '' ? $phone : null,
             $branchId,
+            $ownerId,
             $now,
             $now,
         ]);
 
-        // Ensure default bank accounts exist
-        $cnt = (int) $pdo->query('SELECT COUNT(*) FROM bank_accounts')->fetchColumn();
-        if ($cnt === 0) {
-            $pdo->prepare(
-                'INSERT INTO bank_accounts (id, name, type, balance, is_active, created_at, updated_at) VALUES (?,?,?,0,1,?,?)'
-            )->execute([uuid_v4(), 'Cash Drawer', 'CASH', $now, $now]);
-            $pdo->prepare(
-                'INSERT INTO bank_accounts (id, name, type, balance, is_active, created_at, updated_at) VALUES (?,?,?,0,1,?,?)'
-            )->execute([uuid_v4(), 'Main Bank', 'BANK', $now, $now]);
-        }
+        // Default bank accounts for THIS shop only
+        $pdo->prepare(
+            'INSERT INTO bank_accounts (id, name, type, balance, is_active, owner_id, created_at, updated_at)
+             VALUES (?,?,?,0,1,?,?,?)'
+        )->execute([uuid_v4(), 'Cash Drawer', 'CASH', $ownerId, $now, $now]);
+        $pdo->prepare(
+            'INSERT INTO bank_accounts (id, name, type, balance, is_active, owner_id, created_at, updated_at)
+             VALUES (?,?,?,0,1,?,?,?)'
+        )->execute([uuid_v4(), 'Main Bank', 'BANK', $ownerId, $now, $now]);
 
         Database::commit();
 
@@ -259,7 +262,9 @@ function auth_me(array $params): void
 function auth_users_list(array $params): void
 {
     $pdo = Database::pdo();
-    $stmt = $pdo->query(auth_user_select_sql() . ' ORDER BY u.created_at DESC');
+    $ownerId = tenant_owner_id();
+    $stmt = $pdo->prepare(auth_user_select_sql() . ' WHERE u.owner_id = ? ORDER BY u.created_at DESC');
+    $stmt->execute([$ownerId]);
     $rows = $stmt->fetchAll();
     $users = array_map(static fn($r) => auth_format_user($r), $rows);
     json_response($users);
@@ -297,6 +302,7 @@ function auth_users_create(array $params): void
     }
 
     $actor = Auth::requireUser();
+    $ownerId = tenant_owner_id();
     $pdo = Database::pdo();
     $check = $pdo->prepare('SELECT id FROM users WHERE username = ? LIMIT 1');
     $check->execute([$username]);
@@ -304,8 +310,27 @@ function auth_users_create(array $params): void
         json_error('Username already exists.', 400);
     }
 
-    if (!$branchId) {
+    if ($branchId) {
+        // Branch must belong to this shop
+        $bst = $pdo->prepare('SELECT id FROM branches WHERE id = ? AND owner_id = ? LIMIT 1');
+        $bst->execute([$branchId, $ownerId]);
+        if (!$bst->fetch()) {
+            json_error('Branch not found for your shop.', 400);
+        }
+    } else {
         $branchId = $actor['branchId'] ?? null;
+        if ($branchId) {
+            $bst = $pdo->prepare('SELECT id FROM branches WHERE id = ? AND owner_id = ? LIMIT 1');
+            $bst->execute([$branchId, $ownerId]);
+            if (!$bst->fetch()) {
+                $branchId = null;
+            }
+        }
+        if (!$branchId) {
+            $bst = $pdo->prepare('SELECT id FROM branches WHERE owner_id = ? ORDER BY created_at ASC LIMIT 1');
+            $bst->execute([$ownerId]);
+            $branchId = $bst->fetchColumn() ?: null;
+        }
     }
 
     $id = uuid_v4();
@@ -313,8 +338,8 @@ function auth_users_create(array $params): void
     $now = now_sql();
 
     $stmt = $pdo->prepare(
-        'INSERT INTO users (id, name, username, password_hash, role, email, phone, is_active, branch_id, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)'
+        'INSERT INTO users (id, name, username, password_hash, role, email, phone, is_active, branch_id, owner_id, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)'
     );
     $stmt->execute([
         $id,
@@ -325,6 +350,7 @@ function auth_users_create(array $params): void
         $email ?: null,
         $phone ?: null,
         $branchId ?: null,
+        $ownerId,
         $now,
         $now,
     ]);
@@ -339,9 +365,10 @@ function auth_users_update(array $params): void
     $id = $params['id'];
     $body = read_json_body();
     $pdo = Database::pdo();
+    $ownerId = tenant_owner_id();
 
-    $exists = $pdo->prepare('SELECT id FROM users WHERE id = ? LIMIT 1');
-    $exists->execute([$id]);
+    $exists = $pdo->prepare('SELECT id FROM users WHERE id = ? AND owner_id = ? LIMIT 1');
+    $exists->execute([$id, $ownerId]);
     if (!$exists->fetch()) {
         json_error('User not found.', 404);
     }
@@ -356,8 +383,16 @@ function auth_users_update(array $params): void
         }
     }
     if (array_key_exists('branchId', $body)) {
+        $bid = $body['branchId'] ?: null;
+        if ($bid) {
+            $bst = $pdo->prepare('SELECT id FROM branches WHERE id = ? AND owner_id = ? LIMIT 1');
+            $bst->execute([$bid, $ownerId]);
+            if (!$bst->fetch()) {
+                json_error('Branch not found for your shop.', 400);
+            }
+        }
         $fields[] = 'branch_id = ?';
-        $values[] = $body['branchId'] ?: null;
+        $values[] = $bid;
     }
     if (array_key_exists('isActive', $body)) {
         $fields[] = 'is_active = ?';
@@ -372,7 +407,8 @@ function auth_users_update(array $params): void
         $fields[] = 'updated_at = ?';
         $values[] = now_sql();
         $values[] = $id;
-        $sql = 'UPDATE users SET ' . implode(', ', $fields) . ' WHERE id = ?';
+        $values[] = $ownerId;
+        $sql = 'UPDATE users SET ' . implode(', ', $fields) . ' WHERE id = ? AND owner_id = ?';
         $pdo->prepare($sql)->execute($values);
     }
 
@@ -385,15 +421,20 @@ function auth_users_toggle(array $params): void
 {
     $id = $params['id'];
     $pdo = Database::pdo();
-    $stmt = $pdo->prepare('SELECT is_active FROM users WHERE id = ? LIMIT 1');
-    $stmt->execute([$id]);
+    $ownerId = tenant_owner_id();
+    $stmt = $pdo->prepare('SELECT is_active FROM users WHERE id = ? AND owner_id = ? LIMIT 1');
+    $stmt->execute([$id, $ownerId]);
     $user = $stmt->fetch();
     if (!$user) {
         json_error('User not found.', 404);
     }
+    // Do not allow deactivating the shop owner account via staff toggle
+    if ($id === $ownerId) {
+        json_error('Cannot deactivate the shop owner account.', 400);
+    }
     $new = (int) $user['is_active'] ? 0 : 1;
-    $pdo->prepare('UPDATE users SET is_active = ?, updated_at = ? WHERE id = ?')
-        ->execute([$new, now_sql(), $id]);
+    $pdo->prepare('UPDATE users SET is_active = ?, updated_at = ? WHERE id = ? AND owner_id = ?')
+        ->execute([$new, now_sql(), $id, $ownerId]);
     json_response([
         'message' => 'User status set to ' . ($new ? 'Active' : 'Inactive') . '.',
     ]);
@@ -414,8 +455,9 @@ function auth_format_branch(array $row): array
 function auth_branches_list(array $params): void
 {
     $pdo = Database::pdo();
-    $rows = $pdo->query('SELECT * FROM branches ORDER BY name ASC')->fetchAll();
-    json_response(array_map('auth_format_branch', $rows));
+    $st = $pdo->prepare('SELECT * FROM branches WHERE owner_id = ? ORDER BY name ASC');
+    $st->execute([tenant_owner_id()]);
+    json_response(array_map('auth_format_branch', $st->fetchAll()));
 }
 
 function auth_branches_create(array $params): void
@@ -427,14 +469,17 @@ function auth_branches_create(array $params): void
     }
     $id = uuid_v4();
     $now = now_sql();
+    $ownerId = tenant_owner_id();
     $pdo = Database::pdo();
     $pdo->prepare(
-        'INSERT INTO branches (id, name, address, phone, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)'
+        'INSERT INTO branches (id, name, address, phone, owner_id, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)'
     )->execute([
         $id,
         $name,
         $body['address'] ?? null,
         $body['phone'] ?? null,
+        $ownerId,
         $now,
         $now,
     ]);
@@ -452,20 +497,23 @@ function auth_branches_update(array $params): void
         json_error('Branch name is required.', 400);
     }
     $pdo = Database::pdo();
+    $ownerId = tenant_owner_id();
     $pdo->prepare(
-        'UPDATE branches SET name = ?, address = ?, phone = ?, updated_at = ? WHERE id = ?'
+        'UPDATE branches SET name = ?, address = ?, phone = ?, updated_at = ?
+         WHERE id = ? AND owner_id = ?'
     )->execute([
         $name,
         $body['address'] ?? null,
         $body['phone'] ?? null,
         now_sql(),
         $id,
+        $ownerId,
     ]);
-    $row = $pdo->prepare('SELECT * FROM branches WHERE id = ?');
-    $row->execute([$id]);
+    $row = $pdo->prepare('SELECT * FROM branches WHERE id = ? AND owner_id = ?');
+    $row->execute([$id, $ownerId]);
     $b = $row->fetch();
     if (!$b) {
-        json_error('Failed to update branch.', 500);
+        json_error('Branch not found.', 404);
     }
     json_response(auth_format_branch($b));
 }
@@ -474,12 +522,20 @@ function auth_branches_delete(array $params): void
 {
     $id = $params['id'];
     $pdo = Database::pdo();
+    $ownerId = tenant_owner_id();
+    $chk = $pdo->prepare('SELECT id FROM branches WHERE id = ? AND owner_id = ? LIMIT 1');
+    $chk->execute([$id, $ownerId]);
+    if (!$chk->fetch()) {
+        json_error('Branch not found.', 404);
+    }
     try {
         Database::begin();
         $pdo->prepare('DELETE FROM branch_stocks WHERE branch_id = ?')->execute([$id]);
-        $pdo->prepare('UPDATE users SET branch_id = NULL WHERE branch_id = ?')->execute([$id]);
-        $pdo->prepare('DELETE FROM daily_closings WHERE branch_id = ?')->execute([$id]);
-        $pdo->prepare('DELETE FROM branches WHERE id = ?')->execute([$id]);
+        $pdo->prepare('UPDATE users SET branch_id = NULL WHERE branch_id = ? AND owner_id = ?')
+            ->execute([$id, $ownerId]);
+        $pdo->prepare('DELETE FROM daily_closings WHERE branch_id = ? AND owner_id = ?')
+            ->execute([$id, $ownerId]);
+        $pdo->prepare('DELETE FROM branches WHERE id = ? AND owner_id = ?')->execute([$id, $ownerId]);
         Database::commit();
         json_response(['message' => 'Branch deleted successfully.']);
     } catch (Throwable $e) {
@@ -491,39 +547,73 @@ function auth_branches_delete(array $params): void
 function auth_reset_transactions(array $params): void
 {
     $pdo = Database::pdo();
+    $ownerId = tenant_owner_id();
     try {
         Database::begin();
-        $tables = [
-            'activity_logs',
-            'emi_installments',
-            'sale_emis',
-            'sale_return_items',
-            'sale_returns',
-            'warranty_claims',
-            'sale_items',
-            'sales',
-            'repair_jobs',
-            'purchase_items',
-            'purchase_orders',
-            'supplier_payments',
-            'customer_credit_payments',
-            'expenses',
-            'stock_movements',
-            'daily_closings',
-            'transactions',
-        ];
-        foreach ($tables as $t) {
-            $pdo->exec("DELETE FROM {$t}");
-        }
-        $pdo->exec('UPDATE customers SET credit_balance = 0, reward_points = 0');
-        $pdo->exec('UPDATE bank_accounts SET balance = 0');
+
+        // Delete child rows via owner's sales / POs / etc.
+        $pdo->prepare(
+            'DELETE FROM emi_installments WHERE sale_emi_id IN (
+                SELECT se.id FROM sale_emis se
+                INNER JOIN sales s ON s.id = se.sale_id WHERE s.owner_id = ?
+            )'
+        )->execute([$ownerId]);
+        $pdo->prepare(
+            'DELETE FROM sale_emis WHERE sale_id IN (SELECT id FROM sales WHERE owner_id = ?)'
+        )->execute([$ownerId]);
+        $pdo->prepare(
+            'DELETE FROM sale_return_items WHERE sale_return_id IN (
+                SELECT sr.id FROM sale_returns sr
+                INNER JOIN sales s ON s.id = sr.sale_id WHERE s.owner_id = ?
+            )'
+        )->execute([$ownerId]);
+        $pdo->prepare(
+            'DELETE FROM sale_returns WHERE sale_id IN (SELECT id FROM sales WHERE owner_id = ?)'
+        )->execute([$ownerId]);
+        $pdo->prepare('DELETE FROM warranty_claims WHERE owner_id = ?')->execute([$ownerId]);
+        $pdo->prepare(
+            'DELETE FROM sale_items WHERE sale_id IN (SELECT id FROM sales WHERE owner_id = ?)'
+        )->execute([$ownerId]);
+        $pdo->prepare('DELETE FROM sales WHERE owner_id = ?')->execute([$ownerId]);
+        $pdo->prepare('DELETE FROM repair_jobs WHERE owner_id = ?')->execute([$ownerId]);
+        $pdo->prepare(
+            'DELETE FROM purchase_items WHERE purchase_order_id IN (
+                SELECT id FROM purchase_orders WHERE owner_id = ?
+            )'
+        )->execute([$ownerId]);
+        $pdo->prepare(
+            'DELETE FROM supplier_payments WHERE supplier_id IN (
+                SELECT id FROM suppliers WHERE owner_id = ?
+            )'
+        )->execute([$ownerId]);
+        $pdo->prepare('DELETE FROM purchase_orders WHERE owner_id = ?')->execute([$ownerId]);
+        $pdo->prepare(
+            'DELETE FROM customer_credit_payments WHERE customer_id IN (
+                SELECT id FROM customers WHERE owner_id = ?
+            )'
+        )->execute([$ownerId]);
+        $pdo->prepare('DELETE FROM expenses WHERE owner_id = ?')->execute([$ownerId]);
+        $pdo->prepare('DELETE FROM stock_movements WHERE owner_id = ?')->execute([$ownerId]);
+        $pdo->prepare('DELETE FROM daily_closings WHERE owner_id = ?')->execute([$ownerId]);
+        $pdo->prepare(
+            'DELETE FROM transactions WHERE bank_account_id IN (
+                SELECT id FROM bank_accounts WHERE owner_id = ?
+            ) OR owner_id = ?'
+        )->execute([$ownerId, $ownerId]);
+        $pdo->prepare(
+            'DELETE FROM activity_logs WHERE user_id IN (SELECT id FROM users WHERE owner_id = ?)'
+        )->execute([$ownerId]);
+
+        $pdo->prepare('UPDATE customers SET credit_balance = 0, reward_points = 0 WHERE owner_id = ?')
+            ->execute([$ownerId]);
+        $pdo->prepare('UPDATE bank_accounts SET balance = 0 WHERE owner_id = ?')->execute([$ownerId]);
         Database::commit();
         json_response([
-            'message' => 'All transactions and sales history have been cleared successfully. Products, categories, and contacts have been preserved.',
+            'message' => 'All transactions and sales history for your shop have been cleared. Products, categories, and contacts were preserved.',
         ]);
     } catch (Throwable $e) {
         Database::rollBack();
-        json_error('Failed to clear transaction records.', 500);
+        json_error('Failed to clear transaction records: ' . $e->getMessage(), 500);
     }
 }
 

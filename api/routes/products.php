@@ -127,8 +127,9 @@ function products_suggest(array $params): void
 function products_categories_list(array $params): void
 {
     $pdo = Database::pdo();
-    $rows = $pdo->query('SELECT * FROM categories ORDER BY name ASC')->fetchAll();
-    json_response(array_map('products_format_category', $rows));
+    $st = $pdo->prepare('SELECT * FROM categories WHERE owner_id = ? ORDER BY name ASC');
+    $st->execute([tenant_owner_id()]);
+    json_response(array_map('products_format_category', $st->fetchAll()));
 }
 
 function products_categories_create(array $params): void
@@ -139,15 +140,16 @@ function products_categories_create(array $params): void
         json_error('Name is required.', 400);
     }
     $pdo = Database::pdo();
-    $exists = $pdo->prepare('SELECT id FROM categories WHERE name = ? LIMIT 1');
-    $exists->execute([$name]);
+    $ownerId = tenant_owner_id();
+    $exists = $pdo->prepare('SELECT id FROM categories WHERE name = ? AND owner_id = ? LIMIT 1');
+    $exists->execute([$name, $ownerId]);
     if ($exists->fetch()) {
         json_error('Category already exists.', 400);
     }
     $id = uuid_v4();
     $now = now_sql();
-    $pdo->prepare('INSERT INTO categories (id, name, created_at, updated_at) VALUES (?, ?, ?, ?)')
-        ->execute([$id, $name, $now, $now]);
+    $pdo->prepare('INSERT INTO categories (id, name, owner_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?)')
+        ->execute([$id, $name, $ownerId, $now, $now]);
     $st = $pdo->prepare('SELECT * FROM categories WHERE id = ?');
     $st->execute([$id]);
     json_response(products_format_category($st->fetch()), 201);
@@ -162,13 +164,14 @@ function products_categories_update(array $params): void
         json_error('Name is required.', 400);
     }
     $pdo = Database::pdo();
-    $pdo->prepare('UPDATE categories SET name = ?, updated_at = ? WHERE id = ?')
-        ->execute([$name, now_sql(), $id]);
-    $st = $pdo->prepare('SELECT * FROM categories WHERE id = ?');
-    $st->execute([$id]);
+    $ownerId = tenant_owner_id();
+    $pdo->prepare('UPDATE categories SET name = ?, updated_at = ? WHERE id = ? AND owner_id = ?')
+        ->execute([$name, now_sql(), $id, $ownerId]);
+    $st = $pdo->prepare('SELECT * FROM categories WHERE id = ? AND owner_id = ?');
+    $st->execute([$id, $ownerId]);
     $row = $st->fetch();
     if (!$row) {
-        json_error('Failed to update category.', 400);
+        json_error('Category not found.', 404);
     }
     json_response(products_format_category($row));
 }
@@ -177,10 +180,12 @@ function products_categories_delete(array $params): void
 {
     $id = $params['id'];
     $pdo = Database::pdo();
+    $ownerId = tenant_owner_id();
     try {
         Database::begin();
-        $pdo->prepare('UPDATE products SET category_id = NULL WHERE category_id = ?')->execute([$id]);
-        $pdo->prepare('DELETE FROM categories WHERE id = ?')->execute([$id]);
+        $pdo->prepare('UPDATE products SET category_id = NULL WHERE category_id = ? AND owner_id = ?')
+            ->execute([$id, $ownerId]);
+        $pdo->prepare('DELETE FROM categories WHERE id = ? AND owner_id = ?')->execute([$id, $ownerId]);
         Database::commit();
         json_response(['message' => 'Category deleted successfully.']);
     } catch (Throwable $e) {
@@ -197,11 +202,14 @@ function products_categories_bulk_delete(array $params): void
         json_error('No category IDs provided.', 400);
     }
     $pdo = Database::pdo();
+    $ownerId = tenant_owner_id();
     $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $args = array_merge($ids, [$ownerId]);
     try {
         Database::begin();
-        $pdo->prepare("UPDATE products SET category_id = NULL WHERE category_id IN ($placeholders)")->execute($ids);
-        $pdo->prepare("DELETE FROM categories WHERE id IN ($placeholders)")->execute($ids);
+        $pdo->prepare("UPDATE products SET category_id = NULL WHERE category_id IN ($placeholders) AND owner_id = ?")
+            ->execute($args);
+        $pdo->prepare("DELETE FROM categories WHERE id IN ($placeholders) AND owner_id = ?")->execute($args);
         Database::commit();
         json_response(['message' => count($ids) . ' categories deleted successfully.']);
     } catch (Throwable $e) {
@@ -215,8 +223,9 @@ function products_categories_bulk_delete(array $params): void
 function products_brands_list(array $params): void
 {
     $pdo = Database::pdo();
-    $rows = $pdo->query('SELECT * FROM brands ORDER BY name ASC')->fetchAll();
-    json_response(array_map('products_format_brand', $rows));
+    $st = $pdo->prepare('SELECT * FROM brands WHERE owner_id = ? ORDER BY name ASC');
+    $st->execute([tenant_owner_id()]);
+    json_response(array_map('products_format_brand', $st->fetchAll()));
 }
 
 function products_brands_create(array $params): void
@@ -227,15 +236,16 @@ function products_brands_create(array $params): void
         json_error('Name is required.', 400);
     }
     $pdo = Database::pdo();
-    $exists = $pdo->prepare('SELECT id FROM brands WHERE name = ? LIMIT 1');
-    $exists->execute([$name]);
+    $ownerId = tenant_owner_id();
+    $exists = $pdo->prepare('SELECT id FROM brands WHERE name = ? AND owner_id = ? LIMIT 1');
+    $exists->execute([$name, $ownerId]);
     if ($exists->fetch()) {
         json_error('Brand already exists.', 400);
     }
     $id = uuid_v4();
     $now = now_sql();
-    $pdo->prepare('INSERT INTO brands (id, name, created_at, updated_at) VALUES (?, ?, ?, ?)')
-        ->execute([$id, $name, $now, $now]);
+    $pdo->prepare('INSERT INTO brands (id, name, owner_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?)')
+        ->execute([$id, $name, $ownerId, $now, $now]);
     $st = $pdo->prepare('SELECT * FROM brands WHERE id = ?');
     $st->execute([$id]);
     json_response(products_format_brand($st->fetch()), 201);
@@ -250,13 +260,14 @@ function products_brands_update(array $params): void
         json_error('Name is required.', 400);
     }
     $pdo = Database::pdo();
-    $pdo->prepare('UPDATE brands SET name = ?, updated_at = ? WHERE id = ?')
-        ->execute([$name, now_sql(), $id]);
-    $st = $pdo->prepare('SELECT * FROM brands WHERE id = ?');
-    $st->execute([$id]);
+    $ownerId = tenant_owner_id();
+    $pdo->prepare('UPDATE brands SET name = ?, updated_at = ? WHERE id = ? AND owner_id = ?')
+        ->execute([$name, now_sql(), $id, $ownerId]);
+    $st = $pdo->prepare('SELECT * FROM brands WHERE id = ? AND owner_id = ?');
+    $st->execute([$id, $ownerId]);
     $row = $st->fetch();
     if (!$row) {
-        json_error('Failed to update brand.', 400);
+        json_error('Brand not found.', 404);
     }
     json_response(products_format_brand($row));
 }
@@ -265,10 +276,12 @@ function products_brands_delete(array $params): void
 {
     $id = $params['id'];
     $pdo = Database::pdo();
+    $ownerId = tenant_owner_id();
     try {
         Database::begin();
-        $pdo->prepare('UPDATE products SET brand_id = NULL WHERE brand_id = ?')->execute([$id]);
-        $pdo->prepare('DELETE FROM brands WHERE id = ?')->execute([$id]);
+        $pdo->prepare('UPDATE products SET brand_id = NULL WHERE brand_id = ? AND owner_id = ?')
+            ->execute([$id, $ownerId]);
+        $pdo->prepare('DELETE FROM brands WHERE id = ? AND owner_id = ?')->execute([$id, $ownerId]);
         Database::commit();
         json_response(['message' => 'Brand deleted successfully.']);
     } catch (Throwable $e) {
@@ -285,11 +298,14 @@ function products_brands_bulk_delete(array $params): void
         json_error('No brand IDs provided.', 400);
     }
     $pdo = Database::pdo();
+    $ownerId = tenant_owner_id();
     $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $args = array_merge($ids, [$ownerId]);
     try {
         Database::begin();
-        $pdo->prepare("UPDATE products SET brand_id = NULL WHERE brand_id IN ($placeholders)")->execute($ids);
-        $pdo->prepare("DELETE FROM brands WHERE id IN ($placeholders)")->execute($ids);
+        $pdo->prepare("UPDATE products SET brand_id = NULL WHERE brand_id IN ($placeholders) AND owner_id = ?")
+            ->execute($args);
+        $pdo->prepare("DELETE FROM brands WHERE id IN ($placeholders) AND owner_id = ?")->execute($args);
         Database::commit();
         json_response(['message' => count($ids) . ' brands deleted successfully.']);
     } catch (Throwable $e) {
@@ -419,11 +435,12 @@ function products_list(array $params): void
 {
     $q = query_params();
     $pdo = Database::pdo();
+    $ownerId = tenant_owner_id();
     $isLite = isset($q['lite']) && ($q['lite'] === '1' || $q['lite'] === 'true');
     $branchFilter = isset($q['branchId']) && $q['branchId'] !== '' ? (string) $q['branchId'] : null;
 
-    $where = ['1=1'];
-    $args = [];
+    $where = ['p.owner_id = ?'];
+    $args = [$ownerId];
     if (!empty($q['sku'])) {
         $where[] = 'p.sku = ?';
         $args[] = (string) $q['sku'];
@@ -451,8 +468,8 @@ function products_list(array $params): void
                    c.id AS cat_id, c.name AS cat_name,
                    b.id AS brand_join_id, b.name AS brand_name
             FROM products p
-            LEFT JOIN categories c ON c.id = p.category_id
-            LEFT JOIN brands b ON b.id = p.brand_id
+            LEFT JOIN categories c ON c.id = p.category_id AND c.owner_id = p.owner_id
+            LEFT JOIN brands b ON b.id = p.brand_id AND b.owner_id = p.owner_id
             WHERE ' . implode(' AND ', $where) . '
             ORDER BY p.name ASC
             LIMIT 1000';
@@ -546,8 +563,8 @@ function products_list(array $params): void
 function products_get(array $params): void
 {
     $pdo = Database::pdo();
-    $st = $pdo->prepare('SELECT * FROM products WHERE id = ? LIMIT 1');
-    $st->execute([$params['id']]);
+    $st = $pdo->prepare('SELECT * FROM products WHERE id = ? AND owner_id = ? LIMIT 1');
+    $st->execute([$params['id'], tenant_owner_id()]);
     $row = $st->fetch();
     if (!$row) {
         json_error('Product not found.', 404);
@@ -567,6 +584,7 @@ function products_create(array $params): void
     }
 
     $pdo = Database::pdo();
+    $ownerId = tenant_owner_id();
     $brandId = $body['brandId'] ?? null;
     $model = $body['model'] ?? null;
     $finalSku = isset($body['sku']) && is_string($body['sku']) ? trim($body['sku']) : '';
@@ -574,16 +592,16 @@ function products_create(array $params): void
         $finalSku = products_generate_sku($pdo, $name, $brandId ?: null, $model ? (string) $model : null);
     }
 
-    $chk = $pdo->prepare('SELECT id FROM products WHERE sku = ? LIMIT 1');
-    $chk->execute([$finalSku]);
+    $chk = $pdo->prepare('SELECT id FROM products WHERE sku = ? AND owner_id = ? LIMIT 1');
+    $chk->execute([$finalSku, $ownerId]);
     if ($chk->fetch()) {
         json_error('SKU already exists.', 400);
     }
 
     $barcode = $body['barcode'] ?? null;
     if ($barcode) {
-        $chk = $pdo->prepare('SELECT id FROM products WHERE barcode = ? LIMIT 1');
-        $chk->execute([$barcode]);
+        $chk = $pdo->prepare('SELECT id FROM products WHERE barcode = ? AND owner_id = ? LIMIT 1');
+        $chk->execute([$barcode, $ownerId]);
         if ($chk->fetch()) {
             json_error('Barcode already exists.', 400);
         }
@@ -596,8 +614,8 @@ function products_create(array $params): void
             id, name, sku, barcode, qr_code, category_id, brand_id, model, serial_number, imei,
             color, storage, ram, processor, warranty_months, supplier_id, purchase_price, selling_price,
             wholesale_price, tax_rate, discount_rate, images, description, weight, stock_quantity,
-            min_stock, type, created_at, updated_at
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+            min_stock, type, owner_id, created_at, updated_at
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
     )->execute([
         $id,
         $name,
@@ -628,12 +646,15 @@ function products_create(array $params): void
         0,
         isset($body['minStock']) ? (int) $body['minStock'] : 5,
         $body['type'] ?? 'SINGLE',
+        $ownerId,
         $now,
         $now,
     ]);
 
-    // Init branch stocks at 0
-    $branches = $pdo->query('SELECT id FROM branches')->fetchAll();
+    // Init branch stocks at 0 for this shop only
+    $bst = $pdo->prepare('SELECT id FROM branches WHERE owner_id = ?');
+    $bst->execute([$ownerId]);
+    $branches = $bst->fetchAll();
     $ins = $pdo->prepare(
         'INSERT INTO branch_stocks (id, branch_id, product_id, quantity) VALUES (?, ?, ?, 0)'
     );
@@ -651,16 +672,17 @@ function products_update(array $params): void
     $id = $params['id'];
     $body = read_json_body();
     $pdo = Database::pdo();
+    $ownerId = tenant_owner_id();
 
-    $st = $pdo->prepare('SELECT id FROM products WHERE id = ?');
-    $st->execute([$id]);
+    $st = $pdo->prepare('SELECT id FROM products WHERE id = ? AND owner_id = ?');
+    $st->execute([$id, $ownerId]);
     if (!$st->fetch()) {
         json_error('Product not found.', 404);
     }
 
     if (!empty($body['sku'])) {
-        $chk = $pdo->prepare('SELECT id FROM products WHERE sku = ? AND id <> ? LIMIT 1');
-        $chk->execute([$body['sku'], $id]);
+        $chk = $pdo->prepare('SELECT id FROM products WHERE sku = ? AND id <> ? AND owner_id = ? LIMIT 1');
+        $chk->execute([$body['sku'], $id, $ownerId]);
         if ($chk->fetch()) {
             json_error('SKU is already in use by another product.', 400);
         }
@@ -731,11 +753,12 @@ function products_update(array $params): void
         $sets[] = 'updated_at = ?';
         $vals[] = now_sql();
         $vals[] = $id;
-        $pdo->prepare('UPDATE products SET ' . implode(', ', $sets) . ' WHERE id = ?')->execute($vals);
+        $vals[] = $ownerId;
+        $pdo->prepare('UPDATE products SET ' . implode(', ', $sets) . ' WHERE id = ? AND owner_id = ?')->execute($vals);
     }
 
-    $st = $pdo->prepare('SELECT * FROM products WHERE id = ?');
-    $st->execute([$id]);
+    $st = $pdo->prepare('SELECT * FROM products WHERE id = ? AND owner_id = ?');
+    $st->execute([$id, $ownerId]);
     json_response(products_attach_relations($pdo, $st->fetch(), null, false));
 }
 
@@ -743,6 +766,13 @@ function products_delete(array $params): void
 {
     $id = $params['id'];
     $pdo = Database::pdo();
+    $ownerId = tenant_owner_id();
+
+    $own = $pdo->prepare('SELECT id FROM products WHERE id = ? AND owner_id = ? LIMIT 1');
+    $own->execute([$id, $ownerId]);
+    if (!$own->fetch()) {
+        json_error('Product not found.', 404);
+    }
 
     $refs = [
         $pdo->prepare('SELECT id FROM sale_items WHERE product_id = ? LIMIT 1'),
@@ -762,8 +792,8 @@ function products_delete(array $params): void
     try {
         Database::begin();
         $pdo->prepare('DELETE FROM branch_stocks WHERE product_id = ?')->execute([$id]);
-        $pdo->prepare('DELETE FROM stock_movements WHERE product_id = ?')->execute([$id]);
-        $pdo->prepare('DELETE FROM products WHERE id = ?')->execute([$id]);
+        $pdo->prepare('DELETE FROM stock_movements WHERE product_id = ? AND owner_id = ?')->execute([$id, $ownerId]);
+        $pdo->prepare('DELETE FROM products WHERE id = ? AND owner_id = ?')->execute([$id, $ownerId]);
         Database::commit();
         json_response(['message' => 'Product deleted successfully.']);
     } catch (Throwable $e) {
@@ -780,6 +810,16 @@ function products_bulk_delete(array $params): void
         json_error('No product IDs provided.', 400);
     }
     $pdo = Database::pdo();
+    $ownerId = tenant_owner_id();
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+
+    // Only delete products owned by this shop
+    $owned = $pdo->prepare("SELECT id FROM products WHERE id IN ($placeholders) AND owner_id = ?");
+    $owned->execute(array_merge($ids, [$ownerId]));
+    $ids = array_column($owned->fetchAll(), 'id');
+    if (!$ids) {
+        json_error('No matching products found for your shop.', 404);
+    }
     $placeholders = implode(',', array_fill(0, count($ids), '?'));
 
     foreach (['sale_items', 'purchase_items', 'warranty_claims'] as $table) {

@@ -20,8 +20,9 @@ function inventory_adjust(array $params): void
     $pdo = Database::pdo();
     try {
         Database::begin();
-        $st = $pdo->prepare('SELECT id FROM products WHERE id = ?');
-        $st->execute([$b['productId']]);
+        $ownerId = tenant_owner_id();
+        $st = $pdo->prepare('SELECT id FROM products WHERE id = ? AND owner_id = ?');
+        $st->execute([$b['productId'], $ownerId]);
         if (!$st->fetch()) {
             throw new RuntimeException('Product not found.');
         }
@@ -45,10 +46,10 @@ function inventory_adjust(array $params): void
             ->execute([$change, $now, $b['productId']]);
         $mid = uuid_v4();
         $pdo->prepare(
-            'INSERT INTO stock_movements (id, product_id, quantity, type, branch_id, notes, created_at) VALUES (?,?,?,?,?,?,?)'
+            'INSERT INTO stock_movements (id, product_id, quantity, type, branch_id, notes, owner_id, created_at) VALUES (?,?,?,?,?,?,?,?)'
         )->execute([
             $mid, $b['productId'], $change, $change > 0 ? 'ADJUSTMENT' : 'DAMAGE',
-            $b['branchId'], $b['reason'] ?? 'Manual adjustment', $now,
+            $b['branchId'], $b['reason'] ?? 'Manual adjustment', $ownerId, $now,
         ]);
         Database::commit();
         json_response([
@@ -123,9 +124,10 @@ function inventory_movements(array $params): void
          LEFT JOIN products p ON p.id = sm.product_id
          LEFT JOIN brands b ON b.id = p.brand_id
          LEFT JOIN categories c ON c.id = p.category_id
+         WHERE sm.owner_id = ?
          ORDER BY sm.created_at DESC LIMIT {$limit}"
     );
-    $st->execute();
+    $st->execute([tenant_owner_id()]);
     $out = [];
     foreach ($st->fetchAll() as $r) {
         $out[] = [
@@ -152,57 +154,50 @@ function inventory_movements(array $params): void
 function inventory_alerts(array $params): void
 {
     $pdo = Database::pdo();
+    $ownerId = tenant_owner_id();
     $branchId = query_params()['branchId'] ?? '';
     $threshold = 3;
-    $products = $pdo->query(
+    $st = $pdo->prepare(
         'SELECT p.*, b.name AS brand_name, c.name AS cat_name
          FROM products p
          LEFT JOIN brands b ON b.id = p.brand_id
-         LEFT JOIN categories c ON c.id = p.category_id'
-    )->fetchAll();
-
+         LEFT JOIN categories c ON c.id = p.category_id
+         WHERE p.owner_id = ?
+         ORDER BY p.stock_quantity ASC'
+    );
+    $st->execute([$ownerId]);
+    $products = $st->fetchAll();
     $out = [];
     foreach ($products as $p) {
+        $qty = (int) $p['stock_quantity'];
         if ($branchId) {
-            $st = $pdo->prepare('SELECT quantity FROM branch_stocks WHERE product_id = ? AND branch_id = ?');
-            $st->execute([$p['id'], $branchId]);
-            $row = $st->fetch();
-            $qty = $row ? (int) $row['quantity'] : 0;
-        } else {
-            $st = $pdo->prepare('SELECT COALESCE(SUM(quantity),0) FROM branch_stocks WHERE product_id = ?');
-            $st->execute([$p['id']]);
-            $sum = (int) $st->fetchColumn();
-            $qty = $sum > 0 ? $sum : (int) $p['stock_quantity'];
+            $bst = $pdo->prepare('SELECT quantity FROM branch_stocks WHERE branch_id = ? AND product_id = ?');
+            $bst->execute([$branchId, $p['id']]);
+            $bs = $bst->fetch();
+            $qty = $bs ? (int) $bs['quantity'] : 0;
         }
-        $status = $qty <= 0 ? 'OUT' : ($qty <= $threshold ? 'LOW' : 'OK');
-        if ($status === 'OK') {
+        $min = (int) $p['min_stock'];
+        $level = 'OK';
+        if ($qty <= 0) {
+            $level = 'OUT';
+        } elseif ($qty <= $min) {
+            $level = 'LOW';
+        } elseif ($qty <= $min + $threshold) {
+            $level = 'WATCH';
+        }
+        if ($level === 'OK') {
             continue;
-        }
-        $st = $pdo->prepare(
-            'SELECT bs.*, br.name AS branch_name FROM branch_stocks bs
-             LEFT JOIN branches br ON br.id = bs.branch_id WHERE bs.product_id = ?'
-        );
-        $st->execute([$p['id']]);
-        $branchStocks = [];
-        foreach ($st->fetchAll() as $bs) {
-            $branchStocks[] = [
-                'branchId' => $bs['branch_id'],
-                'quantity' => (int) $bs['quantity'],
-                'branch' => ['id' => $bs['branch_id'], 'name' => $bs['branch_name']],
-            ];
         }
         $out[] = [
             'id' => $p['id'],
             'name' => $p['name'],
             'sku' => $p['sku'],
+            'stockQuantity' => $qty,
+            'minStock' => $min,
+            'level' => $level,
             'brand' => $p['brand_id'] ? ['id' => $p['brand_id'], 'name' => $p['brand_name']] : null,
             'category' => $p['category_id'] ? ['id' => $p['category_id'], 'name' => $p['cat_name']] : null,
-            'branchStocks' => $branchStocks,
-            'stockQuantity' => $qty,
-            'minStock' => $threshold,
-            'status' => $status,
         ];
     }
-    usort($out, static fn($a, $b) => $a['stockQuantity'] <=> $b['stockQuantity']);
     json_response($out);
 }
