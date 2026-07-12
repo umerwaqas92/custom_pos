@@ -6,11 +6,13 @@ function register_auth_routes(Router $router): void
 {
     // POST /api/auth/login
     $router->post('auth/login', 'auth_login', true);
+    // Public admin (OWNER) registration
+    $router->post('auth/signup', 'auth_signup', true);
 
     // GET /api/auth/me
     $router->get('auth/me', 'auth_me');
 
-    // Users
+    // Users / staff (OWNER creates cashiers & techs)
     $router->get('auth/users', 'auth_users_list', false, ['OWNER', 'MANAGER']);
     $router->post('auth/users', 'auth_users_create', false, ['OWNER']);
     $router->put('auth/users/:id', 'auth_users_update', false, ['OWNER']);
@@ -82,6 +84,30 @@ function auth_format_user(array $row, bool $includePassword = false): array
     return $user;
 }
 
+function auth_token_user_response(array $row): array
+{
+    $user = auth_format_user($row);
+    $token = Auth::issueToken([
+        'id' => $row['id'],
+        'username' => $row['username'],
+        'role' => $row['role'],
+        'branchId' => $row['branch_id'],
+    ]);
+    return [
+        'token' => $token,
+        'user' => [
+            'id' => $user['id'],
+            'name' => $user['name'],
+            'username' => $user['username'],
+            'role' => $user['role'],
+            'email' => $user['email'],
+            'phone' => $user['phone'],
+            'branch' => $user['branch'],
+            'branchId' => $user['branchId'],
+        ],
+    ];
+}
+
 function auth_login(array $params): void
 {
     $body = read_json_body();
@@ -105,27 +131,115 @@ function auth_login(array $params): void
         json_error('Invalid username or password.', 401);
     }
 
-    $token = Auth::issueToken([
-        'id' => $row['id'],
-        'username' => $row['username'],
-        'role' => $row['role'],
-        'branchId' => $row['branch_id'],
-    ]);
+    json_response(auth_token_user_response($row));
+}
 
-    $user = auth_format_user($row);
-    // Login response historically omits passwordHash / isActive noise — keep lean like Node
-    json_response([
-        'token' => $token,
-        'user' => [
-            'id' => $user['id'],
-            'name' => $user['name'],
-            'username' => $user['username'],
-            'role' => $user['role'],
-            'email' => $user['email'],
-            'phone' => $user['phone'],
-            'branch' => $user['branch'],
-        ],
-    ]);
+/**
+ * Public admin signup — creates OWNER + optional shop branch, returns JWT like login.
+ */
+function auth_signup(array $params): void
+{
+    $body = read_json_body();
+    $name = trim((string) ($body['name'] ?? ''));
+    $username = trim((string) ($body['username'] ?? ''));
+    $password = (string) ($body['password'] ?? '');
+    $shopName = trim((string) ($body['shopName'] ?? $body['shop_name'] ?? ''));
+    $phone = trim((string) ($body['phone'] ?? ''));
+    $email = trim((string) ($body['email'] ?? ''));
+
+    if ($name === '' || $username === '' || $password === '') {
+        json_error('Name, username, and password are required.', 400);
+    }
+    if (strlen($username) < 3) {
+        json_error('Username must be at least 3 characters.', 400);
+    }
+    if (strlen($password) < 6) {
+        json_error('Password must be at least 6 characters.', 400);
+    }
+    if (!preg_match('/^[a-zA-Z0-9._-]+$/', $username)) {
+        json_error('Username may only contain letters, numbers, dots, dashes, and underscores.', 400);
+    }
+
+    $pdo = Database::pdo();
+    $check = $pdo->prepare('SELECT id FROM users WHERE username = ? LIMIT 1');
+    $check->execute([$username]);
+    if ($check->fetch()) {
+        json_error('Username already taken. Choose another or sign in.', 400);
+    }
+
+    try {
+        Database::begin();
+        $now = now_sql();
+        $branchId = null;
+
+        // Prefer first existing branch; otherwise create shop branch
+        $existingBranch = $pdo->query('SELECT id FROM branches ORDER BY created_at ASC LIMIT 1')->fetch();
+        if ($existingBranch) {
+            $branchId = $existingBranch['id'];
+        } else {
+            $branchId = uuid_v4();
+            $pdo->prepare(
+                'INSERT INTO branches (id, name, address, phone, created_at, updated_at) VALUES (?,?,?,?,?,?)'
+            )->execute([
+                $branchId,
+                $shopName !== '' ? $shopName : 'Main Showroom',
+                null,
+                $phone !== '' ? $phone : null,
+                $now,
+                $now,
+            ]);
+        }
+
+        // If shop name given and we reused a branch with default name, optionally leave as-is
+        if ($shopName !== '' && $existingBranch) {
+            // create additional branch only if user provided distinct shop name and no branches named that
+            $st = $pdo->prepare('SELECT id FROM branches WHERE name = ? LIMIT 1');
+            $st->execute([$shopName]);
+            $named = $st->fetch();
+            if ($named) {
+                $branchId = $named['id'];
+            }
+        }
+
+        $userId = uuid_v4();
+        $hash = password_hash($password, PASSWORD_BCRYPT);
+        $pdo->prepare(
+            'INSERT INTO users (id, name, username, password_hash, role, email, phone, is_active, branch_id, created_at, updated_at)
+             VALUES (?,?,?,?,?,?,?,1,?,?,?)'
+        )->execute([
+            $userId,
+            $name,
+            $username,
+            $hash,
+            'OWNER',
+            $email !== '' ? $email : null,
+            $phone !== '' ? $phone : null,
+            $branchId,
+            $now,
+            $now,
+        ]);
+
+        // Ensure default bank accounts exist
+        $cnt = (int) $pdo->query('SELECT COUNT(*) FROM bank_accounts')->fetchColumn();
+        if ($cnt === 0) {
+            $pdo->prepare(
+                'INSERT INTO bank_accounts (id, name, type, balance, is_active, created_at, updated_at) VALUES (?,?,?,0,1,?,?)'
+            )->execute([uuid_v4(), 'Cash Drawer', 'CASH', $now, $now]);
+            $pdo->prepare(
+                'INSERT INTO bank_accounts (id, name, type, balance, is_active, created_at, updated_at) VALUES (?,?,?,0,1,?,?)'
+            )->execute([uuid_v4(), 'Main Bank', 'BANK', $now, $now]);
+        }
+
+        Database::commit();
+
+        $fetch = $pdo->prepare(auth_user_select_sql() . ' WHERE u.id = ? LIMIT 1');
+        $fetch->execute([$userId]);
+        $row = $fetch->fetch();
+        json_response(auth_token_user_response($row), 201);
+    } catch (Throwable $e) {
+        Database::rollBack();
+        json_error($e->getMessage() ?: 'Signup failed.', 500);
+    }
 }
 
 function auth_me(array $params): void
@@ -157,7 +271,7 @@ function auth_users_create(array $params): void
     $name = trim((string) ($body['name'] ?? ''));
     $username = trim((string) ($body['username'] ?? ''));
     $password = (string) ($body['password'] ?? '');
-    $role = trim((string) ($body['role'] ?? ''));
+    $role = strtoupper(trim((string) ($body['role'] ?? '')));
     $email = $body['email'] ?? null;
     $phone = $body['phone'] ?? null;
     $branchId = $body['branchId'] ?? null;
@@ -165,12 +279,33 @@ function auth_users_create(array $params): void
     if ($name === '' || $username === '' || $password === '' || $role === '') {
         json_error('Name, username, password, and role are required.', 400);
     }
+    if (strlen($password) < 4) {
+        json_error('Password must be at least 4 characters.', 400);
+    }
 
+    // Staff roles admin can create (not another OWNER via this endpoint)
+    $allowedStaff = ['CASHIER', 'TECHNICIAN', 'MANAGER', 'WAREHOUSE'];
+    // Accept friendly aliases from UI
+    if ($role === 'TECH' || $role === 'TECHNICIAN') {
+        $role = 'TECHNICIAN';
+    }
+    if ($role === 'CASHIER' || $role === 'STAFF') {
+        $role = $role === 'STAFF' ? 'CASHIER' : 'CASHIER';
+    }
+    if (!in_array($role, $allowedStaff, true)) {
+        json_error('Invalid staff role. Use CASHIER or TECHNICIAN (or MANAGER / WAREHOUSE).', 400);
+    }
+
+    $actor = Auth::requireUser();
     $pdo = Database::pdo();
     $check = $pdo->prepare('SELECT id FROM users WHERE username = ? LIMIT 1');
     $check->execute([$username]);
     if ($check->fetch()) {
         json_error('Username already exists.', 400);
+    }
+
+    if (!$branchId) {
+        $branchId = $actor['branchId'] ?? null;
     }
 
     $id = uuid_v4();

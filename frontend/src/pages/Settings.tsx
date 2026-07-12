@@ -23,20 +23,25 @@ import {
   ChevronRight,
   AlertTriangle,
   RefreshCw,
+  Users,
+  UserPlus,
+  Shield,
 } from "lucide-react";
 
-type TabId = "shops" | "tax" | "backup" | "danger";
+type TabId = "shops" | "staff" | "tax" | "backup" | "danger";
 
 const TABS: { id: TabId; label: string; iconSrc: string; accent: string }[] = [
   { id: "shops",  label: "Shop Branches", iconSrc: "/icons/settings/shops.png", accent: "text-primary" },
+  { id: "staff",  label: "Staff",         iconSrc: "/icons/settings/gear.png", accent: "text-indigo-500" },
   { id: "tax",    label: "GST / Tax",     iconSrc: "/icons/settings/tax.png", accent: "text-emerald-500" },
   { id: "backup", label: "Backup & Restore", iconSrc: "/icons/settings/backup.png", accent: "text-blue-500" },
   { id: "danger", label: "Danger Zone",   iconSrc: "/icons/settings/danger.png", accent: "text-red-400" },
 ];
 
 export default function Settings() {
-  const { addNotification, gstEnabled, gstRate, setGstSettings, setBranches: setStoreBranches } = useStore();
+  const { addNotification, gstEnabled, gstRate, setGstSettings, setBranches: setStoreBranches, user } = useStore();
   const [activeTab, setActiveTab] = useState<TabId>("shops");
+  const isOwner = user?.role === "OWNER";
 
   // ─── GST State ────────────────────────────────────────────────────────────
   const [gstEnabledLocal, setGstEnabledLocal] = useState(gstEnabled);
@@ -79,11 +84,26 @@ export default function Settings() {
   // ─── Danger Zone State ────────────────────────────────────────────────────
   const [resetting, setResetting] = useState(false);
 
+  // ─── Staff State ──────────────────────────────────────────────────────────
+  const [staff, setStaff] = useState<any[]>([]);
+  const [staffLoading, setStaffLoading] = useState(false);
+  const [staffModalOpen, setStaffModalOpen] = useState(false);
+  const [savingStaff, setSavingStaff] = useState(false);
+  const [newStaff, setNewStaff] = useState({
+    name: "",
+    username: "",
+    password: "",
+    role: "CASHIER" as "CASHIER" | "TECHNICIAN",
+    phone: "",
+    branchId: ""
+  });
+
   // ─── Load ─────────────────────────────────────────────────────────────────
   useEffect(() => {
     loadBranches();
     loadBackups();
-  }, []);
+    if (isOwner) loadStaff();
+  }, [isOwner]);
 
   const loadBranches = async () => {
     try {
@@ -93,6 +113,63 @@ export default function Settings() {
       setStoreBranches(list);
     } catch {
       addNotification("Failed to load branches.", "warning");
+    }
+  };
+
+  const loadStaff = async () => {
+    setStaffLoading(true);
+    try {
+      const res = await axios.get("/api/auth/users");
+      setStaff(Array.isArray(res.data) ? res.data : []);
+    } catch {
+      addNotification("Failed to load staff list.", "warning");
+      setStaff([]);
+    } finally {
+      setStaffLoading(false);
+    }
+  };
+
+  const handleCreateStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newStaff.name.trim() || !newStaff.username.trim() || !newStaff.password) {
+      addNotification("Name, username, and password are required.", "warning");
+      return;
+    }
+    setSavingStaff(true);
+    try {
+      await axios.post("/api/auth/users", {
+        name: newStaff.name.trim(),
+        username: newStaff.username.trim(),
+        password: newStaff.password,
+        role: newStaff.role,
+        phone: newStaff.phone.trim() || undefined,
+        branchId: newStaff.branchId || undefined
+      });
+      addNotification(`${newStaff.role === "TECHNICIAN" ? "Technician" : "Cashier"} created.`, "success");
+      setStaffModalOpen(false);
+      setNewStaff({ name: "", username: "", password: "", role: "CASHIER", phone: "", branchId: "" });
+      loadStaff();
+    } catch (err: any) {
+      addNotification(err.response?.data?.error || "Failed to create staff.", "warning");
+    } finally {
+      setSavingStaff(false);
+    }
+  };
+
+  const handleToggleStaff = async (u: any) => {
+    if (u.role === "OWNER") {
+      addNotification("Cannot deactivate an owner from here.", "warning");
+      return;
+    }
+    try {
+      await axios.delete(`/api/auth/users/${u.id}`);
+      addNotification(
+        u.isActive ? `${u.name} deactivated.` : `${u.name} activated.`,
+        "success"
+      );
+      loadStaff();
+    } catch (err: any) {
+      addNotification(err.response?.data?.error || "Failed to update staff status.", "warning");
     }
   };
 
@@ -683,6 +760,117 @@ export default function Settings() {
     </div>
   );
 
+  const roleBadge = (role: string) => {
+    const map: Record<string, string> = {
+      OWNER: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+      MANAGER: "bg-violet-500/15 text-violet-400 border-violet-500/30",
+      CASHIER: "bg-sky-500/15 text-sky-400 border-sky-500/30",
+      TECHNICIAN: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+      WAREHOUSE: "bg-orange-500/15 text-orange-400 border-orange-500/30"
+    };
+    return map[role] || "bg-secondary text-muted-foreground border-border";
+  };
+
+  const renderStaff = () => (
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-extrabold text-foreground flex items-center gap-2">
+            <Users className="w-4 h-4 text-indigo-400" /> Staff accounts
+          </h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Create cashiers and technicians. Only owners can manage staff.
+          </p>
+        </div>
+        {isOwner && (
+          <button
+            type="button"
+            onClick={() => {
+              setNewStaff({
+                name: "",
+                username: "",
+                password: "",
+                role: "CASHIER",
+                phone: "",
+                branchId: branches[0]?.id || ""
+              });
+              setStaffModalOpen(true);
+            }}
+            className="bg-primary text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 hover:bg-primary/90 transition"
+          >
+            <UserPlus className="w-4 h-4" /> Add staff
+          </button>
+        )}
+      </div>
+
+      {!isOwner ? (
+        <div className="bg-card border border-border rounded-2xl p-8 text-center text-sm text-muted-foreground">
+          Only the shop <strong className="text-foreground">owner</strong> can add or manage staff.
+        </div>
+      ) : staffLoading ? (
+        <div className="py-16 text-center text-xs text-muted-foreground">Loading staff…</div>
+      ) : staff.length === 0 ? (
+        <div className="bg-card border border-dashed border-border rounded-2xl p-10 text-center">
+          <Shield className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+          <p className="text-sm font-bold text-foreground">No staff yet</p>
+          <p className="text-xs text-muted-foreground mt-1">Add a cashier for POS or a technician for repairs.</p>
+        </div>
+      ) : (
+        <div className="bg-card border border-border rounded-2xl overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-border bg-secondary/40 text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <th className="px-4 py-3 font-bold">Name</th>
+                  <th className="px-4 py-3 font-bold">Username</th>
+                  <th className="px-4 py-3 font-bold">Role</th>
+                  <th className="px-4 py-3 font-bold">Branch</th>
+                  <th className="px-4 py-3 font-bold">Status</th>
+                  <th className="px-4 py-3 font-bold text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {staff.map((u) => (
+                  <tr key={u.id} className="border-b border-border/60 last:border-0 hover:bg-secondary/20">
+                    <td className="px-4 py-3 font-semibold text-foreground">{u.name}</td>
+                    <td className="px-4 py-3 font-mono text-muted-foreground">{u.username}</td>
+                    <td className="px-4 py-3">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border ${roleBadge(u.role)}`}>
+                        {u.role}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">{u.branch?.name || "—"}</td>
+                    <td className="px-4 py-3">
+                      <span className={`text-[10px] font-bold ${u.isActive ? "text-emerald-400" : "text-red-400"}`}>
+                        {u.isActive ? "Active" : "Inactive"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {u.role !== "OWNER" && (
+                        <button
+                          type="button"
+                          onClick={() => handleToggleStaff(u)}
+                          className="text-[11px] font-bold text-primary hover:underline"
+                        >
+                          {u.isActive ? "Deactivate" : "Activate"}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-secondary/40 border border-border rounded-xl p-4 text-[11px] text-muted-foreground space-y-1">
+        <p><strong className="text-foreground">CASHIER</strong> — POS sales, customers, installments</p>
+        <p><strong className="text-foreground">TECHNICIAN</strong> — repairs & warranty jobs</p>
+      </div>
+    </div>
+  );
+
   const renderDanger = () => (
     <div className="max-w-2xl space-y-5">
       <div className="flex gap-3 bg-red-500/5 border border-red-500/20 rounded-2xl p-4 text-xs text-muted-foreground">
@@ -782,9 +970,82 @@ export default function Settings() {
 
       {/* Tab Content */}
       {activeTab === "shops"  && renderShops()}
+      {activeTab === "staff"  && renderStaff()}
       {activeTab === "tax"    && renderTax()}
       {activeTab === "backup" && renderBackup()}
       {activeTab === "danger" && renderDanger()}
+
+      {/* Add Staff Modal */}
+      {staffModalOpen && (
+        <Modal
+          title="Add staff member"
+          onClose={() => setStaffModalOpen(false)}
+          onSubmit={handleCreateStaff}
+          submitLabel={savingStaff ? "Saving…" : "Create staff"}
+        >
+          <Field label="Full name *">
+            <input
+              required
+              type="text"
+              value={newStaff.name}
+              onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
+              placeholder="e.g. Ali Cashier"
+              className={inputCls}
+            />
+          </Field>
+          <Field label="Username *">
+            <input
+              required
+              type="text"
+              value={newStaff.username}
+              onChange={(e) => setNewStaff({ ...newStaff, username: e.target.value })}
+              placeholder="e.g. cashier1"
+              className={inputCls}
+            />
+          </Field>
+          <Field label="Password *">
+            <input
+              required
+              type="password"
+              value={newStaff.password}
+              onChange={(e) => setNewStaff({ ...newStaff, password: e.target.value })}
+              placeholder="Min 4 characters"
+              className={inputCls}
+            />
+          </Field>
+          <Field label="Role *">
+            <select
+              value={newStaff.role}
+              onChange={(e) => setNewStaff({ ...newStaff, role: e.target.value as "CASHIER" | "TECHNICIAN" })}
+              className={inputCls}
+            >
+              <option value="CASHIER">Cashier (POS)</option>
+              <option value="TECHNICIAN">Technician (Repairs)</option>
+            </select>
+          </Field>
+          <Field label="Branch">
+            <select
+              value={newStaff.branchId}
+              onChange={(e) => setNewStaff({ ...newStaff, branchId: e.target.value })}
+              className={inputCls}
+            >
+              <option value="">— None —</option>
+              {branches.map((b) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Phone">
+            <input
+              type="text"
+              value={newStaff.phone}
+              onChange={(e) => setNewStaff({ ...newStaff, phone: e.target.value })}
+              placeholder="Optional"
+              className={inputCls}
+            />
+          </Field>
+        </Modal>
+      )}
 
       {/* Add Shop Modal */}
       {addOpen && (

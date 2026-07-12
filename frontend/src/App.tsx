@@ -37,27 +37,29 @@ axios.interceptors.request.use((config) => {
   return config;
 });
 
-// Login Page Component
+// Login + Admin Signup
 function Login() {
   const { login, addNotification, theme } = useStore();
+  const [mode, setMode] = useState<"login" | "signup">("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [shopName, setShopName] = useState("");
+  const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Auto-apply theme on load
   useEffect(() => {
     const root = window.document.documentElement;
     root.classList.remove("light", "dark");
     root.classList.add(theme);
   }, [theme]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username || !password) {
       addNotification("Please enter both username and password.", "warning");
       return;
     }
-
     setLoading(true);
     try {
       const response = await axios.post("/api/auth/login", { username, password });
@@ -72,65 +74,124 @@ function Login() {
     }
   };
 
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !username.trim() || !password) {
+      addNotification("Name, username, and password are required.", "warning");
+      return;
+    }
+    if (password.length < 6) {
+      addNotification("Password must be at least 6 characters.", "warning");
+      return;
+    }
+    setLoading(true);
+    try {
+      const response = await axios.post("/api/auth/signup", {
+        name: name.trim(),
+        username: username.trim(),
+        password,
+        shopName: shopName.trim() || undefined,
+        phone: phone.trim() || undefined
+      });
+      const { token, user } = response.data;
+      login(token, user);
+      addNotification(`Welcome, ${user.name}! Your admin account is ready.`, "success");
+    } catch (err: any) {
+      const msg = err.response?.data?.error || "Signup failed. Try a different username.";
+      addNotification(msg, "warning");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const inputCls =
+    "w-full bg-secondary text-foreground border border-border px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder-muted-foreground transition duration-200";
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      {/* Background radial glow */}
+    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-8">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.08),transparent_50%)] pointer-events-none" />
 
       <div className="w-full max-w-md bg-card border border-border p-8 rounded-2xl shadow-2xl relative overflow-hidden backdrop-blur-md">
-        {/* Glow accent */}
         <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
 
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 text-primary mb-3">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold tracking-tight text-foreground"> POS System</h2>
-          <p className="text-sm text-muted-foreground mt-1">Shop Management Dashboard</p>
+          <h2 className="text-2xl font-bold tracking-tight text-foreground">POS System</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            {mode === "login" ? "Sign in to your shop" : "Create admin (owner) account"}
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Username</label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="e.g., admin, cashier, tech"
-              className="w-full bg-secondary text-foreground border border-border px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder-muted-foreground transition duration-200"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full bg-secondary text-foreground border border-border px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder-muted-foreground transition duration-200"
-            />
-          </div>
-
+        {/* Login / Signup toggle */}
+        <div className="flex gap-1 bg-secondary/80 border border-border p-1 rounded-xl mb-6">
           <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-primary hover:bg-primary/95 text-white font-medium py-3 rounded-xl flex items-center justify-center transition duration-200 disabled:opacity-50"
+            type="button"
+            onClick={() => setMode("login")}
+            className={`flex-1 py-2 rounded-lg text-xs font-bold transition ${
+              mode === "login" ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:text-foreground"
+            }`}
           >
-            {loading ? (
-              <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              "Sign In"
-            )}
+            Sign In
           </button>
-        </form>
-
-        <div className="mt-8 text-center text-xs text-muted-foreground">
-          <p>Default logins: <strong>admin</strong> / <strong>admin123</strong> (Owner)</p>
-          <p className="mt-1">Staff: <strong>cashier</strong> or <strong>tech</strong> / <strong>staff123</strong></p>
+          <button
+            type="button"
+            onClick={() => setMode("signup")}
+            className={`flex-1 py-2 rounded-lg text-xs font-bold transition ${
+              mode === "signup" ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Admin Signup
+          </button>
         </div>
+
+        {mode === "login" ? (
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Username</label>
+              <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="admin" className={inputCls} autoComplete="username" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Password</label>
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className={inputCls} autoComplete="current-password" />
+            </div>
+            <button type="submit" disabled={loading} className="w-full bg-primary hover:bg-primary/95 text-white font-medium py-3 rounded-xl flex items-center justify-center transition disabled:opacity-50">
+              {loading ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Sign In"}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleSignup} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Full name *</label>
+              <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" className={inputCls} required />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Shop name</label>
+              <input type="text" value={shopName} onChange={(e) => setShopName(e.target.value)} placeholder="Main Showroom (optional)" className={inputCls} />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Username *</label>
+              <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="admin" className={inputCls} required autoComplete="username" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Password * (min 6)</label>
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className={inputCls} required autoComplete="new-password" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Phone</label>
+              <input type="text" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Optional" className={inputCls} />
+            </div>
+            <button type="submit" disabled={loading} className="w-full bg-primary hover:bg-primary/95 text-white font-medium py-3 rounded-xl flex items-center justify-center transition disabled:opacity-50">
+              {loading ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Create Admin Account"}
+            </button>
+            <p className="text-[11px] text-muted-foreground text-center">
+              Creates an <strong className="text-foreground">OWNER</strong> account. After signup you can add cashiers & technicians in Settings → Staff.
+            </p>
+          </form>
+        )}
       </div>
     </div>
   );
