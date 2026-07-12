@@ -4,6 +4,7 @@ import axios from "axios";
 import { useStore } from "./store/useStore";
 import Layout from "./components/Layout";
 import TrialExpiredOverlay from "./components/TrialExpiredOverlay";
+import { ToastContainer } from "./components/Toast";
 
 // Import pages
 import Dashboard from "./pages/Dashboard";
@@ -114,7 +115,9 @@ function Login() {
     "w-full bg-secondary text-foreground border border-border px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder-muted-foreground transition duration-200";
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-8">
+    <>
+      <ToastContainer />
+      <div className="min-h-screen flex items-center justify-center bg-background px-4 py-8">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.08),transparent_50%)] pointer-events-none" />
 
       <div className="w-full max-w-md bg-card border border-border p-8 rounded-2xl shadow-2xl relative overflow-hidden backdrop-blur-md">
@@ -227,7 +230,7 @@ function Login() {
           </form>
         )}
       </div>
-    </div>
+    </>
   );
 }
 
