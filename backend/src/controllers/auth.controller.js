@@ -208,8 +208,8 @@ router.post("/users", auth_1.protect, (0, auth_1.restrictTo)("OWNER"), async (re
         return res.status(500).json({ error: "Internal server error." });
     }
 });
-// Update user details (OWNER only)
-router.put("/users/:id", auth_1.protect, (0, auth_1.restrictTo)("OWNER"), async (req, res) => {
+// Update user details (OWNER or SUPER_ADMIN)
+router.put("/users/:id", auth_1.protect, (0, auth_1.restrictTo)("OWNER", "SUPER_ADMIN"), async (req, res) => {
     const { id } = req.params;
     const { name, role, email, phone, branchId, isActive, password } = req.body;
     try {
