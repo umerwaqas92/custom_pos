@@ -25,7 +25,8 @@ import {
   Minimize2,
   Menu,
   ShoppingBag,
-  X
+  X,
+  Lock
 } from "lucide-react";
 
 export default function Layout() {
