@@ -116,7 +116,7 @@ router.get("/me", protect, async (req: AuthenticatedRequest, res: Response) => {
 });
 
 // List all users (Staff Management)
-router.get("/users", protect, restrictTo("OWNER", "MANAGER"), async (req, res) => {
+router.get("/users", protect, restrictTo("OWNER", "MANAGER", "SUPER_ADMIN"), async (req, res) => {
   try {
     const users = await prisma.user.findMany({
       include: { branch: true },

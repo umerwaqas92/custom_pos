@@ -325,6 +325,41 @@ export default function Dashboard() {
       }
     ];
 
+    const salesStatCards = [
+      {
+        title: "Today's Sales",
+        value: money(stats?.todaySales),
+        description: `${stats?.todaySalesCount || 0} invoices today`,
+        icon: DollarSign,
+        color: "bg-sky-500/10 text-sky-400 border-sky-500/20",
+        iconBg: "bg-sky-500/15 ring-sky-500/25"
+      },
+      {
+        title: "Monthly Sales",
+        value: money(stats?.monthlySales),
+        description: `${stats?.monthlySalesCount || 0} invoices this month`,
+        icon: TrendingUp,
+        color: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+        iconBg: "bg-blue-500/15 ring-blue-500/25"
+      },
+      {
+        title: "30-Day Revenue",
+        value: money(stats?.totalRevenue),
+        description: `${stats?.totalSalesCount || 0} total invoices`,
+        icon: Receipt,
+        color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+        iconBg: "bg-emerald-500/15 ring-emerald-500/25"
+      },
+      {
+        title: "30-Day Net Profit",
+        value: money(stats?.netProfit),
+        description: "Revenue − expenses",
+        icon: TrendingDown,
+        color: stats && stats.netProfit >= 0 ? "bg-green-500/10 text-green-400 border-green-500/20" : "bg-rose-500/10 text-rose-400 border-rose-500/20",
+        iconBg: "bg-primary/15 ring-primary/25"
+      }
+    ];
+
     return (
       <div className="space-y-6 flex-1">
         {/* Welcome banner */}
@@ -337,7 +372,7 @@ export default function Dashboard() {
             </div>
             <h1 className="text-2xl font-black tracking-tight text-foreground">Global Platform Overview</h1>
             <p className="text-sm text-muted-foreground">
-              Real-time platform statistics, registered shop branches, users, and catalog items.
+              Platform-wide sales, customers, registered shop branches, users, and catalog items.
             </p>
           </div>
           <button
@@ -349,7 +384,7 @@ export default function Dashboard() {
           </button>
         </div>
 
-        {/* Counters grid */}
+        {/* Platform stats grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           {adminStatCards.map((card, idx) => {
             const Icon = card.icon;
@@ -373,6 +408,117 @@ export default function Dashboard() {
               </div>
             );
           })}
+        </div>
+
+        {/* Sales stats grid */}
+        <div>
+          <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+            <DollarSign className="w-4 h-4 text-primary" />
+            Platform Sales Overview
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            {salesStatCards.map((card, idx) => {
+              const Icon = card.icon;
+              return (
+                <div
+                  key={idx}
+                  className={`bg-card border p-5 rounded-2xl flex items-center justify-between ${card.color}`}
+                >
+                  <div className="space-y-1 min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      {card.title}
+                    </p>
+                    <h3 className="text-2xl font-extrabold tracking-tight text-foreground truncate">{card.value}</h3>
+                    <p className="text-[11px] text-muted-foreground truncate">{card.description}</p>
+                  </div>
+                  <div
+                    className={`shrink-0 ml-2 w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center p-2 ring-1 ${card.iconBg}`}
+                  >
+                    <Icon className="w-5 h-5" />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Recent Sales + Recent Customers */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-card border border-border p-6 rounded-2xl">
+            <div className="flex items-center gap-2 mb-4">
+              <Receipt className="w-5 h-5 text-primary" />
+              <h3 className="font-bold text-sm text-foreground flex-1">Recent Sales (All Branches)</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-border text-muted-foreground font-semibold">
+                    <th className="pb-3 pl-1">Invoice</th>
+                    <th className="pb-3">Customer</th>
+                    <th className="pb-3">Branch</th>
+                    <th className="pb-3">Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/50">
+                  {!stats?.recentSales?.length ? (
+                    <tr>
+                      <td colSpan={4} className="py-8 text-center text-muted-foreground">No sales yet.</td>
+                    </tr>
+                  ) : (
+                    stats.recentSales.map((s: any) => (
+                      <tr key={s.id} className="hover:bg-secondary/30 transition">
+                        <td className="py-3 pl-1 font-mono text-muted-foreground">{s.id.substring(0, 8)}</td>
+                        <td className="py-3 font-semibold text-foreground">
+                          {s.customer?.name || <span className="italic text-muted-foreground">Walk-in</span>}
+                        </td>
+                        <td className="py-3 text-muted-foreground">{(s as any).branch?.name || "—"}</td>
+                        <td className="py-3 font-black text-foreground">{money(s.payableAmount)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="bg-card border border-border p-6 rounded-2xl">
+            <div className="flex items-center gap-2 mb-4">
+              <Users className="w-5 h-5 text-indigo-400" />
+              <h3 className="font-bold text-sm text-foreground flex-1">Recent Customers</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-border text-muted-foreground font-semibold">
+                    <th className="pb-3 pl-1">Name</th>
+                    <th className="pb-3">Phone</th>
+                    <th className="pb-3 text-right">Credit</th>
+                    <th className="pb-3 text-right">Joined</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/50">
+                  {!stats?.recentCustomers?.length ? (
+                    <tr>
+                      <td colSpan={4} className="py-8 text-center text-muted-foreground">No customers yet.</td>
+                    </tr>
+                  ) : (
+                    stats.recentCustomers.map((c: any) => (
+                      <tr key={c.id} className="hover:bg-secondary/30 transition">
+                        <td className="py-3 pl-1 font-semibold text-foreground">{c.name}</td>
+                        <td className="py-3 text-muted-foreground">{c.phone || "—"}</td>
+                        <td className="py-3 text-right font-bold text-foreground">
+                          {c.creditBalance > 0 ? money(c.creditBalance) : "—"}
+                        </td>
+                        <td className="py-3 text-right text-muted-foreground whitespace-nowrap">
+                          {new Date(c.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
     );

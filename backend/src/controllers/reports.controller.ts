@@ -14,7 +14,7 @@ const LOW_STOCK_THRESHOLD = 3;
 // ==================== DASHBOARD REPORT WIDGETS ====================
 
 // Dashboard aggregates (OWNER, MANAGER)
-router.get("/dashboard-stats", protect, restrictTo("OWNER", "MANAGER"), async (req, res) => {
+router.get("/dashboard-stats", protect, restrictTo("OWNER", "MANAGER", "SUPER_ADMIN"), async (req, res) => {
   try {
     const branchId = req.query.branchId ? String(req.query.branchId) : "";
     const cacheKey = `reports:dashboard-stats:${branchId || "all"}`;
@@ -103,6 +103,7 @@ router.get("/dashboard-stats", protect, restrictTo("OWNER", "MANAGER"), async (r
             paymentMethod: true,
             paymentStatus: true,
             returnStatus: true,
+            branch: { select: { id: true, name: true } },
             customer: { select: { id: true, name: true, phone: true } },
             cashier: { select: { name: true } },
             _count: { select: { items: true } }
