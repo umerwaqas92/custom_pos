@@ -237,7 +237,7 @@ function RoleGuard({ children, allowedRoles }: GuardProps) {
 
   if (!user) return <Navigate to="/login" replace />;
 
-  if (user.role !== "SUPER_ADMIN" && !allowedRoles.includes(user.role)) {
+  if (!allowedRoles.includes(user.role)) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-16 h-16 text-destructive mb-4">

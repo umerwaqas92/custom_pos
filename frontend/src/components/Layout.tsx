@@ -177,7 +177,13 @@ export default function Layout() {
           {/* Navigation Links */}
           <nav className="p-3 space-y-1">
             {navItems
-              .filter(item => user && (user.role === "SUPER_ADMIN" || item.roles.includes(user.role)))
+              .filter(item => {
+                if (!user) return false;
+                if (user.role === "SUPER_ADMIN") {
+                  return item.name === "Dashboard";
+                }
+                return item.roles.includes(user.role);
+              })
               .map(item => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path;
@@ -305,7 +311,13 @@ export default function Layout() {
           {/* Navigation Links */}
           <nav className="p-3 space-y-1">
             {navItems
-              .filter(item => user && (user.role === "SUPER_ADMIN" || item.roles.includes(user.role)))
+              .filter(item => {
+                if (!user) return false;
+                if (user.role === "SUPER_ADMIN") {
+                  return item.name === "Dashboard";
+                }
+                return item.roles.includes(user.role);
+              })
               .map(item => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path;

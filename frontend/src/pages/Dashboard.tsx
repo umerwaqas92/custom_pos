@@ -77,36 +77,56 @@ const money = (n: number | undefined) =>
   `Rs. ${Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 
 export default function Dashboard() {
-  const { addNotification, branches, selectedBranchId } = useStore();
+  const { addNotification, branches, selectedBranchId, user } = useStore();
   const [stats, setStats] = useState<Stats | null>(null);
   const [charts, setCharts] = useState<ChartData | null>(null);
   const [topProducts, setTopProducts] = useState<any[]>([]);
   const [lowStockList, setLowStockList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Super Admin specific state
+  const [allBranches, setAllBranches] = useState<any[]>([]);
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [adminTab, setAdminTab] = useState<"branches" | "users" | "products">("branches");
+
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
       const branchParams = selectedBranchId ? { branchId: selectedBranchId } : {};
       const opts = { params: branchParams, timeout: 20000 };
-      const [statsRes, chartsRes, topRes, alertRes] = await Promise.all([
-        axios.get("/api/reports/dashboard-stats", opts),
-        axios.get("/api/reports/charts", { timeout: 20000 }),
-        axios.get("/api/reports/top-selling", { timeout: 20000 }),
-        axios.get("/api/inventory/alerts", opts)
-      ]);
 
-      const chartsData = chartsRes.data && typeof chartsRes.data === "object" ? chartsRes.data : {};
-      setStats(statsRes.data && typeof statsRes.data === "object" ? statsRes.data : null);
-      setCharts({
-        salesTrend: Array.isArray(chartsData.salesTrend) ? chartsData.salesTrend : [],
-        dailyRevenue: Array.isArray(chartsData.dailyRevenue) ? chartsData.dailyRevenue : [],
-        profitTrend: Array.isArray(chartsData.profitTrend) ? chartsData.profitTrend : [],
-        categoryChartData: Array.isArray(chartsData.categoryChartData) ? chartsData.categoryChartData : [],
-        brandChartData: Array.isArray(chartsData.brandChartData) ? chartsData.brandChartData : []
-      });
-      setTopProducts(Array.isArray(topRes.data) ? topRes.data : []);
-      setLowStockList(Array.isArray(alertRes.data) ? alertRes.data : []);
+      if (user?.role === "SUPER_ADMIN") {
+        const [statsRes, branchesRes, usersRes, productsRes] = await Promise.all([
+          axios.get("/api/reports/dashboard-stats", opts),
+          axios.get("/api/auth/branches"),
+          axios.get("/api/auth/users"),
+          axios.get("/api/products")
+        ]);
+        setStats(statsRes.data && typeof statsRes.data === "object" ? statsRes.data : null);
+        setAllBranches(Array.isArray(branchesRes.data) ? branchesRes.data : []);
+        setAllUsers(Array.isArray(usersRes.data) ? usersRes.data : []);
+        setAllProducts(Array.isArray(productsRes.data) ? productsRes.data : []);
+      } else {
+        const [statsRes, chartsRes, topRes, alertRes] = await Promise.all([
+          axios.get("/api/reports/dashboard-stats", opts),
+          axios.get("/api/reports/charts", { timeout: 20000 }),
+          axios.get("/api/reports/top-selling", { timeout: 20000 }),
+          axios.get("/api/inventory/alerts", opts)
+        ]);
+
+        const chartsData = chartsRes.data && typeof chartsRes.data === "object" ? chartsRes.data : {};
+        setStats(statsRes.data && typeof statsRes.data === "object" ? statsRes.data : null);
+        setCharts({
+          salesTrend: Array.isArray(chartsData.salesTrend) ? chartsData.salesTrend : [],
+          dailyRevenue: Array.isArray(chartsData.dailyRevenue) ? chartsData.dailyRevenue : [],
+          profitTrend: Array.isArray(chartsData.profitTrend) ? chartsData.profitTrend : [],
+          categoryChartData: Array.isArray(chartsData.categoryChartData) ? chartsData.categoryChartData : [],
+          brandChartData: Array.isArray(chartsData.brandChartData) ? chartsData.brandChartData : []
+        });
+        setTopProducts(Array.isArray(topRes.data) ? topRes.data : []);
+        setLowStockList(Array.isArray(alertRes.data) ? alertRes.data : []);
+      }
     } catch (err) {
       console.error(err);
       setStats({
@@ -149,7 +169,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchDashboardData();
-  }, [addNotification, selectedBranchId]);
+  }, [addNotification, selectedBranchId, user]);
 
   const activeBranch = branches.find((b) => b.id === selectedBranchId);
   const displayName = activeBranch?.name || "Dashboard";
@@ -270,12 +290,264 @@ export default function Dashboard() {
     }
   ];
 
+  const renderSuperAdminDashboard = () => {
+    const adminStatCards = [
+      {
+        title: "Total Shop Branches",
+        value: allBranches.length,
+        description: "Registered locations",
+        icon: ShoppingBag,
+        color: "bg-sky-500/10 text-sky-400 border-sky-500/20",
+        iconBg: "bg-sky-500/15 ring-sky-500/25"
+      },
+      {
+        title: "Total Platform Users",
+        value: allUsers.length,
+        description: "Staff & Owner accounts",
+        icon: Users,
+        color: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+        iconBg: "bg-blue-500/15 ring-blue-500/25"
+      },
+      {
+        title: "Total System Products",
+        value: allProducts.length,
+        description: "SKUs across all branches",
+        icon: Package2,
+        color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+        iconBg: "bg-emerald-500/15 ring-emerald-500/25"
+      },
+      {
+        title: "Total Platform Customers",
+        value: stats?.totalCustomers || 0,
+        description: "Registered shoppers",
+        icon: Award,
+        color: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+        iconBg: "bg-amber-500/15 ring-amber-500/25"
+      }
+    ];
+
+    const roleBadge = (role: string) => {
+      const map: Record<string, string> = {
+        OWNER: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+        MANAGER: "bg-violet-500/15 text-violet-400 border-violet-500/30",
+        CASHIER: "bg-sky-500/15 text-sky-400 border-sky-500/30",
+        TECHNICIAN: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+        WAREHOUSE: "bg-orange-500/15 text-orange-400 border-orange-500/30",
+        SUPER_ADMIN: "bg-red-500/15 text-red-400 border-red-500/30"
+      };
+      return map[role] || "bg-secondary text-muted-foreground border-border";
+    };
+
+    return (
+      <div className="space-y-6 flex-1">
+        {/* Welcome banner */}
+        <div className="bg-card border border-border p-6 rounded-2xl flex items-center justify-between relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+          <div className="space-y-1 relative z-10">
+            <div className="flex items-center gap-2 text-primary">
+              <Sparkles className="w-5 h-5" />
+              <span className="text-xs font-bold uppercase tracking-wider">Super Admin Console</span>
+            </div>
+            <h1 className="text-2xl font-black tracking-tight text-foreground">Global Platform Overview</h1>
+            <p className="text-sm text-muted-foreground">
+              Real-time platform statistics, registered shop branches, users, and catalog items.
+            </p>
+          </div>
+          <button
+            onClick={fetchDashboardData}
+            disabled={loading}
+            className="bg-secondary border border-border hover:bg-secondary/80 text-foreground text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-1.5 transition disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Refresh
+          </button>
+        </div>
+
+        {/* Counters grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          {adminStatCards.map((card, idx) => {
+            const Icon = card.icon;
+            return (
+              <div
+                key={idx}
+                className={`bg-card border p-5 rounded-2xl flex items-center justify-between ${card.color}`}
+              >
+                <div className="space-y-1 min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    {card.title}
+                  </p>
+                  <h3 className="text-2xl font-extrabold tracking-tight text-foreground truncate">{card.value}</h3>
+                  <p className="text-[11px] text-muted-foreground truncate">{card.description}</p>
+                </div>
+                <div
+                  className={`shrink-0 ml-2 w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center p-2 ring-1 ${card.iconBg}`}
+                >
+                  <Icon className="w-5 h-5" />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Tab Selection */}
+        <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
+          <div className="flex border-b border-border">
+            <button
+              onClick={() => setAdminTab("branches")}
+              className={`pb-3 px-4 text-xs font-bold border-b-2 transition ${
+                adminTab === "branches"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Shop Branches ({allBranches.length})
+            </button>
+            <button
+              onClick={() => setAdminTab("users")}
+              className={`pb-3 px-4 text-xs font-bold border-b-2 transition ${
+                adminTab === "users"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Platform Users ({allUsers.length})
+            </button>
+            <button
+              onClick={() => setAdminTab("products")}
+              className={`pb-3 px-4 text-xs font-bold border-b-2 transition ${
+                adminTab === "products"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Registered Products ({allProducts.length})
+            </button>
+          </div>
+
+          {/* Tab contents */}
+          {adminTab === "branches" && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-border bg-secondary/40 text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <th className="px-4 py-3 font-bold">Branch Name</th>
+                    <th className="px-4 py-3 font-bold">Address</th>
+                    <th className="px-4 py-3 font-bold">Phone</th>
+                    <th className="px-4 py-3 font-bold">ID Reference</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {allBranches.map((b) => (
+                    <tr key={b.id} className="hover:bg-secondary/20 transition-colors">
+                      <td className="px-4 py-3 font-bold text-foreground">{b.name}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{b.address || "—"}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{b.phone || "—"}</td>
+                      <td className="px-4 py-3 font-mono text-[10px] text-muted-foreground">{b.id}</td>
+                    </tr>
+                  ))}
+                  {allBranches.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="py-8 text-center text-muted-foreground">No branches found.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {adminTab === "users" && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-border bg-secondary/40 text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <th className="px-4 py-3 font-bold">Name</th>
+                    <th className="px-4 py-3 font-bold">Username / Email</th>
+                    <th className="px-4 py-3 font-bold">Role</th>
+                    <th className="px-4 py-3 font-bold">Assigned Branch</th>
+                    <th className="px-4 py-3 font-bold">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {allUsers.map((u) => (
+                    <tr key={u.id} className="hover:bg-secondary/20 transition-colors">
+                      <td className="px-4 py-3 font-bold text-foreground">{u.name}</td>
+                      <td className="px-4 py-3 font-mono text-muted-foreground">{u.email || u.username}</td>
+                      <td className="px-4 py-3">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border ${roleBadge(u.role)}`}>
+                          {u.role}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">{u.branch?.name || "—"}</td>
+                      <td className="px-4 py-3">
+                        <span className={`text-[10px] font-bold ${u.isActive ? "text-emerald-400" : "text-red-400"}`}>
+                          {u.isActive ? "Active" : "Inactive"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                  {allUsers.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="py-8 text-center text-muted-foreground">No users found.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {adminTab === "products" && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-border bg-secondary/40 text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <th className="px-4 py-3 font-bold">SKU</th>
+                    <th className="px-4 py-3 font-bold">Product Name</th>
+                    <th className="px-4 py-3 font-bold">Category / Brand</th>
+                    <th className="px-4 py-3 font-bold">Purchase Price</th>
+                    <th className="px-4 py-3 font-bold">Selling Price</th>
+                    <th className="px-4 py-3 font-bold">Stock Qty</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {allProducts.map((p) => (
+                    <tr key={p.id} className="hover:bg-secondary/20 transition-colors">
+                      <td className="px-4 py-3 font-mono font-bold text-foreground">{p.sku}</td>
+                      <td className="px-4 py-3 text-foreground">{p.name}</td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {p.cat_name || "—"} / {p.brand_name || "—"}
+                      </td>
+                      <td className="px-4 py-3 font-semibold text-muted-foreground">{money(p.purchasePrice)}</td>
+                      <td className="px-4 py-3 font-extrabold text-foreground">{money(p.sellingPrice)}</td>
+                      <td className="px-4 py-3">
+                        <span className={`font-bold ${p.stockQuantity <= p.minStock ? "text-red-400" : "text-foreground"}`}>
+                          {p.stockQuantity}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                  {allProducts.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center text-muted-foreground">No products found.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const chartTooltipStyle = {
     backgroundColor: "hsl(var(--card))",
     borderColor: "hsl(var(--border))",
     borderRadius: 12,
     fontSize: 12
   };
+
+  if (user?.role === "SUPER_ADMIN") {
+    return renderSuperAdminDashboard();
+  }
 
   return (
     <div className="space-y-6 flex-1">
