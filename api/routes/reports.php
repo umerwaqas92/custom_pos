@@ -962,8 +962,8 @@ function reports_charts(array $params): void
 {
     $pdo = Database::pdo();
     [$saleWhere, $saleArgs] = reports_dashboard_period_filter();
-    // Strip branch_id alias — charts SQL uses s. prefix
-    $saleWhereS = str_replace('branch_id', 's.branch_id', str_replace('sale_date', 's.sale_date', $saleWhere));
+    // Alias for queries that use s. prefix
+    $saleWhereS = str_replace('branch_id', 's.branch_id', str_replace('sale_date', 's.sale_date', str_replace('owner_id', 's.owner_id', $saleWhere)));
     $expWhere = str_replace('sale_date', 'date', explode(' AND branch_id', $saleWhere)[0]);
     // rebuild expense filter cleanly
     [$expWhere, $expArgs] = reports_expense_period_filter();
@@ -1090,7 +1090,7 @@ function reports_top_selling(array $params): void
 {
     $pdo = Database::pdo();
     [$saleWhere, $saleArgs] = reports_dashboard_period_filter();
-    $saleWhereS = str_replace('branch_id', 's.branch_id', str_replace('sale_date', 's.sale_date', $saleWhere));
+    $saleWhereS = str_replace('branch_id', 's.branch_id', str_replace('sale_date', 's.sale_date', str_replace('owner_id', 's.owner_id', $saleWhere)));
     $sql = "SELECT p.id, p.name, p.sku, br.name AS brand_name, SUM(si.quantity) AS qty, SUM(si.total_price) AS revenue
             FROM sale_items si
             JOIN sales s ON s.id = si.sale_id
