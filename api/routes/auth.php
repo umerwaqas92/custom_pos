@@ -13,10 +13,10 @@ function register_auth_routes(Router $router): void
     $router->get('auth/me', 'auth_me');
 
     // Users / staff (OWNER creates cashiers & techs)
-    $router->get('auth/users', 'auth_users_list', false, ['OWNER', 'MANAGER']);
+    $router->get('auth/users', 'auth_users_list', false, ['OWNER', 'MANAGER', 'SUPER_ADMIN']);
     $router->post('auth/users', 'auth_users_create', false, ['OWNER']);
-    $router->put('auth/users/:id', 'auth_users_update', false, ['OWNER']);
-    $router->delete('auth/users/:id', 'auth_users_toggle', false, ['OWNER']);
+    $router->put('auth/users/:id', 'auth_users_update', false, ['OWNER', 'SUPER_ADMIN']);
+    $router->delete('auth/users/:id', 'auth_users_toggle', false, ['OWNER', 'SUPER_ADMIN']);
 
     // Branches
     $router->get('auth/branches', 'auth_branches_list');
@@ -261,10 +261,16 @@ function auth_me(array $params): void
 function auth_users_list(array $params): void
 {
     $pdo = Database::pdo();
-    $ownerId = tenant_owner_id();
-    $stmt = $pdo->prepare(auth_user_select_sql() . ' WHERE u.owner_id = ? ORDER BY u.created_at DESC');
-    $stmt->execute([$ownerId]);
-    $rows = $stmt->fetchAll();
+    $user = Auth::requireUser();
+    if ($user['role'] === 'SUPER_ADMIN') {
+        $stmt = $pdo->query(auth_user_select_sql() . ' ORDER BY u.created_at DESC');
+        $rows = $stmt->fetchAll();
+    } else {
+        $ownerId = tenant_owner_id();
+        $stmt = $pdo->prepare(auth_user_select_sql() . ' WHERE u.owner_id = ? ORDER BY u.created_at DESC');
+        $stmt->execute([$ownerId]);
+        $rows = $stmt->fetchAll();
+    }
     $users = array_map(static fn($r) => auth_format_user($r), $rows);
     json_response($users);
 }
@@ -367,10 +373,16 @@ function auth_users_update(array $params): void
     $id = $params['id'];
     $body = read_json_body();
     $pdo = Database::pdo();
-    $ownerId = tenant_owner_id();
+    $authUser = Auth::requireUser();
 
-    $exists = $pdo->prepare('SELECT id FROM users WHERE id = ? AND owner_id = ? LIMIT 1');
-    $exists->execute([$id, $ownerId]);
+    if ($authUser['role'] === 'SUPER_ADMIN') {
+        $exists = $pdo->prepare('SELECT id FROM users WHERE id = ? LIMIT 1');
+        $exists->execute([$id]);
+    } else {
+        $ownerId = tenant_owner_id();
+        $exists = $pdo->prepare('SELECT id FROM users WHERE id = ? AND owner_id = ? LIMIT 1');
+        $exists->execute([$id, $ownerId]);
+    }
     if (!$exists->fetch()) {
         json_error('User not found.', 404);
     }

@@ -237,7 +237,7 @@ export default function Layout() {
                   <ShieldCheck className={`w-3.5 h-3.5 ${user.role === "SUPER_ADMIN" ? "text-amber-500" : "text-blue-400"}`} />
                   {user.role === "SUPER_ADMIN" ? (
                     <span className="text-[10px] text-amber-500 uppercase font-bold bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
-                      Super Admin (Read-Only)
+                      Super Admin
                     </span>
                   ) : (
                     <span className="text-[10px] text-muted-foreground uppercase font-semibold">{user.role}</span>
@@ -374,7 +374,7 @@ export default function Layout() {
                   <ShieldCheck className={`w-3.5 h-3.5 ${user.role === "SUPER_ADMIN" ? "text-amber-500" : "text-blue-400"}`} />
                   {user.role === "SUPER_ADMIN" ? (
                     <span className="text-[10px] text-amber-500 uppercase font-bold bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
-                      Super Admin (Read-Only)
+                      Super Admin
                     </span>
                   ) : (
                     <span className="text-[10px] text-muted-foreground uppercase font-semibold">{user.role}</span>

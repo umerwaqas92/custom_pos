@@ -135,8 +135,8 @@ final class Auth
             $ownerId = (string) $id;
         }
 
-        if ($role === 'SUPER_ADMIN' && !in_array($method, ['GET', 'HEAD', 'OPTIONS'], true)) {
-            json_error('Super Admin has read-only access.', 403);
+        if ($role === 'SUPER_ADMIN') {
+            // SUPER_ADMIN can perform any operation across all tenants
         }
 
         self::$user = [
