@@ -139,6 +139,8 @@ export default function Layout() {
     { name: "Branches", path: "/admin/branches", icon: ShoppingBag, iconSrc: "/icons/sidebar/dashboard.png", roles: ["SUPER_ADMIN"] },
     { name: "Platform Users", path: "/admin/users", icon: Users, iconSrc: "/icons/sidebar/contacts.png", roles: ["SUPER_ADMIN"] },
     { name: "All Products", path: "/admin/products", icon: Package, iconSrc: "/icons/sidebar/inventory.png", roles: ["SUPER_ADMIN"] },
+    { name: "Platform Sales", path: "/admin/sales", icon: FileText, iconSrc: "/icons/sidebar/sales-history.png", roles: ["SUPER_ADMIN"] },
+    { name: "Customers", path: "/admin/customers", icon: Users, iconSrc: "/icons/sidebar/contacts.png", roles: ["SUPER_ADMIN"] },
     { name: "Settings", path: "/settings", icon: Settings, iconSrc: "/icons/sidebar/settings.png", roles: ["OWNER", "MANAGER"] }
   ];
 

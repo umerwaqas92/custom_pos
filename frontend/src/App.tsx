@@ -18,6 +18,8 @@ import Settings from "./pages/Settings";
 import SuperAdminBranches from "./pages/SuperAdminBranches";
 import SuperAdminUsers from "./pages/SuperAdminUsers";
 import SuperAdminProducts from "./pages/SuperAdminProducts";
+import SuperAdminSales from "./pages/SuperAdminSales";
+import SuperAdminCustomers from "./pages/SuperAdminCustomers";
 
 // API base: production uses same origin (PHP /api on shared host).
 // Dev defaults to Node backend; override with VITE_API_URL (e.g. http://localhost:8080 for PHP).
@@ -488,6 +490,22 @@ export default function App() {
             element={
               <RoleGuard allowedRoles={["SUPER_ADMIN"]}>
                 <SuperAdminProducts />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="admin/sales"
+            element={
+              <RoleGuard allowedRoles={["SUPER_ADMIN"]}>
+                <SuperAdminSales />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="admin/customers"
+            element={
+              <RoleGuard allowedRoles={["SUPER_ADMIN"]}>
+                <SuperAdminCustomers />
               </RoleGuard>
             }
           />

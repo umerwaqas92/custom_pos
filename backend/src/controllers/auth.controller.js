@@ -133,7 +133,7 @@ router.get("/me", auth_1.protect, async (req, res) => {
     }
 });
 // List all users (Staff Management)
-router.get("/users", auth_1.protect, (0, auth_1.restrictTo)("OWNER", "MANAGER"), async (req, res) => {
+router.get("/users", auth_1.protect, (0, auth_1.restrictTo)("OWNER", "MANAGER", "SUPER_ADMIN"), async (req, res) => {
     try {
         const users = await db_1.default.user.findMany({
             include: { branch: true },
