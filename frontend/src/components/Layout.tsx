@@ -24,6 +24,7 @@ import {
   Maximize2,
   Minimize2,
   Menu,
+  ShoppingBag,
   X
 } from "lucide-react";
 
