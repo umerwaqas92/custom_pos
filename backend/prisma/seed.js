@@ -61,7 +61,7 @@ async function main() {
     // 2. Create Branches
     const showroom = await prisma.branch.create({
         data: {
-            name: "Main Showroom",
+            name: "Default Store",
             address: "123 Electronics Avenue, City Center",
             phone: "+1-555-0100"
         }

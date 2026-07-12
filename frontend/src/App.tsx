@@ -170,7 +170,7 @@ function Login() {
             </div>
             <div>
               <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Shop name</label>
-              <input type="text" value={shopName} onChange={(e) => setShopName(e.target.value)} placeholder="Main Showroom (optional)" className={inputCls} />
+              <input type="text" value={shopName} onChange={(e) => setShopName(e.target.value)} placeholder="Default Store (optional)" className={inputCls} />
             </div>
             <div>
               <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Username *</label>

@@ -12,7 +12,7 @@ SET @bank_id   = 'a3000000-0000-4000-8000-000000000002';
 INSERT INTO branches (id, name, address, phone)
 VALUES (
   @branch_id,
-  'Main Showroom',
+  'Default Store',
   'Main Street',
   NULL
 ) ON DUPLICATE KEY UPDATE name = VALUES(name);

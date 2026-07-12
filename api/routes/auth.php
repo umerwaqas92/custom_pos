@@ -197,7 +197,7 @@ function auth_signup(array $params): void
              VALUES (?,?,?,?,?,?,?)'
         )->execute([
             $branchId,
-            $shopName !== '' ? $shopName : 'Main Showroom',
+            $shopName !== '' ? $shopName : 'Default Store',
             null,
             $phone !== '' ? $phone : null,
             $ownerId,
