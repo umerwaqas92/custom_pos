@@ -135,6 +135,10 @@ final class Auth
             $ownerId = (string) $id;
         }
 
+        if ($role === 'SUPER_ADMIN' && !in_array($method, ['GET', 'HEAD', 'OPTIONS'], true)) {
+            json_error('Super Admin has read-only access.', 403);
+        }
+
         self::$user = [
             'id' => (string) $decoded['id'],
             'username' => (string) ($decoded['username'] ?? ''),
@@ -146,7 +150,9 @@ final class Auth
             'ownerId' => $ownerId,
         ];
 
+
         return self::$user;
+
     }
 
     public static function restrictTo(string ...$roles): void

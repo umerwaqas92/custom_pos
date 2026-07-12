@@ -78,6 +78,7 @@ async function main() {
     const salt = await bcrypt.genSalt(10);
     const adminPassword = await bcrypt.hash("admin123", salt);
     const staffPassword = await bcrypt.hash("staff123", salt);
+    const superadminPassword = await bcrypt.hash("superadmin123", salt);
     const owner = await prisma.user.create({
         data: {
             name: "Owner John",
@@ -86,6 +87,17 @@ async function main() {
             role: "OWNER",
             email: "owner@electronics.com",
             phone: "+1-555-1111",
+            branchId: showroom.id
+        }
+    });
+    const superadmin = await prisma.user.create({
+        data: {
+            name: "Super Admin",
+            username: "superadmin",
+            passwordHash: superadminPassword,
+            role: "SUPER_ADMIN",
+            email: "superadmin@shop.com",
+            phone: null,
             branchId: showroom.id
         }
     });

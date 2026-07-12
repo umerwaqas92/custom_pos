@@ -41,7 +41,8 @@ const TABS: { id: TabId; label: string; iconSrc: string; accent: string }[] = [
 export default function Settings() {
   const { addNotification, gstEnabled, gstRate, setGstSettings, setBranches: setStoreBranches, user } = useStore();
   const [activeTab, setActiveTab] = useState<TabId>("shops");
-  const isOwner = user?.role === "OWNER";
+  const isOwner = user?.role === "OWNER" || user?.role === "SUPER_ADMIN";
+  const isReadOnly = user?.role === "SUPER_ADMIN";
 
   // ─── GST State ────────────────────────────────────────────────────────────
   const [gstEnabledLocal, setGstEnabledLocal] = useState(gstEnabled);
@@ -132,6 +133,10 @@ export default function Settings() {
 
   const handleCreateStaff = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isReadOnly) {
+      addNotification("Action failed: Super Admin has read-only access.", "warning");
+      return;
+    }
     if (!newStaff.name.trim() || !newStaff.email.trim() || !newStaff.password) {
       addNotification("Name, email, and password are required.", "warning");
       return;
@@ -158,6 +163,10 @@ export default function Settings() {
   };
 
   const handleToggleStaff = async (u: any) => {
+    if (isReadOnly) {
+      addNotification("Action failed: Super Admin has read-only access.", "warning");
+      return;
+    }
     if (u.role === "OWNER") {
       addNotification("Cannot deactivate an owner from here.", "warning");
       return;
@@ -185,6 +194,10 @@ export default function Settings() {
 
   // ─── GST ──────────────────────────────────────────────────────────────────
   const handleSaveGst = async () => {
+    if (isReadOnly) {
+      addNotification("Action failed: Super Admin has read-only access.", "warning");
+      return;
+    }
     const rate = parseFloat(gstRateLocal);
     if (gstEnabledLocal && (isNaN(rate) || rate < 0 || rate > 100)) {
       addNotification("Enter a valid tax rate between 0 and 100.", "warning");
@@ -212,6 +225,10 @@ export default function Settings() {
   // ─── Branches ─────────────────────────────────────────────────────────────
   const handleAddBranch = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isReadOnly) {
+      addNotification("Action failed: Super Admin has read-only access.", "warning");
+      return;
+    }
     if (!newBranch.name) return addNotification("Shop name is required.", "warning");
     try {
       await axios.post("/api/auth/branches", newBranch);
@@ -232,6 +249,10 @@ export default function Settings() {
 
   const handleEditBranch = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isReadOnly) {
+      addNotification("Action failed: Super Admin has read-only access.", "warning");
+      return;
+    }
     if (!editBranch.name) return addNotification("Shop name is required.", "warning");
     try {
       await axios.put(`/api/auth/branches/${selectedBranchId}`, editBranch);
@@ -244,6 +265,10 @@ export default function Settings() {
   };
 
   const handleDeleteBranch = async (id: string, name: string) => {
+    if (isReadOnly) {
+      addNotification("Action failed: Super Admin has read-only access.", "warning");
+      return;
+    }
     if (!window.confirm(`Delete "${name}"? All stock records for this branch will be removed.`)) return;
     try {
       await axios.delete(`/api/auth/branches/${id}`);
@@ -283,6 +308,10 @@ export default function Settings() {
   };
 
   const handleCreateServerBackup = async () => {
+    if (isReadOnly) {
+      addNotification("Action failed: Super Admin has read-only access.", "warning");
+      return;
+    }
     setCreatingBackup(true);
     try {
       const res = await axios.post("/api/auth/backup/create");
@@ -297,6 +326,10 @@ export default function Settings() {
 
   const handleImportBackup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isReadOnly) {
+      addNotification("Action failed: Super Admin has read-only access.", "warning");
+      return;
+    }
     if (!selectedFile) return addNotification("Select a backup file first.", "warning");
     if (
       !window.confirm(
@@ -347,6 +380,10 @@ export default function Settings() {
   };
 
   const handleRestoreBackup = async (filename: string) => {
+    if (isReadOnly) {
+      addNotification("Action failed: Super Admin has read-only access.", "warning");
+      return;
+    }
     if (
       !window.confirm(
         `Restore system to backup "${filename}"?\n\nThis will overwrite all current data.`
@@ -369,6 +406,10 @@ export default function Settings() {
   };
 
   const handleDeleteBackup = async (filename: string) => {
+    if (isReadOnly) {
+      addNotification("Action failed: Super Admin has read-only access.", "warning");
+      return;
+    }
     if (!window.confirm(`Delete backup file "${filename}"?`)) return;
     try {
       await axios.delete(`/api/auth/backup/delete/${encodeURIComponent(filename)}`);
@@ -381,6 +422,10 @@ export default function Settings() {
 
   // ─── Danger ───────────────────────────────────────────────────────────────
   const handleResetTransactions = async () => {
+    if (isReadOnly) {
+      addNotification("Action failed: Super Admin has read-only access.", "warning");
+      return;
+    }
     if (!window.confirm("WARNING: This will permanently delete all sales, transactions, invoices, installments, expenses, and log history.\n\nMaster records (products, customers, staff, etc.) will be preserved.\n\nThis CANNOT be undone. Proceed?")) return;
     const keyword = window.prompt("Type the word RESET to confirm:");
     if (keyword !== "RESET") { addNotification("Reset cancelled.", "warning"); return; }
@@ -471,16 +516,18 @@ export default function Settings() {
                     <p className="text-[10px] text-muted-foreground">Branch</p>
                   </div>
                 </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => handleOpenEdit(b)}
-                    className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-primary transition" title="Edit">
-                    <Edit2 className="w-3.5 h-3.5" />
-                  </button>
-                  <button onClick={() => handleDeleteBranch(b.id, b.name)}
-                    className="p-1.5 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-400 transition" title="Delete">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                {!isReadOnly && (
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => handleOpenEdit(b)}
+                      className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-primary transition" title="Edit">
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button onClick={() => handleDeleteBranch(b.id, b.name)}
+                      className="p-1.5 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-400 transition" title="Delete">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
               <div className="space-y-2 text-xs border-t border-border/50 pt-3">
                 <div className="flex items-start gap-2 text-muted-foreground">
@@ -496,13 +543,15 @@ export default function Settings() {
           ))}
 
           {/* Add new card */}
-          <button onClick={() => setAddOpen(true)}
-            className="group border-2 border-dashed border-border hover:border-primary/40 rounded-2xl p-5 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:text-primary transition-all min-h-[140px]">
-            <div className="w-9 h-9 rounded-xl bg-secondary group-hover:bg-primary/10 flex items-center justify-center transition-colors">
-              <Plus className="w-4 h-4" />
-            </div>
-            <span className="text-xs font-bold">Add New Shop</span>
-          </button>
+          {!isReadOnly && (
+            <button onClick={() => setAddOpen(true)}
+              className="group border-2 border-dashed border-border hover:border-primary/40 rounded-2xl p-5 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:text-primary transition-all min-h-[140px]">
+              <div className="w-9 h-9 rounded-xl bg-secondary group-hover:bg-primary/10 flex items-center justify-center transition-colors">
+                <Plus className="w-4 h-4" />
+              </div>
+              <span className="text-xs font-bold">Add New Shop</span>
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -522,8 +571,9 @@ export default function Settings() {
           {/* Toggle */}
           <button
             type="button"
-            onClick={() => setGstEnabledLocal(!gstEnabledLocal)}
-            className="flex-shrink-0 ml-4"
+            onClick={() => !isReadOnly && setGstEnabledLocal(!gstEnabledLocal)}
+            disabled={isReadOnly}
+            className="flex-shrink-0 ml-4 disabled:opacity-50"
             title={gstEnabledLocal ? "Disable Tax" : "Enable Tax"}
           >
             {gstEnabledLocal
@@ -552,6 +602,7 @@ export default function Settings() {
               <div className="flex items-center gap-3">
                 <div className="relative flex-1 max-w-[160px]">
                   <input
+                    disabled={isReadOnly}
                     type="number"
                     value={gstRateLocal}
                     onChange={(e) => setGstRateLocal(e.target.value)}
@@ -559,7 +610,7 @@ export default function Settings() {
                     max="100"
                     step="0.5"
                     placeholder="e.g. 5"
-                    className="w-full bg-secondary border border-border px-3 py-2.5 pr-8 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition"
+                    className="w-full bg-secondary border border-border px-3 py-2.5 pr-8 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition disabled:opacity-60"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-bold">%</span>
                 </div>
@@ -595,14 +646,15 @@ export default function Settings() {
         </ul>
       </div>
 
-      <button
-        onClick={handleSaveGst}
-        disabled={savingGst}
-        className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-600/90 text-white text-xs font-bold px-6 py-3 rounded-xl flex items-center justify-center gap-2 transition disabled:opacity-50"
-      >
-        <CheckCircle2 className="w-4 h-4" />
-        {savingGst ? "Saving…" : "Save Tax Settings"}
-      </button>
+      {!isReadOnly && (
+        <button
+          onClick={handleSaveGst}
+          disabled={savingGst}
+          className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-600/90 text-white text-xs font-bold px-6 py-3 rounded-xl flex items-center justify-center gap-2 transition disabled:opacity-50"
+        >
+          {savingGst ? "Saving…" : "Save Tax Settings"}
+        </button>
+      )}
     </div>
   );
 
@@ -634,55 +686,59 @@ export default function Settings() {
               <Download className="w-3.5 h-3.5" />
               {exporting ? "Preparing…" : "Download Backup ZIP"}
             </button>
-            <button
-              onClick={handleCreateServerBackup}
-              disabled={creatingBackup}
-              className="w-full bg-secondary border border-border hover:bg-secondary/80 text-foreground text-xs font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition disabled:opacity-50"
-            >
-              <HardDrive className="w-3.5 h-3.5" />
-              {creatingBackup ? "Saving…" : "Save Backup on Server"}
-            </button>
+            {!isReadOnly && (
+              <button
+                onClick={handleCreateServerBackup}
+                disabled={creatingBackup}
+                className="w-full bg-secondary border border-border hover:bg-secondary/80 text-foreground text-xs font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition disabled:opacity-50"
+              >
+                <HardDrive className="w-3.5 h-3.5" />
+                {creatingBackup ? "Saving…" : "Save Backup on Server"}
+              </button>
+            )}
           </div>
         </div>
 
         {/* Import */}
-        <div className="bg-card border border-border rounded-2xl p-6 space-y-4 relative overflow-hidden">
-          <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-amber-500 to-orange-500" />
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-              <Upload className="w-4 h-4 text-amber-500" />
+        {!isReadOnly && (
+          <div className="bg-card border border-border rounded-2xl p-6 space-y-4 relative overflow-hidden">
+            <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-amber-500 to-orange-500" />
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                <Upload className="w-4 h-4 text-amber-500" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-sm text-foreground">Restore Backup</h3>
+                <p className="text-[10px] text-muted-foreground">Upload & restore from ZIP</p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-extrabold text-sm text-foreground">Restore Backup</h3>
-              <p className="text-[10px] text-muted-foreground">Upload & restore from ZIP</p>
-            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Select a previously exported <code className="font-mono bg-secondary px-1 rounded">.zip</code> file. This <strong>overwrites</strong> all current data.
+            </p>
+            <form onSubmit={handleImportBackup} className="space-y-3">
+              <div className="border-2 border-dashed border-border hover:border-amber-500/40 rounded-xl p-3 text-center transition-colors cursor-pointer">
+                <input
+                  type="file"
+                  accept=".zip"
+                  onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                  className="hidden"
+                  id="backup-file-input"
+                />
+                <label htmlFor="backup-file-input" className="cursor-pointer block">
+                  {selectedFile ? (
+                    <span className="text-xs font-bold text-amber-500">{selectedFile.name}</span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">Click to select .zip file</span>
+                  )}
+                </label>
+              </div>
+              <button type="submit" disabled={importing || !selectedFile}
+                className="w-full bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-500 text-xs font-bold px-4 py-2.5 rounded-xl transition disabled:opacity-40">
+                {importing ? "Restoring…" : "Upload & Restore"}
+              </button>
+            </form>
           </div>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            Select a previously exported <code className="font-mono bg-secondary px-1 rounded">.zip</code> file. This <strong>overwrites</strong> all current data.
-          </p>
-          <form onSubmit={handleImportBackup} className="space-y-3">
-            <div className="border-2 border-dashed border-border hover:border-amber-500/40 rounded-xl p-3 text-center transition-colors cursor-pointer">
-              <input
-                type="file"
-                accept=".zip"
-                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                className="hidden"
-                id="backup-file-input"
-              />
-              <label htmlFor="backup-file-input" className="cursor-pointer block">
-                {selectedFile ? (
-                  <span className="text-xs font-bold text-amber-500">{selectedFile.name}</span>
-                ) : (
-                  <span className="text-xs text-muted-foreground">Click to select .zip file</span>
-                )}
-              </label>
-            </div>
-            <button type="submit" disabled={importing || !selectedFile}
-              className="w-full bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-500 text-xs font-bold px-4 py-2.5 rounded-xl transition disabled:opacity-40">
-              {importing ? "Restoring…" : "Upload & Restore"}
-            </button>
-          </form>
-        </div>
+        )}
       </div>
 
       {/* Server backups list (auto + manual) */}
@@ -783,7 +839,7 @@ export default function Settings() {
             Create cashiers and technicians. Only owners can manage staff.
           </p>
         </div>
-        {isOwner && (
+        {!isReadOnly && isOwner && (
           <button
             type="button"
             onClick={() => {
@@ -847,7 +903,7 @@ export default function Settings() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      {u.role !== "OWNER" && (
+                      {u.role !== "OWNER" && !isReadOnly && (
                         <button
                           type="button"
                           onClick={() => handleToggleStaff(u)}
@@ -860,6 +916,7 @@ export default function Settings() {
                   </tr>
                 ))}
               </tbody>
+
             </table>
           </div>
         </div>
@@ -907,8 +964,8 @@ export default function Settings() {
           <div className="border-t border-red-500/10 pt-4">
             <button
               onClick={handleResetTransactions}
-              disabled={resetting}
-              className="bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 hover:border-red-500/50 text-red-400 text-xs font-bold px-5 py-3 rounded-xl transition flex items-center gap-2 disabled:opacity-50"
+              disabled={resetting || isReadOnly}
+              className="bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 hover:border-red-500/50 text-red-400 text-xs font-bold px-5 py-3 rounded-xl transition flex items-center gap-2 disabled:opacity-40"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               {resetting ? "Clearing Data…" : "Clear All Transaction Data"}

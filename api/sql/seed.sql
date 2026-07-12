@@ -31,6 +31,22 @@ VALUES (
   @branch_id
 ) ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash), is_active = 1;
 
+-- password: superadmin123 (bcrypt)
+INSERT INTO users (id, name, username, password_hash, role, email, phone, is_active, branch_id, owner_id)
+VALUES (
+  'a2000000-0000-4000-8000-000000000002',
+  'Super Admin',
+  'superadmin',
+  '$2y$12$idca50bCR1cV7Q5NLHg7he9pU297aTB/P/azy3ebpsDgeUPn3EiKq',
+  'SUPER_ADMIN',
+  'superadmin@shop.com',
+  NULL,
+  1,
+  @branch_id,
+  NULL
+) ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash), is_active = 1;
+
+
 INSERT INTO bank_accounts (id, name, type, account_number, bank_name, balance, is_active, notes)
 VALUES
   (@cash_id, 'Cash Drawer', 'CASH', NULL, NULL, 0.00, 1, 'Default cash account'),

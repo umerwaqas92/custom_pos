@@ -177,7 +177,7 @@ export default function Layout() {
           {/* Navigation Links */}
           <nav className="p-3 space-y-1">
             {navItems
-              .filter(item => user && item.roles.includes(user.role))
+              .filter(item => user && (user.role === "SUPER_ADMIN" || item.roles.includes(user.role)))
               .map(item => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path;
@@ -223,8 +223,14 @@ export default function Layout() {
               <div className="min-w-0">
                 <p className="text-xs font-bold truncate">{user.name}</p>
                 <div className="flex items-center gap-1 mt-0.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
-                  <span className="text-[10px] text-muted-foreground uppercase font-semibold">{user.role}</span>
+                  <ShieldCheck className={`w-3.5 h-3.5 ${user.role === "SUPER_ADMIN" ? "text-amber-500" : "text-blue-400"}`} />
+                  {user.role === "SUPER_ADMIN" ? (
+                    <span className="text-[10px] text-amber-500 uppercase font-bold bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                      Super Admin (Read-Only)
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground uppercase font-semibold">{user.role}</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -299,7 +305,7 @@ export default function Layout() {
           {/* Navigation Links */}
           <nav className="p-3 space-y-1">
             {navItems
-              .filter(item => user && item.roles.includes(user.role))
+              .filter(item => user && (user.role === "SUPER_ADMIN" || item.roles.includes(user.role)))
               .map(item => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path;
@@ -345,8 +351,14 @@ export default function Layout() {
               <div className="min-w-0">
                 <p className="text-xs font-bold truncate">{user.name}</p>
                 <div className="flex items-center gap-1 mt-0.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
-                  <span className="text-[10px] text-muted-foreground uppercase font-semibold">{user.role}</span>
+                  <ShieldCheck className={`w-3.5 h-3.5 ${user.role === "SUPER_ADMIN" ? "text-amber-500" : "text-blue-400"}`} />
+                  {user.role === "SUPER_ADMIN" ? (
+                    <span className="text-[10px] text-amber-500 uppercase font-bold bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                      Super Admin (Read-Only)
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground uppercase font-semibold">{user.role}</span>
+                  )}
                 </div>
               </div>
             </div>
