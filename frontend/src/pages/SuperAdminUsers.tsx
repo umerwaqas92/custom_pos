@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useStore } from "../store/useStore";
-import { Search, Users, RefreshCw } from "lucide-react";
+import { Search, Users, RefreshCw, Lock, X } from "lucide-react";
 
 export default function SuperAdminUsers() {
   const { addNotification } = useStore();
@@ -9,6 +9,9 @@ export default function SuperAdminUsers() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedRole, setSelectedRole] = useState("");
+  const [resetTarget, setResetTarget] = useState<any>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [pwLoading, setPwLoading] = useState(false);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -116,6 +119,7 @@ export default function SuperAdminUsers() {
                   <th className="px-5 py-4 font-bold">Role</th>
                   <th className="px-5 py-4 font-bold">Assigned Branch</th>
                   <th className="px-5 py-4 font-bold">Status</th>
+                  <th className="px-5 py-4 font-bold text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
@@ -134,11 +138,20 @@ export default function SuperAdminUsers() {
                         {u.isActive ? "Active" : "Inactive"}
                       </span>
                     </td>
+                    <td className="px-5 py-4 text-right">
+                      <button
+                        onClick={() => { setResetTarget(u); setNewPassword(""); }}
+                        title="Reset Password"
+                        className="p-1.5 rounded-lg text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10 transition"
+                      >
+                        <Lock className="w-3.5 h-3.5" />
+                      </button>
+                    </td>
                   </tr>
                 ))}
                 {filteredUsers.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="py-16 text-center text-muted-foreground font-medium">
+                    <td colSpan={6} className="py-16 text-center text-muted-foreground font-medium">
                       No users found matching your filters.
                     </td>
                   </tr>
@@ -148,6 +161,64 @@ export default function SuperAdminUsers() {
           </div>
         )}
       </div>
+
+      {/* Password Reset Modal */}
+      {resetTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setResetTarget(null)}>
+          <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-2xl mx-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h3 className="text-lg font-bold text-foreground">Reset Password</h3>
+                <p className="text-xs text-muted-foreground mt-1">{resetTarget.name} ({resetTarget.username})</p>
+              </div>
+              <button onClick={() => setResetTarget(null)} className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!newPassword || newPassword.length < 6) {
+                  addNotification("Password must be at least 6 characters.", "warning");
+                  return;
+                }
+                setPwLoading(true);
+                try {
+                  await axios.put(`/api/auth/users/${resetTarget.id}`, { password: newPassword });
+                  addNotification(`Password reset for ${resetTarget.name}.`, "success");
+                  setResetTarget(null);
+                } catch (err: any) {
+                  const msg = err.response?.data?.error || "Failed to reset password.";
+                  addNotification(msg, "warning");
+                } finally {
+                  setPwLoading(false);
+                }
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">New Password</label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full bg-secondary text-foreground border border-border px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  placeholder="At least 6 characters"
+                  autoFocus
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={pwLoading}
+                className="w-full bg-primary hover:bg-primary/95 text-white font-medium py-2.5 rounded-xl flex items-center justify-center transition disabled:opacity-50"
+              >
+                {pwLoading ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Reset Password"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

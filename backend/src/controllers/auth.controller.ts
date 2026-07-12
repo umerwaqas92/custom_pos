@@ -199,8 +199,8 @@ router.post("/users", protect, restrictTo("OWNER"), async (req, res) => {
   }
 });
 
-// Update user details (OWNER only)
-router.put("/users/:id", protect, restrictTo("OWNER"), async (req, res) => {
+// Update user details (OWNER or SUPER_ADMIN)
+router.put("/users/:id", protect, restrictTo("OWNER", "SUPER_ADMIN"), async (req, res) => {
   const { id } = req.params;
   const { name, role, email, phone, branchId, isActive, password } = req.body;
 
