@@ -88,7 +88,6 @@ export default function Dashboard() {
   const [allBranches, setAllBranches] = useState<any[]>([]);
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [allProducts, setAllProducts] = useState<any[]>([]);
-  const [adminTab, setAdminTab] = useState<"branches" | "users" | "products">("branches");
 
   const fetchDashboardData = async () => {
     setLoading(true);
@@ -326,18 +325,6 @@ export default function Dashboard() {
       }
     ];
 
-    const roleBadge = (role: string) => {
-      const map: Record<string, string> = {
-        OWNER: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-        MANAGER: "bg-violet-500/15 text-violet-400 border-violet-500/30",
-        CASHIER: "bg-sky-500/15 text-sky-400 border-sky-500/30",
-        TECHNICIAN: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-        WAREHOUSE: "bg-orange-500/15 text-orange-400 border-orange-500/30",
-        SUPER_ADMIN: "bg-red-500/15 text-red-400 border-red-500/30"
-      };
-      return map[role] || "bg-secondary text-muted-foreground border-border";
-    };
-
     return (
       <div className="space-y-6 flex-1">
         {/* Welcome banner */}
@@ -386,153 +373,6 @@ export default function Dashboard() {
               </div>
             );
           })}
-        </div>
-
-        {/* Tab Selection */}
-        <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
-          <div className="flex border-b border-border">
-            <button
-              onClick={() => setAdminTab("branches")}
-              className={`pb-3 px-4 text-xs font-bold border-b-2 transition ${
-                adminTab === "branches"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Shop Branches ({allBranches.length})
-            </button>
-            <button
-              onClick={() => setAdminTab("users")}
-              className={`pb-3 px-4 text-xs font-bold border-b-2 transition ${
-                adminTab === "users"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Platform Users ({allUsers.length})
-            </button>
-            <button
-              onClick={() => setAdminTab("products")}
-              className={`pb-3 px-4 text-xs font-bold border-b-2 transition ${
-                adminTab === "products"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Registered Products ({allProducts.length})
-            </button>
-          </div>
-
-          {/* Tab contents */}
-          {adminTab === "branches" && (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-border bg-secondary/40 text-[10px] uppercase tracking-wider text-muted-foreground">
-                    <th className="px-4 py-3 font-bold">Branch Name</th>
-                    <th className="px-4 py-3 font-bold">Address</th>
-                    <th className="px-4 py-3 font-bold">Phone</th>
-                    <th className="px-4 py-3 font-bold">ID Reference</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/60">
-                  {allBranches.map((b) => (
-                    <tr key={b.id} className="hover:bg-secondary/20 transition-colors">
-                      <td className="px-4 py-3 font-bold text-foreground">{b.name}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{b.address || "—"}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{b.phone || "—"}</td>
-                      <td className="px-4 py-3 font-mono text-[10px] text-muted-foreground">{b.id}</td>
-                    </tr>
-                  ))}
-                  {allBranches.length === 0 && (
-                    <tr>
-                      <td colSpan={4} className="py-8 text-center text-muted-foreground">No branches found.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {adminTab === "users" && (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-border bg-secondary/40 text-[10px] uppercase tracking-wider text-muted-foreground">
-                    <th className="px-4 py-3 font-bold">Name</th>
-                    <th className="px-4 py-3 font-bold">Username / Email</th>
-                    <th className="px-4 py-3 font-bold">Role</th>
-                    <th className="px-4 py-3 font-bold">Assigned Branch</th>
-                    <th className="px-4 py-3 font-bold">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/60">
-                  {allUsers.map((u) => (
-                    <tr key={u.id} className="hover:bg-secondary/20 transition-colors">
-                      <td className="px-4 py-3 font-bold text-foreground">{u.name}</td>
-                      <td className="px-4 py-3 font-mono text-muted-foreground">{u.email || u.username}</td>
-                      <td className="px-4 py-3">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border ${roleBadge(u.role)}`}>
-                          {u.role}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground">{u.branch?.name || "—"}</td>
-                      <td className="px-4 py-3">
-                        <span className={`text-[10px] font-bold ${u.isActive ? "text-emerald-400" : "text-red-400"}`}>
-                          {u.isActive ? "Active" : "Inactive"}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                  {allUsers.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="py-8 text-center text-muted-foreground">No users found.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {adminTab === "products" && (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-border bg-secondary/40 text-[10px] uppercase tracking-wider text-muted-foreground">
-                    <th className="px-4 py-3 font-bold">SKU</th>
-                    <th className="px-4 py-3 font-bold">Product Name</th>
-                    <th className="px-4 py-3 font-bold">Category / Brand</th>
-                    <th className="px-4 py-3 font-bold">Purchase Price</th>
-                    <th className="px-4 py-3 font-bold">Selling Price</th>
-                    <th className="px-4 py-3 font-bold">Stock Qty</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/60">
-                  {allProducts.map((p) => (
-                    <tr key={p.id} className="hover:bg-secondary/20 transition-colors">
-                      <td className="px-4 py-3 font-mono font-bold text-foreground">{p.sku}</td>
-                      <td className="px-4 py-3 text-foreground">{p.name}</td>
-                      <td className="px-4 py-3 text-muted-foreground">
-                        {p.cat_name || "—"} / {p.brand_name || "—"}
-                      </td>
-                      <td className="px-4 py-3 font-semibold text-muted-foreground">{money(p.purchasePrice)}</td>
-                      <td className="px-4 py-3 font-extrabold text-foreground">{money(p.sellingPrice)}</td>
-                      <td className="px-4 py-3">
-                        <span className={`font-bold ${p.stockQuantity <= p.minStock ? "text-red-400" : "text-foreground"}`}>
-                          {p.stockQuantity}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                  {allProducts.length === 0 && (
-                    <tr>
-                      <td colSpan={6} className="py-8 text-center text-muted-foreground">No products found.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
         </div>
       </div>
     );
