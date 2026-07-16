@@ -38,6 +38,46 @@ const TABS: { id: TabId; label: string; iconSrc: string; accent: string }[] = [
   { id: "danger", label: "Danger Zone",   iconSrc: "/icons/settings/danger.png", accent: "text-red-400" },
 ];
 
+const inputCls = "w-full bg-secondary border border-border px-3 py-2.5 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 transition";
+
+// ─── Helper: field ────────────────────────────────────────────────────────
+const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div className="space-y-1.5">
+    <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{label}</label>
+    {children}
+  </div>
+);
+
+// ─── Modal ────────────────────────────────────────────────────────────────
+const Modal = ({ title, onClose, onSubmit, children, submitLabel = "Save" }: {
+  title: string; onClose: () => void; onSubmit: (e: React.FormEvent) => void;
+  children: React.ReactNode; submitLabel?: string;
+}) => (
+  <PortalModal isOpen={true} onClose={onClose} backdropClass="bg-black/70 backdrop-blur-sm px-4">
+    <div className="bg-card border border-border w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+        <h3 className="font-extrabold text-sm text-foreground">{title}</h3>
+        <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition">
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+      <form onSubmit={onSubmit} className="p-6 space-y-4">
+        {children}
+        <div className="flex gap-3 pt-2">
+          <button type="button" onClick={onClose}
+            className="flex-1 px-4 py-2.5 border border-border text-xs font-semibold rounded-xl hover:bg-secondary transition">
+            Cancel
+          </button>
+          <button type="submit"
+            className="flex-1 px-4 py-2.5 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/95 transition">
+            {submitLabel}
+          </button>
+        </div>
+      </form>
+    </div>
+  </PortalModal>
+);
+
 export default function Settings() {
   const { addNotification, gstEnabled, gstRate, setGstSettings, setBranches: setStoreBranches, user } = useStore();
   const [activeTab, setActiveTab] = useState<TabId>("shops");
@@ -525,46 +565,6 @@ export default function Settings() {
       setResetting(false);
     }
   };
-
-  // ─── Helper: field ────────────────────────────────────────────────────────
-  const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
-    <div className="space-y-1.5">
-      <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{label}</label>
-      {children}
-    </div>
-  );
-
-  const inputCls = "w-full bg-secondary border border-border px-3 py-2.5 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 transition";
-
-  // ─── Modal ────────────────────────────────────────────────────────────────
-  const Modal = ({ title, onClose, onSubmit, children, submitLabel = "Save" }: {
-    title: string; onClose: () => void; onSubmit: (e: React.FormEvent) => void;
-    children: React.ReactNode; submitLabel?: string;
-  }) => (
-    <PortalModal isOpen={true} onClose={onClose} backdropClass="bg-black/70 backdrop-blur-sm px-4">
-      <div className="bg-card border border-border w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <h3 className="font-extrabold text-sm text-foreground">{title}</h3>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-        <form onSubmit={onSubmit} className="p-6 space-y-4">
-          {children}
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose}
-              className="flex-1 px-4 py-2.5 border border-border text-xs font-semibold rounded-xl hover:bg-secondary transition">
-              Cancel
-            </button>
-            <button type="submit"
-              className="flex-1 px-4 py-2.5 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/95 transition">
-              {submitLabel}
-            </button>
-          </div>
-        </form>
-      </div>
-    </PortalModal>
-  );
 
   // ─── Tab content renderers ────────────────────────────────────────────────
   const renderShops = () => (

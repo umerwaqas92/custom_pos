@@ -1199,47 +1199,12 @@ function auth_import_json_string(string $json): void
     error_log('[JSON BACKUP IMPORT] ownerId=' . $ownerId . ' backupOwnerId=' . ($backupOwnerId ?? 'null') . ' crossStore=' . ($isCrossStore ? 'YES' : 'NO'));
 
     $pdo->exec('SET FOREIGN_KEY_CHECKS=0');
-
-    // Clean junction / shared tables that don't have owner_id
-    $junctionCleanup = [
-        "DELETE FROM app_meta",
-        "DELETE FROM branch_stocks WHERE branch_id IN (SELECT id FROM branches WHERE owner_id = ?)",
-        "DELETE FROM sale_return_items WHERE sale_return_id IN (SELECT id FROM sale_returns WHERE sale_id IN (SELECT id FROM sales WHERE owner_id = ?))",
-        "DELETE FROM sale_returns WHERE sale_id IN (SELECT id FROM sales WHERE owner_id = ?)",
-        "DELETE FROM sale_emis WHERE sale_id IN (SELECT id FROM sales WHERE owner_id = ?)",
-        "DELETE FROM emi_installments WHERE sale_emi_id IN (SELECT id FROM sale_emis WHERE sale_id IN (SELECT id FROM sales WHERE owner_id = ?))",
-        "DELETE FROM sale_items WHERE sale_id IN (SELECT id FROM sales WHERE owner_id = ?)",
-        "DELETE FROM purchase_items WHERE purchase_order_id IN (SELECT id FROM purchase_orders WHERE owner_id = ?)",
-        "DELETE FROM customer_credit_payments WHERE customer_id IN (SELECT id FROM customers WHERE owner_id = ?)",
-        "DELETE FROM supplier_payments WHERE supplier_id IN (SELECT id FROM suppliers WHERE owner_id = ?)",
-    ];
-    foreach ($junctionCleanup as $cleanupSql) {
-        try {
-            if (str_contains($cleanupSql, '?')) {
-                $pdo->prepare($cleanupSql)->execute([$ownerId]);
-            } else {
-                $pdo->exec($cleanupSql);
-            }
-        } catch (Throwable $e) {
-            // table may not exist — ignore
-        }
-    }
-
     $pdo->exec('SET NAMES utf8mb4');
 
-    // Delete existing owner data from owned tables that we're about to import
-    foreach ($backup['data'] as $table => $rows) {
-        if ($table === 'users' || empty($rows)) {
-            continue;
-        }
-        if (isset($ownedLookup[$table])) {
-            try {
-                $pdo->prepare("DELETE FROM `{$table}` WHERE owner_id = ?")->execute([$ownerId]);
-            } catch (Throwable $e) {
-                // table may not have owner_id column
-            }
-        }
-    }
+    // JSON import always merges — inserts data alongside existing records.
+    // No deletion: UUIDs are globally unique per row, so PK conflicts between
+    // different stores never happen. Duplicate key errors (same UUID re-imported)
+    // are silently skipped below.
 
     // Insert data table by table
     $ran = 0;
@@ -1253,7 +1218,7 @@ function auth_import_json_string(string $json): void
         $colList = '`' . implode('`, `', array_map(static fn($c) => str_replace('`', '``', $c), $columns)) . '`';
         $placeholders = implode(', ', array_fill(0, count($columns), '?'));
 
-        $stmt = $pdo->prepare("INSERT INTO `{$table}` ({$colList}) VALUES ({$placeholders})");
+        $stmt = $pdo->prepare("INSERT IGNORE INTO `{$table}` ({$colList}) VALUES ({$placeholders})");
 
         foreach ($rows as $row) {
             $values = [];
@@ -1268,11 +1233,10 @@ function auth_import_json_string(string $json): void
 
             try {
                 $stmt->execute($values);
-                $ran++;
-            } catch (Throwable $e) {
-                if (str_contains($e->getMessage(), '1062') || str_contains($e->getMessage(), 'Duplicate entry')) {
-                    continue;
+                if ($stmt->rowCount() > 0) {
+                    $ran++;
                 }
+            } catch (Throwable $e) {
                 $errors[] = substr($e->getMessage(), 0, 80) . ' @ ' . $table;
                 if (count($errors) > 100) {
                     break 2;
@@ -1287,10 +1251,7 @@ function auth_import_json_string(string $json): void
         // ignore
     }
 
-    if ($ran < 1) {
-        throw new RuntimeException('No data was imported. Invalid or empty backup.');
-    }
-    if (count($errors) > 0 && $ran < 3) {
+    if ($ran < 1 && count($errors) > 0) {
         throw new RuntimeException('Import failed: ' . $errors[0]);
     }
 }
