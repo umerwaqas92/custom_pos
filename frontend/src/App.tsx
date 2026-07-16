@@ -53,14 +53,15 @@ axios.interceptors.request.use((config) => {
 function Login() {
   const { login, addNotification, theme } = useStore();
   const [mode, setMode] = useState<"login" | "signup">("login");
-  const [username, setUsername] = useState("");
+  const [username, setUsername] = useState(() => localStorage.getItem("pos_remember_username") || "");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [password, setPassword] = useState(() => localStorage.getItem("pos_remember_password") || "");
   const [name, setName] = useState("");
   const [shopName, setShopName] = useState("");
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(() => localStorage.getItem("pos_remember_me") === "true");
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -79,6 +80,16 @@ function Login() {
       const response = await axios.post("/api/auth/login", { username, password });
       const { token, user } = response.data;
       login(token, user);
+      // Save or clear remembered credentials
+      if (rememberMe) {
+        localStorage.setItem("pos_remember_me", "true");
+        localStorage.setItem("pos_remember_username", username);
+        localStorage.setItem("pos_remember_password", password);
+      } else {
+        localStorage.removeItem("pos_remember_me");
+        localStorage.removeItem("pos_remember_username");
+        localStorage.removeItem("pos_remember_password");
+      }
       addNotification(`Welcome back, ${user.name}!`, "success");
     } catch (err: any) {
       const msg = err.response?.data?.error || "Login failed. Please check your credentials.";
@@ -188,6 +199,15 @@ function Login() {
                 </button>
               </div>
             </div>
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 rounded border-border bg-secondary text-primary focus:ring-primary/50 cursor-pointer"
+              />
+              <span className="text-xs text-muted-foreground">Remember me</span>
+            </label>
             <button type="submit" disabled={loading} className="w-full bg-primary hover:bg-primary/95 text-white font-medium py-3 rounded-xl flex items-center justify-center transition disabled:opacity-50">
               {loading ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Sign In"}
             </button>

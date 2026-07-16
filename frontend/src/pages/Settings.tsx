@@ -83,7 +83,30 @@ export default function Settings() {
   };
 
   // ─── Danger Zone State ────────────────────────────────────────────────────
+  const CLEAR_OPTIONS = [
+    { key: "sales_records", label: "Sales Records" },
+    { key: "invoices", label: "Invoices" },
+    { key: "installments", label: "Installments" },
+    { key: "expenses", label: "Expenses" },
+    { key: "warranty_claims", label: "Warranty Claims" },
+    { key: "purchase_orders", label: "Purchase Orders" },
+  ] as const;
+  const PRESERVED_OPTIONS = [
+    { key: "products", label: "Products" },
+    { key: "categories", label: "Categories" },
+    { key: "brands", label: "Brands" },
+    { key: "customers", label: "Customers" },
+    { key: "suppliers", label: "Suppliers" },
+    { key: "staff", label: "Staff" },
+    { key: "branches", label: "Shop Branches" },
+  ] as const;
+  const ALL_OPTIONS = [...CLEAR_OPTIONS, ...PRESERVED_OPTIONS];
+  const [selectedTypes, setSelectedTypes] = useState<Record<string, boolean>>(
+    Object.fromEntries(ALL_OPTIONS.map((o) => [o.key, false]))
+  );
   const [resetting, setResetting] = useState(false);
+  const [dataCounts, setDataCounts] = useState<Record<string, number>>({});
+  const [loadingCounts, setLoadingCounts] = useState(false);
 
   // ─── Staff State ──────────────────────────────────────────────────────────
   const [staff, setStaff] = useState<any[]>([]);
@@ -421,18 +444,44 @@ export default function Settings() {
   };
 
   // ─── Danger ───────────────────────────────────────────────────────────────
+  const loadDataCounts = async () => {
+    setLoadingCounts(true);
+    try {
+      const res = await axios.get("/api/auth/data-counts");
+      setDataCounts(res.data || {});
+    } catch {
+      setDataCounts({});
+    } finally {
+      setLoadingCounts(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "danger") loadDataCounts();
+  }, [activeTab]);
   const handleResetTransactions = async () => {
     if (isReadOnly) {
       addNotification("Action failed: Super Admin has read-only access.", "warning");
       return;
     }
-    if (!window.confirm("WARNING: This will permanently delete all sales, transactions, invoices, installments, expenses, and log history.\n\nMaster records (products, customers, staff, etc.) will be preserved.\n\nThis CANNOT be undone. Proceed?")) return;
+    const selected = ALL_OPTIONS.filter((o) => selectedTypes[o.key]).map((o) => o.label);
+    if (selected.length === 0) {
+      addNotification("Select at least one data type to clear.", "warning");
+      return;
+    }
+    const hasMasterData = PRESERVED_OPTIONS.some((o) => selectedTypes[o.key]);
+    let msg = `WARNING: This will permanently delete the following data:\n\n• ${selected.join("\n• ")}\n\nThis CANNOT be undone. Proceed?`;
+    if (hasMasterData) {
+      msg = `EXTREME WARNING: You are about to delete MASTER RECORDS including Products, Customers, Staff, or Branches.\n\nThis will permanently delete:\n\n• ${selected.join("\n• ")}\n\nAll associated transaction data for these records will also be lost.\n\nThis CANNOT be undone. Proceed?`;
+    }
+    if (!window.confirm(msg)) return;
     const keyword = window.prompt("Type the word RESET to confirm:");
     if (keyword !== "RESET") { addNotification("Reset cancelled.", "warning"); return; }
     setResetting(true);
     try {
-      const res = await axios.post("/api/auth/reset-transactions");
-      addNotification(res.data.message || "Transactions cleared.", "success");
+      const types = ALL_OPTIONS.filter((o) => selectedTypes[o.key]).map((o) => o.key);
+      const res = await axios.post("/api/auth/reset-transactions", { types });
+      addNotification(res.data.message || "Selected data cleared.", "success");
       setTimeout(() => window.location.reload(), 1500);
     } catch (err: any) {
       addNotification(err.response?.data?.error || "Failed to clear data.", "warning");
@@ -946,29 +995,91 @@ export default function Settings() {
             <div className="w-9 h-9 rounded-xl bg-red-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
               <RotateCcw className="w-4 h-4 text-red-400" />
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1 flex-1">
               <h3 className="font-extrabold text-sm text-foreground">Clear Sales & Transaction Data</h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Permanently deletes all sales histories, transactions, EMIs/installments, expenses, warranty claims, and purchase orders.
+                Select the data types to permanently delete. These operations cannot be undone.
               </p>
-              <div className="flex flex-wrap gap-2 pt-1">
-                {["Sales Records", "Invoices", "Installments", "Expenses", "Warranty Claims", "Purchase Orders"].map((item) => (
-                  <span key={item} className="text-[10px] bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded-lg font-semibold">{item}</span>
+              <button
+                onClick={() => {
+                  const allSelected = ALL_OPTIONS.every((o) => selectedTypes[o.key]);
+                  const next: Record<string, boolean> = {};
+                  ALL_OPTIONS.forEach((o) => { next[o.key] = !allSelected; });
+                  setSelectedTypes(next);
+                }}
+                className="text-[10px] font-semibold text-red-400 hover:text-red-300 transition underline underline-offset-2"
+              >
+                {ALL_OPTIONS.every((o) => selectedTypes[o.key]) ? "Deselect All" : "Select All"}
+              </button>
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                {CLEAR_OPTIONS.map(({ key, label }) => (
+                  <label
+                    key={key}
+                    className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
+                      selectedTypes[key]
+                        ? "bg-red-500/10 border-red-500/30 text-red-400"
+                        : "bg-secondary/40 border-border/60 text-muted-foreground hover:border-red-500/20 hover:text-foreground"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedTypes[key]}
+                      onChange={() => setSelectedTypes((prev) => ({ ...prev, [key]: !prev[key] }))}
+                      className="w-4 h-4 rounded border-gray-500 text-red-500 focus:ring-red-500/30 accent-red-500"
+                    />
+                    <span className="flex-1">{label}</span>
+                    <span className="text-[10px] font-mono opacity-60">
+                      {loadingCounts ? "…" : dataCounts[key] ?? "—"}
+                    </span>
+                  </label>
                 ))}
               </div>
-              <p className="text-[10px] text-muted-foreground pt-1">
-                <strong className="text-foreground">Preserved:</strong> Products, Categories, Brands, Customers, Suppliers, Staff, and Shop Branches.
-              </p>
             </div>
           </div>
+
+          {/* Master Records Section */}
+          <div className="border-t border-red-500/10 pt-4 space-y-3">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="w-3.5 h-3.5 text-orange-400 flex-shrink-0 mt-0.5" />
+              <p className="text-[10px] text-orange-400 font-semibold leading-relaxed">
+                Master records are normally preserved. Check below to also delete them — this will remove all associated data.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {PRESERVED_OPTIONS.map(({ key, label }) => (
+                <label
+                  key={key}
+                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
+                    selectedTypes[key]
+                      ? "bg-orange-500/10 border-orange-500/30 text-orange-400"
+                      : "bg-secondary/40 border-border/60 text-muted-foreground hover:border-orange-500/20 hover:text-foreground"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedTypes[key]}
+                    onChange={() => setSelectedTypes((prev) => ({ ...prev, [key]: !prev[key] }))}
+                    className="w-4 h-4 rounded border-gray-500 text-orange-500 focus:ring-orange-500/30 accent-orange-500"
+                  />
+                  <span className="flex-1">{label}</span>
+                  <span className="text-[10px] font-mono opacity-60">
+                    {loadingCounts ? "…" : dataCounts[key] ?? "—"}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+
           <div className="border-t border-red-500/10 pt-4">
             <button
               onClick={handleResetTransactions}
-              disabled={resetting || isReadOnly}
+              disabled={resetting || isReadOnly || ALL_OPTIONS.every((o) => !selectedTypes[o.key])}
               className="bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 hover:border-red-500/50 text-red-400 text-xs font-bold px-5 py-3 rounded-xl transition flex items-center gap-2 disabled:opacity-40"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              {resetting ? "Clearing Data…" : "Clear All Transaction Data"}
+              {resetting
+                ? "Clearing Data…"
+                : `Clear Selected Data (${ALL_OPTIONS.filter((o) => selectedTypes[o.key]).length})`}
             </button>
           </div>
         </div>

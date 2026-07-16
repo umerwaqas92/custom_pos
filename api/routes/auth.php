@@ -29,6 +29,7 @@ function register_auth_routes(Router $router): void
 
     // Reset transactional data
     $router->post('auth/reset-transactions', 'auth_reset_transactions', false, ['OWNER']);
+    $router->get('auth/data-counts', 'auth_data_counts', false, ['OWNER']);
 
     // Backup stubs (full SQL backup in later phase — endpoints registered so UI doesn't 404 hard)
     $router->get('auth/backup/list', 'auth_backup_list', false, ['OWNER', 'MANAGER']);
@@ -630,72 +631,204 @@ function auth_branches_delete(array $params): void
     }
 }
 
+function auth_data_counts(array $params): void
+{
+    $pdo = Database::pdo();
+    $ownerId = tenant_owner_id();
+
+    $q = static function (string $sql, array $args = []) use ($pdo) {
+        $st = $pdo->prepare($sql);
+        $st->execute($args);
+        return (int) $st->fetchColumn();
+    };
+
+    $counts = [
+        'sales_records' => $q('SELECT COUNT(*) FROM sales WHERE owner_id = ?', [$ownerId]),
+        'invoices' => $q('SELECT COUNT(*) FROM transactions WHERE owner_id = ? OR bank_account_id IN (SELECT id FROM bank_accounts WHERE owner_id = ?)', [$ownerId, $ownerId]),
+        'installments' => $q('SELECT COUNT(*) FROM sale_emis WHERE sale_id IN (SELECT id FROM sales WHERE owner_id = ?)', [$ownerId]),
+        'expenses' => $q('SELECT COUNT(*) FROM expenses WHERE owner_id = ?', [$ownerId]),
+        'warranty_claims' => $q('SELECT COUNT(*) FROM warranty_claims WHERE owner_id = ?', [$ownerId]),
+        'purchase_orders' => $q('SELECT COUNT(*) FROM purchase_orders WHERE owner_id = ?', [$ownerId]),
+        'products' => $q('SELECT COUNT(*) FROM products WHERE owner_id = ?', [$ownerId]),
+        'categories' => $q('SELECT COUNT(*) FROM categories WHERE owner_id = ?', [$ownerId]),
+        'brands' => $q('SELECT COUNT(*) FROM brands WHERE owner_id = ?', [$ownerId]),
+        'customers' => $q('SELECT COUNT(*) FROM customers WHERE owner_id = ?', [$ownerId]),
+        'suppliers' => $q('SELECT COUNT(*) FROM suppliers WHERE owner_id = ?', [$ownerId]),
+        'staff' => $q("SELECT COUNT(*) FROM users WHERE owner_id = ? AND role != 'OWNER'", [$ownerId]),
+        'branches' => $q('SELECT COUNT(*) FROM branches WHERE owner_id = ?', [$ownerId]),
+    ];
+
+    json_response($counts);
+}
+
 function auth_reset_transactions(array $params): void
 {
     $pdo = Database::pdo();
     $ownerId = tenant_owner_id();
+    $body = read_json_body();
+    $types = (array) ($body['types'] ?? []);
+
+    $allowed = ['sales_records', 'invoices', 'installments', 'expenses', 'warranty_claims', 'purchase_orders', 'products', 'categories', 'brands', 'customers', 'suppliers', 'staff', 'branches'];
+    $types = array_intersect($types, $allowed);
+
+    if (empty($types)) {
+        json_error('No valid data types selected. Choose at least one type to clear.', 400);
+    }
+
     try {
         Database::begin();
 
-        // Delete child rows via owner's sales / POs / etc.
-        $pdo->prepare(
-            'DELETE FROM emi_installments WHERE sale_emi_id IN (
-                SELECT se.id FROM sale_emis se
-                INNER JOIN sales s ON s.id = se.sale_id WHERE s.owner_id = ?
-            )'
-        )->execute([$ownerId]);
-        $pdo->prepare(
-            'DELETE FROM sale_emis WHERE sale_id IN (SELECT id FROM sales WHERE owner_id = ?)'
-        )->execute([$ownerId]);
-        $pdo->prepare(
-            'DELETE FROM sale_return_items WHERE sale_return_id IN (
-                SELECT sr.id FROM sale_returns sr
-                INNER JOIN sales s ON s.id = sr.sale_id WHERE s.owner_id = ?
-            )'
-        )->execute([$ownerId]);
-        $pdo->prepare(
-            'DELETE FROM sale_returns WHERE sale_id IN (SELECT id FROM sales WHERE owner_id = ?)'
-        )->execute([$ownerId]);
-        $pdo->prepare('DELETE FROM warranty_claims WHERE owner_id = ?')->execute([$ownerId]);
-        $pdo->prepare(
-            'DELETE FROM sale_items WHERE sale_id IN (SELECT id FROM sales WHERE owner_id = ?)'
-        )->execute([$ownerId]);
-        $pdo->prepare('DELETE FROM sales WHERE owner_id = ?')->execute([$ownerId]);
-        $pdo->prepare('DELETE FROM repair_jobs WHERE owner_id = ?')->execute([$ownerId]);
-        $pdo->prepare(
-            'DELETE FROM purchase_items WHERE purchase_order_id IN (
-                SELECT id FROM purchase_orders WHERE owner_id = ?
-            )'
-        )->execute([$ownerId]);
-        $pdo->prepare(
-            'DELETE FROM supplier_payments WHERE supplier_id IN (
-                SELECT id FROM suppliers WHERE owner_id = ?
-            )'
-        )->execute([$ownerId]);
-        $pdo->prepare('DELETE FROM purchase_orders WHERE owner_id = ?')->execute([$ownerId]);
-        $pdo->prepare(
-            'DELETE FROM customer_credit_payments WHERE customer_id IN (
-                SELECT id FROM customers WHERE owner_id = ?
-            )'
-        )->execute([$ownerId]);
-        $pdo->prepare('DELETE FROM expenses WHERE owner_id = ?')->execute([$ownerId]);
+        // Build a lookup for quick checks
+        $t = array_flip($types);
+
+        if (isset($t['installments'])) {
+            $pdo->prepare(
+                'DELETE FROM emi_installments WHERE sale_emi_id IN (
+                    SELECT se.id FROM sale_emis se
+                    INNER JOIN sales s ON s.id = se.sale_id WHERE s.owner_id = ?
+                )'
+            )->execute([$ownerId]);
+            $pdo->prepare(
+                'DELETE FROM sale_emis WHERE sale_id IN (SELECT id FROM sales WHERE owner_id = ?)'
+            )->execute([$ownerId]);
+        }
+
+        if (isset($t['sales_records'])) {
+            $pdo->prepare(
+                'DELETE FROM sale_return_items WHERE sale_return_id IN (
+                    SELECT sr.id FROM sale_returns sr
+                    INNER JOIN sales s ON s.id = sr.sale_id WHERE s.owner_id = ?
+                )'
+            )->execute([$ownerId]);
+            $pdo->prepare(
+                'DELETE FROM sale_returns WHERE sale_id IN (SELECT id FROM sales WHERE owner_id = ?)'
+            )->execute([$ownerId]);
+            $pdo->prepare(
+                'DELETE FROM sale_items WHERE sale_id IN (SELECT id FROM sales WHERE owner_id = ?)'
+            )->execute([$ownerId]);
+            $pdo->prepare('DELETE FROM sales WHERE owner_id = ?')->execute([$ownerId]);
+            $pdo->prepare(
+                'DELETE FROM customer_credit_payments WHERE customer_id IN (
+                    SELECT id FROM customers WHERE owner_id = ?
+                )'
+            )->execute([$ownerId]);
+            $pdo->prepare('UPDATE customers SET credit_balance = 0, reward_points = 0 WHERE owner_id = ?')
+                ->execute([$ownerId]);
+            $pdo->prepare('UPDATE bank_accounts SET balance = 0 WHERE owner_id = ?')->execute([$ownerId]);
+        }
+
+        if (isset($t['warranty_claims'])) {
+            $pdo->prepare('DELETE FROM warranty_claims WHERE owner_id = ?')->execute([$ownerId]);
+        }
+
+        if (isset($t['purchase_orders'])) {
+            $pdo->prepare(
+                'DELETE FROM purchase_items WHERE purchase_order_id IN (
+                    SELECT id FROM purchase_orders WHERE owner_id = ?
+                )'
+            )->execute([$ownerId]);
+            $pdo->prepare(
+                'DELETE FROM supplier_payments WHERE supplier_id IN (
+                    SELECT id FROM suppliers WHERE owner_id = ?
+                )'
+            )->execute([$ownerId]);
+            $pdo->prepare('DELETE FROM purchase_orders WHERE owner_id = ?')->execute([$ownerId]);
+        }
+
+        if (isset($t['expenses'])) {
+            $pdo->prepare('DELETE FROM expenses WHERE owner_id = ?')->execute([$ownerId]);
+        }
+
+        if (isset($t['invoices'])) {
+            $pdo->prepare(
+                'DELETE FROM transactions WHERE bank_account_id IN (
+                    SELECT id FROM bank_accounts WHERE owner_id = ?
+                ) OR owner_id = ?'
+            )->execute([$ownerId, $ownerId]);
+            $pdo->prepare('DELETE FROM daily_closings WHERE owner_id = ?')->execute([$ownerId]);
+        }
+
+        // ── Master Records (normally preserved) ──────────────────────────
+        if (isset($t['branches'])) {
+            $pdo->prepare('DELETE FROM branch_stocks WHERE branch_id IN (SELECT id FROM branches WHERE owner_id = ?)')
+                ->execute([$ownerId]);
+            $pdo->prepare('UPDATE users SET branch_id = NULL WHERE owner_id = ? AND role != ?')
+                ->execute([$ownerId, 'OWNER']);
+            $pdo->prepare('DELETE FROM daily_closings WHERE owner_id = ?')->execute([$ownerId]);
+            $pdo->prepare('DELETE FROM branches WHERE owner_id = ?')->execute([$ownerId]);
+        }
+
+        if (isset($t['staff'])) {
+            $pdo->prepare('DELETE FROM users WHERE owner_id = ? AND role != ?')->execute([$ownerId, 'OWNER']);
+        }
+
+        if (isset($t['customers'])) {
+            $pdo->prepare('DELETE FROM customer_credit_payments WHERE customer_id IN (SELECT id FROM customers WHERE owner_id = ?)')
+                ->execute([$ownerId]);
+            $pdo->prepare('DELETE FROM customers WHERE owner_id = ?')->execute([$ownerId]);
+        }
+
+        if (isset($t['suppliers'])) {
+            $pdo->prepare('DELETE FROM supplier_payments WHERE supplier_id IN (SELECT id FROM suppliers WHERE owner_id = ?)')
+                ->execute([$ownerId]);
+            $pdo->prepare('DELETE FROM suppliers WHERE owner_id = ?')->execute([$ownerId]);
+        }
+
+        if (isset($t['categories'])) {
+            $pdo->prepare('UPDATE products SET category_id = NULL WHERE category_id IN (SELECT id FROM categories WHERE owner_id = ?)')
+                ->execute([$ownerId]);
+            $pdo->prepare('DELETE FROM categories WHERE owner_id = ?')->execute([$ownerId]);
+        }
+
+        if (isset($t['brands'])) {
+            $pdo->prepare('UPDATE products SET brand_id = NULL WHERE brand_id IN (SELECT id FROM brands WHERE owner_id = ?)')
+                ->execute([$ownerId]);
+            $pdo->prepare('DELETE FROM brands WHERE owner_id = ?')->execute([$ownerId]);
+        }
+
+        if (isset($t['products'])) {
+            $pdo->prepare('DELETE FROM stock_movements WHERE product_id IN (SELECT id FROM products WHERE owner_id = ?)')
+                ->execute([$ownerId]);
+            $pdo->prepare('DELETE FROM branch_stocks WHERE product_id IN (SELECT id FROM products WHERE owner_id = ?)')
+                ->execute([$ownerId]);
+            $pdo->prepare('DELETE FROM sale_items WHERE product_id IN (SELECT id FROM products WHERE owner_id = ?)')
+                ->execute([$ownerId]);
+            $pdo->prepare('DELETE FROM purchase_items WHERE product_id IN (SELECT id FROM products WHERE owner_id = ?)')
+                ->execute([$ownerId]);
+            $pdo->prepare('DELETE FROM products WHERE owner_id = ?')->execute([$ownerId]);
+        }
+
+        // Always clean up audit/log data
         $pdo->prepare('DELETE FROM stock_movements WHERE owner_id = ?')->execute([$ownerId]);
-        $pdo->prepare('DELETE FROM daily_closings WHERE owner_id = ?')->execute([$ownerId]);
-        $pdo->prepare(
-            'DELETE FROM transactions WHERE bank_account_id IN (
-                SELECT id FROM bank_accounts WHERE owner_id = ?
-            ) OR owner_id = ?'
-        )->execute([$ownerId, $ownerId]);
         $pdo->prepare(
             'DELETE FROM activity_logs WHERE user_id IN (SELECT id FROM users WHERE owner_id = ?)'
         )->execute([$ownerId]);
 
-        $pdo->prepare('UPDATE customers SET credit_balance = 0, reward_points = 0 WHERE owner_id = ?')
-            ->execute([$ownerId]);
-        $pdo->prepare('UPDATE bank_accounts SET balance = 0 WHERE owner_id = ?')->execute([$ownerId]);
+        // Always clean repair jobs (tied to warranty/sales context)
+        $pdo->prepare('DELETE FROM repair_jobs WHERE owner_id = ?')->execute([$ownerId]);
+
         Database::commit();
+
+        $labels = array_map(function ($t) {
+            return [
+                'sales_records' => 'Sales Records',
+                'invoices' => 'Invoices',
+                'installments' => 'Installments',
+                'expenses' => 'Expenses',
+                'warranty_claims' => 'Warranty Claims',
+                'purchase_orders' => 'Purchase Orders',
+                'products' => 'Products',
+                'categories' => 'Categories',
+                'brands' => 'Brands',
+                'customers' => 'Customers',
+                'suppliers' => 'Suppliers',
+                'staff' => 'Staff',
+                'branches' => 'Shop Branches',
+            ][$t] ?? $t;
+        }, $types);
+
         json_response([
-            'message' => 'All transactions and sales history for your shop have been cleared. Products, categories, and contacts were preserved.',
+            'message' => 'Cleared: ' . implode(', ', $labels) . '.',
         ]);
     } catch (Throwable $e) {
         Database::rollBack();
