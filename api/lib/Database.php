@@ -21,11 +21,15 @@ final class Database
             $dsn = "mysql:host={$host};port={$port};dbname={$name};charset={$charset}";
 
             try {
-                self::$pdo = new TenantPDO($dsn, $user, $pass, [
+                $foundRowsConst = PHP_VERSION_ID >= 80500
+                ? constant('Pdo\\Mysql::ATTR_FOUND_ROWS')
+                : PDO::MYSQL_ATTR_FOUND_ROWS;
+
+            self::$pdo = new TenantPDO($dsn, $user, $pass, [
                     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                     PDO::ATTR_EMULATE_PREPARES => true,
-                    PDO::MYSQL_ATTR_FOUND_ROWS => true,
+                    $foundRowsConst => true,
                     PDO::ATTR_TIMEOUT => 8,
                     PDO::ATTR_PERSISTENT => false,
                 ]);

@@ -9,7 +9,8 @@
   "scripts": {
     "dev:backend": "npm --prefix backend run dev",
     "dev:frontend": "npm --prefix frontend run dev",
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:php": "php -S localhost:5001 router-dev.php",
+    "dev": "concurrently -n frontend,php \"npm run dev:frontend\" \"npm run dev:php\"",
     "build:backend": "npm --prefix backend run build",
     "build:frontend": "npm --prefix frontend run build",
     "build": "npm run build:backend && npm run build:frontend"

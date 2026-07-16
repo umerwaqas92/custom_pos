@@ -25,7 +25,11 @@ if (strtoupper($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
     exit;
 }
 
-$configFile = __DIR__ . '/config.php';
+// Load config.local.php for local dev, fall back to config.php for production
+$localConfig = __DIR__ . '/config.local.php';
+$prodConfig = __DIR__ . '/config.php';
+$configFile = is_file($localConfig) ? $localConfig : $prodConfig;
+
 if (!is_file($configFile)) {
     http_response_code(500);
     header('Content-Type: application/json');

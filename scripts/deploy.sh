@@ -223,6 +223,8 @@ for p in (ROOT / "api").rglob("*"):
         continue
     if KEEP_CFG and p.name == "config.php":
         continue
+    if p.name == "config.local.php":
+        continue
     rel = p.relative_to(ROOT / "api").as_posix()
     pairs.append((p, f"{REMOTE}/api/{rel}"))
 

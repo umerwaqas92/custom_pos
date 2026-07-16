@@ -14,6 +14,7 @@ build/
 
 # PHP API secrets (never commit real DB password / JWT secret)
 api/config.php
+api/config.local.php
 
 # Deploy secrets
 scripts/deploy.env

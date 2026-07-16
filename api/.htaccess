@@ -11,7 +11,7 @@
   RewriteRule ^ - [E=HTTP_X_ACCESS_TOKEN:%{HTTP:X-Access-Token}]
 
   # Block direct access to config and libraries
-  RewriteRule ^(config\.php|config\.sample\.php|bootstrap\.php)$ - [F,L]
+  RewriteRule ^(config\.php|config\.sample\.php|config\.local\.php|bootstrap\.php)$ - [F,L]
   RewriteRule ^(lib|sql|backups)/ - [F,L]
 
   # Existing files (none expected) pass through
@@ -26,7 +26,7 @@
 </IfModule>
 
 # Deny config if rewrite unavailable
-<FilesMatch "^(config\.php|config\.sample\.php|bootstrap\.php)$">
+<FilesMatch "^(config\.php|config\.sample\.php|config\.local\.php|bootstrap\.php)$">
   <IfModule mod_authz_core.c>
     Require all denied
   </IfModule>
