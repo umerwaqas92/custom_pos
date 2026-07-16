@@ -475,8 +475,6 @@ export default function Settings() {
       msg = `EXTREME WARNING: You are about to delete MASTER RECORDS including Products, Customers, Staff, or Branches.\n\nThis will permanently delete:\n\n• ${selected.join("\n• ")}\n\nAll associated transaction data for these records will also be lost.\n\nThis CANNOT be undone. Proceed?`;
     }
     if (!window.confirm(msg)) return;
-    const keyword = window.prompt("Type the word RESET to confirm:");
-    if (keyword !== "RESET") { addNotification("Reset cancelled.", "warning"); return; }
     setResetting(true);
     try {
       const types = ALL_OPTIONS.filter((o) => selectedTypes[o.key]).map((o) => o.key);
