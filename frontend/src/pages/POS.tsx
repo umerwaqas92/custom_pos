@@ -540,7 +540,7 @@ export default function POS() {
                   </div>
 
                   <div className="flex items-center justify-between mt-1.5 pt-1 border-t border-border/20">
-                    <span className="font-extrabold text-[10px] text-foreground">Rs. {p.sellingPrice}</span>
+                    <span className="font-extrabold text-xs text-foreground">Rs. {Number(p.sellingPrice).toLocaleString(undefined, { minimumFractionDigits: 0 })}</span>
                     <span
                       className={`text-[8px] px-1 py-0.5 rounded font-bold ${branchQty <= 0
                           ? "bg-red-500/10 text-red-400"
@@ -590,7 +590,7 @@ export default function POS() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <h4 className="font-bold text-xs text-foreground truncate">{item.name}</h4>
-                    <p className="text-[10px] text-muted-foreground">SKU: {item.sku} | Price: Rs. {item.sellingPrice}</p>
+                    <p className="text-xs text-muted-foreground">SKU: {item.sku} | Price: Rs. {Number(item.sellingPrice).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
                   </div>
                   <button onClick={() => removeFromCart(item.productId)} className="text-muted-foreground hover:text-destructive">
                     <Trash2 className="w-4 h-4" />
@@ -646,7 +646,7 @@ export default function POS() {
                     </button>
                   </div>
                   <span className="font-bold text-xs text-foreground">
-                    Rs. {((item.sellingPrice * item.quantity) * (1 - item.discount / 100)).toFixed(2)}
+                    Rs. {Number(((item.sellingPrice * item.quantity) * (1 - item.discount / 100))).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
@@ -669,7 +669,7 @@ export default function POS() {
                 <option value="">Walk-in Customer</option>
                 {customers.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name} ({c.phone}) - Due: Rs. {c.creditBalance}
+                    {c.name} ({c.phone}) - Due: Rs. {Number(c.creditBalance).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </option>
                 ))}
               </select>
@@ -685,14 +685,14 @@ export default function POS() {
           </div>
 
           {/* Cart Pricing Aggregates */}
-          <div className="space-y-1 text-xs">
-            <div className="flex justify-between text-muted-foreground">
+          <div className="space-y-1.5">
+            <div className="flex justify-between text-muted-foreground text-sm font-semibold">
               <span>Subtotal:</span>
-              <span>Rs. {subtotal.toFixed(2)}</span>
+              <span>Rs. {subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
             </div>
 
             {/* Cart overall discount */}
-            <div className="flex justify-between text-muted-foreground items-center">
+            <div className="flex justify-between text-muted-foreground items-center text-sm font-semibold">
               <span className="flex items-center gap-1">
                 <img src="/icons/pos/discount.png?v=1" alt="" className="w-3.5 h-3.5 object-contain" draggable={false} />
                 Cart Discount (Rs.):
@@ -701,16 +701,16 @@ export default function POS() {
                 type="number"
                 value={cartDiscount || ""}
                 onChange={(e) => setCartDiscount(Math.max(0, Number(e.target.value)))}
-                className="w-16 bg-secondary text-right border border-border px-1 py-0.5 rounded text-[11px] focus:outline-none"
+                className="w-20 bg-secondary text-right border border-border px-2 py-1 rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
-            <div className="flex justify-between text-muted-foreground">
+            <div className="flex justify-between text-muted-foreground text-xs">
               <span>Estimated Tax:</span>
-              <span>Rs. {finalTax.toFixed(2)}</span>
+              <span>Rs. {finalTax.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
             </div>
-            <div className="flex justify-between font-black text-sm text-foreground pt-1.5 border-t border-border/50">
+            <div className="flex justify-between font-black text-base text-foreground pt-1.5 border-t border-border/50">
               <span>Grand Total:</span>
-              <span>Rs. {payableAmount.toFixed(2)}</span>
+              <span>Rs. {payableAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
             </div>
           </div>
 
@@ -781,12 +781,12 @@ export default function POS() {
           </div>
 
           {/* Amount Paid input */}
-          <div className="space-y-1">
-            <div className="flex justify-between items-center text-[10px] font-bold text-muted-foreground uppercase">
+          <div className="space-y-1.5">
+            <div className="flex justify-between items-center text-xs font-bold text-muted-foreground uppercase">
               <span>Amount Paid (Rs.)</span>
               {Number(amountPaid) > payableAmount && (
-                <span className="text-emerald-400 font-extrabold normal-case">
-                  Change: Rs. {(Number(amountPaid) - payableAmount).toFixed(2)}
+                <span className="text-emerald-400 font-extrabold normal-case text-xs">
+                  Change: Rs. {(Number(amountPaid) - payableAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </span>
               )}
             </div>
@@ -795,7 +795,7 @@ export default function POS() {
               value={amountPaid}
               onChange={(e) => setAmountPaid(e.target.value)}
               step="0.01"
-              className="w-full bg-secondary border border-border px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full bg-secondary border border-border px-3 py-2 rounded-lg text-sm font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
 
@@ -852,7 +852,7 @@ export default function POS() {
                   <div>
                     <p className="font-semibold text-foreground">{item.product.name}</p>
                     <p className="text-[9px] text-muted-foreground">
-                      Qty: {item.quantity} @ Rs. {item.unitPrice}
+                      Qty: {item.quantity} @ Rs. {Number(item.unitPrice).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </p>
                     {(item.serialNumber || item.imei) && (
                       <p className="text-[9px] text-primary/80 font-bold mt-0.5">
@@ -862,7 +862,7 @@ export default function POS() {
                       </p>
                     )}
                   </div>
-                  <span className="font-bold text-foreground">Rs. {item.totalPrice.toFixed(2)}</span>
+                  <span className="font-bold text-foreground">Rs. {Number(item.totalPrice).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                 </div>
               ))}
             </div>
@@ -870,19 +870,19 @@ export default function POS() {
             <div className="border-t border-border pt-3 space-y-1 text-[11px]">
               <div className="flex justify-between text-muted-foreground">
                 <span>Subtotal:</span>
-                <span>Rs. {receiptResult?.totalAmount.toFixed(2)}</span>
+                <span>Rs. {Number(receiptResult?.totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
               </div>
               <div className="flex justify-between text-muted-foreground">
                 <span>Discount:</span>
-                <span>-Rs. {receiptResult?.discountAmount.toFixed(2)}</span>
+                <span>-Rs. {Number(receiptResult?.discountAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
               </div>
               <div className="flex justify-between text-muted-foreground">
                 <span>Sales Tax ({receiptResult?.items[0]?.tax || 0}%):</span>
-                <span>+Rs. {receiptResult?.taxAmount.toFixed(2)}</span>
+                <span>+Rs. {Number(receiptResult?.taxAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
               </div>
               <div className="flex justify-between font-black text-foreground text-xs pt-1 border-t border-border/40">
                 <span>Total Paid ({receiptResult?.paymentMethod}):</span>
-                <span>Rs. {receiptResult?.paidAmount.toFixed(2)}</span>
+                <span>Rs. {Number(receiptResult?.paidAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
               </div>
             </div>
 
@@ -890,9 +890,9 @@ export default function POS() {
               <div className="bg-secondary/60 p-2 rounded text-[10px] text-muted-foreground">
                 <p>Customer: <strong>{receiptResult.customer.name}</strong></p>
                 {receiptResult.paymentMethod === "EMI" ? (
-                  <p>Financed Balance: <strong>Rs. {Math.max(0, receiptResult.payableAmount - receiptResult.paidAmount).toFixed(2)}</strong></p>
+                  <p>Financed Balance: <strong>Rs. {Number(Math.max(0, receiptResult.payableAmount - receiptResult.paidAmount)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong></p>
                 ) : receiptResult.paymentMethod === "CREDIT" ? (
-                  <p>Outstanding on Invoice: <strong>Rs. {Math.max(0, receiptResult.payableAmount - receiptResult.paidAmount).toFixed(2)}</strong></p>
+                  <p>Outstanding on Invoice: <strong>Rs. {Number(Math.max(0, receiptResult.payableAmount - receiptResult.paidAmount)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong></p>
                 ) : null}
               </div>
             )}

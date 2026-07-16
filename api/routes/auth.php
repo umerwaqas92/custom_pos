@@ -834,6 +834,11 @@ function auth_export_sql_dump(): string
 
     foreach ($tables as $table) {
         $table = (string) $table;
+
+        // Skip users table — never export user records to prevent login issues on restore
+        if ($table === 'users') {
+            continue;
+        }
         $create = $pdo->query('SHOW CREATE TABLE `' . str_replace('`', '``', $table) . '`')->fetch(PDO::FETCH_ASSOC);
         if (!$create) {
             continue;
@@ -945,8 +950,12 @@ function auth_import_sql_string(string $sql): void
         }
 
         // Before first INSERT into an owned table, delete this owner's existing data
+        // Skip users table — we never overwrite user records to prevent login issues
         if (preg_match('/^INSERT\s+INTO\s+`?(\w+)`?/i', $stmt, $m)) {
             $tableName = $m[1];
+            if ($tableName === 'users') {
+                continue; // skip user inserts to preserve current logins
+            }
             if (isset($ownedLookup[$tableName]) && !isset($insertBuffers[$tableName])) {
                 $insertBuffers[$tableName] = true;
                 try {

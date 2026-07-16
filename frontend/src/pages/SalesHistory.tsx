@@ -71,9 +71,12 @@ export default function SalesHistory() {
   const [selectedCustomer, setSelectedCustomer] = useState("ALL");
   const [dateFilter, setDateFilter] = useState("ALL");
   /** Year filter: "ALL" or "2026" */
-  const [selectedYear, setSelectedYear] = useState("ALL");
+  const [selectedYear, setSelectedYear] = useState(String(new Date().getFullYear()));
   /** Month filter: "ALL" or "01"…"12" */
-  const [selectedMonth, setSelectedMonth] = useState("ALL");
+  const [selectedMonth, setSelectedMonth] = useState(
+    String(new Date().getMonth() + 1).padStart(2, "0")
+  );
+  const [showCashier, setShowCashier] = useState(true);
 
   // Receipt
   const [activeSale, setActiveSale] = useState<any | null>(null);
@@ -707,6 +710,19 @@ export default function SalesHistory() {
               {opt.label}
             </button>
           ))}
+          <span className="w-px h-5 bg-border/60 mx-1" />
+          <button
+            type="button"
+            onClick={() => setShowCashier(!showCashier)}
+            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition border ${
+              showCashier
+                ? "bg-secondary border-border text-muted-foreground hover:text-foreground"
+                : "bg-primary/15 text-primary border-primary/30"
+            }`}
+            title={showCashier ? "Hide Cashier column" : "Show Cashier column"}
+          >
+            {showCashier ? "Hide Cashier" : "Show Cashier"}
+          </button>
         </div>
       </div>
 
@@ -744,7 +760,7 @@ export default function SalesHistory() {
                 <th className="pb-3 pl-2">Invoice ID</th>
                 <th className="pb-3">Sale Date</th>
                 <th className="pb-3">Customer Profile</th>
-                <th className="pb-3">Cashier</th>
+                {showCashier && <th className="pb-3">Cashier</th>}
                 <th className="pb-3 text-center">Payment Method</th>
                 <th className="pb-3 text-right">Grand Total</th>
                 <th className="pb-3 text-center">Return</th>
@@ -754,7 +770,7 @@ export default function SalesHistory() {
             <tbody className="divide-y divide-border/50">
               {filteredSales.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={showCashier ? 8 : 7} className="py-8 text-center text-muted-foreground">
                     No sales matching filters or transactions logged yet.
                   </td>
                 </tr>
@@ -780,7 +796,7 @@ export default function SalesHistory() {
                         <span className="text-muted-foreground italic">Walk-in Customer</span>
                       )}
                     </td>
-                    <td className="py-4 text-foreground">{s.cashier?.name || "-"}</td>
+                    {showCashier && <td className="py-4 text-foreground">{s.cashier?.name || "-"}</td>}
                     <td className="py-4 text-center">
                       <span className="bg-secondary px-2 py-0.5 rounded font-black text-[10px]">
                         {paymentMethodNames[s.paymentMethod] || s.paymentMethod}
