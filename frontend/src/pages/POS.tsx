@@ -323,7 +323,7 @@ export default function POS() {
           .catch((err: any) => {
             console.error(err);
             element.style.cssText = oldStyle;
-            addNotification("Failed to generate PDF.", "error");
+            addNotification("Failed to generate PDF.", "warning");
           });
       }
     };
@@ -685,30 +685,30 @@ export default function POS() {
           </div>
 
           {/* Cart Pricing Aggregates */}
-          <div className="space-y-1.5">
-            <div className="flex justify-between text-muted-foreground text-sm font-semibold">
+          <div className="space-y-2">
+            <div className="flex justify-between text-foreground text-base font-bold">
               <span>Subtotal:</span>
               <span>Rs. {subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
             </div>
 
             {/* Cart overall discount */}
-            <div className="flex justify-between text-muted-foreground items-center text-sm font-semibold">
+            <div className="flex justify-between text-foreground items-center text-base font-bold">
               <span className="flex items-center gap-1">
-                <img src="/icons/pos/discount.png?v=1" alt="" className="w-3.5 h-3.5 object-contain" draggable={false} />
+                <img src="/icons/pos/discount.png?v=1" alt="" className="w-4 h-4 object-contain" draggable={false} />
                 Cart Discount (Rs.):
               </span>
               <input
                 type="number"
                 value={cartDiscount || ""}
                 onChange={(e) => setCartDiscount(Math.max(0, Number(e.target.value)))}
-                className="w-20 bg-secondary text-right border border-border px-2 py-1 rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-24 bg-secondary text-right border border-border px-2 py-1 rounded text-sm font-bold focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
-            <div className="flex justify-between text-muted-foreground text-xs">
+            <div className="flex justify-between text-foreground text-base font-bold">
               <span>Estimated Tax:</span>
               <span>Rs. {finalTax.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
             </div>
-            <div className="flex justify-between font-black text-base text-foreground pt-1.5 border-t border-border/50">
+            <div className="flex justify-between font-black text-lg text-foreground pt-2 border-t border-border/50">
               <span>Grand Total:</span>
               <span>Rs. {payableAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
             </div>
@@ -782,10 +782,10 @@ export default function POS() {
 
           {/* Amount Paid input */}
           <div className="space-y-1.5">
-            <div className="flex justify-between items-center text-xs font-bold text-muted-foreground uppercase">
+            <div className="flex justify-between items-center text-sm font-extrabold text-foreground uppercase">
               <span>Amount Paid (Rs.)</span>
               {Number(amountPaid) > payableAmount && (
-                <span className="text-emerald-400 font-extrabold normal-case text-xs">
+                <span className="text-emerald-400 font-extrabold normal-case text-sm">
                   Change: Rs. {(Number(amountPaid) - payableAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </span>
               )}
@@ -795,7 +795,7 @@ export default function POS() {
               value={amountPaid}
               onChange={(e) => setAmountPaid(e.target.value)}
               step="0.01"
-              className="w-full bg-secondary border border-border px-3 py-2 rounded-lg text-sm font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full bg-secondary border border-border px-3 py-2.5 rounded-lg text-lg font-bold focus:outline-none focus:ring-2 focus:ring-primary text-foreground"
             />
           </div>
 
