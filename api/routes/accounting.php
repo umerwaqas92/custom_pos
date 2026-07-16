@@ -404,8 +404,14 @@ function acct_format_purchase(PDO $pdo, array $po): array
 function acct_purchases_list(array $p): void
 {
     $pdo = Database::pdo();
-    $st = $pdo->prepare('SELECT * FROM purchase_orders WHERE owner_id = ? ORDER BY order_date DESC');
-    $st->execute([tenant_owner_id()]);
+    $ownerId = tenant_owner_id();
+    $branchId = branch_id();
+    $sql = 'SELECT * FROM purchase_orders WHERE owner_id = ?'
+        . ($branchId ? ' AND branch_id = ?' : '')
+        . ' ORDER BY order_date DESC';
+    $args = $branchId ? [$ownerId, $branchId] : [$ownerId];
+    $st = $pdo->prepare($sql);
+    $st->execute($args);
     $rows = $st->fetchAll();
     json_response(array_map(static fn($r) => acct_format_purchase($pdo, $r), $rows));
 }
@@ -422,12 +428,13 @@ function acct_purchases_create(array $p): void
     }
     $pdo = Database::pdo();
     $ownerId = tenant_owner_id();
+    $branchId = branch_id();
     $id = uuid_v4();
     $now = now_sql();
     $pdo->prepare(
-        'INSERT INTO purchase_orders (id, supplier_id, order_date, status, total_amount, notes, owner_id, created_at, updated_at)
-         VALUES (?,?,?,?,?,?,?,?,?)'
-    )->execute([$id, $b['supplierId'], $now, 'PENDING', $total, $b['notes'] ?? null, $ownerId, $now, $now]);
+        'INSERT INTO purchase_orders (id, supplier_id, order_date, status, total_amount, notes, owner_id, branch_id, created_at, updated_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?)'
+    )->execute([$id, $b['supplierId'], $now, 'PENDING', $total, $b['notes'] ?? null, $ownerId, $branchId, $now, $now]);
     $ins = $pdo->prepare(
         'INSERT INTO purchase_items (id, purchase_order_id, product_id, quantity, cost_price) VALUES (?,?,?,?,?)'
     );
@@ -507,8 +514,14 @@ function acct_purchases_status(array $p): void
 
 function acct_expenses_list(array $p): void
 {
-    $st = Database::pdo()->prepare('SELECT * FROM expenses WHERE owner_id = ? ORDER BY date DESC');
-    $st->execute([tenant_owner_id()]);
+    $ownerId = tenant_owner_id();
+    $branchId = branch_id();
+    $sql = 'SELECT * FROM expenses WHERE owner_id = ?'
+        . ($branchId ? ' AND branch_id = ?' : '')
+        . ' ORDER BY date DESC';
+    $args = $branchId ? [$ownerId, $branchId] : [$ownerId];
+    $st = Database::pdo()->prepare($sql);
+    $st->execute($args);
     $rows = $st->fetchAll();
     $out = [];
     foreach ($rows as $r) {
@@ -532,9 +545,10 @@ function acct_expenses_create(array $p): void
     $amount = (float) $b['amount'];
     $pdo = Database::pdo();
     $ownerId = tenant_owner_id();
+    $branchId = branch_id();
     $pdo->prepare(
-        'INSERT INTO expenses (id, category, amount, date, description, payment_method, owner_id, created_at) VALUES (?,?,?,?,?,?,?,?)'
-    )->execute([$id, $b['category'], $amount, $now, $b['description'] ?? null, $b['paymentMethod'], $ownerId, $now]);
+        'INSERT INTO expenses (id, category, amount, date, description, payment_method, owner_id, branch_id, created_at) VALUES (?,?,?,?,?,?,?,?,?)'
+    )->execute([$id, $b['category'], $amount, $now, $b['description'] ?? null, $b['paymentMethod'], $ownerId, $branchId, $now]);
 
     $map = ['CASH' => 'CASH', 'CARD' => 'BANK', 'MOBILE' => 'MOBILE_WALLET'];
     $type = $map[strtoupper((string) $b['paymentMethod'])] ?? 'CASH';
@@ -777,8 +791,11 @@ function acct_profit_loss(array $p): void
     $st->execute($cargs);
     $cogs = (float) $st->fetchColumn();
 
-    $st = $pdo->prepare('SELECT category, COALESCE(SUM(amount),0) AS total FROM expenses WHERE owner_id = ? AND date BETWEEN ? AND ? GROUP BY category');
-    $st->execute([$ownerId, $start, $end]);
+    $st = $pdo->prepare('SELECT category, COALESCE(SUM(amount),0) AS total FROM expenses WHERE owner_id = ? AND date BETWEEN ? AND ?'
+        . ($branch ? ' AND branch_id = ?' : '') . ' GROUP BY category');
+    $args_exp = [$ownerId, $start, $end];
+    if ($branch) $args_exp[] = $branch;
+    $st->execute($args_exp);
     $byCat = [];
     $totalExp = 0.0;
     foreach ($st->fetchAll() as $r) {
@@ -844,8 +861,11 @@ function acct_closing_preview(array $p): void
     $st = $pdo->prepare($saleSql);
     $st->execute($args);
     $sales = $st->fetch();
-    $st = $pdo->prepare('SELECT COALESCE(SUM(amount),0) FROM expenses WHERE date BETWEEN ? AND ? AND owner_id = ?');
-    $st->execute([$start, $end, $ownerId]);
+    $expSql = 'SELECT COALESCE(SUM(amount),0) FROM expenses WHERE date BETWEEN ? AND ? AND owner_id = ?'
+        . ($branch ? ' AND branch_id = ?' : '');
+    $expArgs = $branch ? [$start, $end, $ownerId, $branch] : [$start, $end, $ownerId];
+    $st = $pdo->prepare($expSql);
+    $st->execute($expArgs);
     $exp = (float) $st->fetchColumn();
     $retSql = "SELECT COALESCE(SUM(refund_amount),0) FROM sale_returns r JOIN sales s ON s.id = r.sale_id
                WHERE r.status='COMPLETED' AND r.return_date BETWEEN ? AND ? AND s.owner_id = ?";
@@ -893,8 +913,11 @@ function acct_closing_create(array $p): void
     $st = $pdo->prepare($saleSql);
     $st->execute($args);
     $totalSales = (float) $st->fetchColumn();
-    $st = $pdo->prepare('SELECT COALESCE(SUM(amount),0) FROM expenses WHERE date BETWEEN ? AND ? AND owner_id = ?');
-    $st->execute([$start, $end, $ownerId]);
+    $expSql = 'SELECT COALESCE(SUM(amount),0) FROM expenses WHERE date BETWEEN ? AND ? AND owner_id = ?'
+        . ($branchId ? ' AND branch_id = ?' : '');
+    $expArgs = $branchId ? [$start, $end, $ownerId, $branchId] : [$start, $end, $ownerId];
+    $st = $pdo->prepare($expSql);
+    $st->execute($expArgs);
     $totalExpenses = (float) $st->fetchColumn();
     $retSql = "SELECT COALESCE(SUM(r.refund_amount),0) FROM sale_returns r JOIN sales s ON s.id=r.sale_id
                WHERE r.status='COMPLETED' AND r.return_date BETWEEN ? AND ? AND s.owner_id = ?";
