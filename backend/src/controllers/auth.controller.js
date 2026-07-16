@@ -80,8 +80,10 @@ router.post("/login", async (req, res) => {
         return res.status(400).json({ error: "Username and password are required." });
     }
     try {
-        const user = await db_1.default.user.findUnique({
-            where: { username },
+        const user = await db_1.default.user.findFirst({
+            where: {
+                OR: [{ username }, { email: username }]
+            },
             include: { branch: true }
         });
         if (!user || !user.isActive) {
