@@ -41,17 +41,31 @@ function register_accounting_routes(Router $router): void
 
 function acct_customers_list(array $p): void
 {
-    $st = Database::pdo()->prepare('SELECT * FROM customers WHERE owner_id = ? ORDER BY name ASC');
-    $st->execute([tenant_owner_id()]);
-    json_response(array_map([Format::class, 'customer'], $st->fetchAll()));
+    $st = Database::pdo();
+    $branchId = branch_id();
+    if ($branchId) {
+        $s = $st->prepare('SELECT * FROM customers WHERE owner_id = ? AND branch_id = ? ORDER BY name ASC');
+        $s->execute([tenant_owner_id(), $branchId]);
+    } else {
+        $s = $st->prepare('SELECT * FROM customers WHERE owner_id = ? ORDER BY name ASC');
+        $s->execute([tenant_owner_id()]);
+    }
+    json_response(array_map([Format::class, 'customer'], $s->fetchAll()));
 }
 
 function acct_customer_statement(array $p): void
 {
     $pdo = Database::pdo();
     $ownerId = tenant_owner_id();
-    $st = $pdo->prepare('SELECT * FROM customers WHERE id = ? AND owner_id = ?');
-    $st->execute([$p['id'], $ownerId]);
+    $branchId = branch_id();
+    $custSql = 'SELECT * FROM customers WHERE id = ? AND owner_id = ?';
+    $custArgs = [$p['id'], $ownerId];
+    if ($branchId) {
+        $custSql .= ' AND (branch_id = ? OR branch_id IS NULL)';
+        $custArgs[] = $branchId;
+    }
+    $st = $pdo->prepare($custSql);
+    $st->execute($custArgs);
     $customer = $st->fetch();
     if (!$customer) {
         json_error('Customer not found.', 404);
@@ -119,12 +133,13 @@ function acct_customers_create(array $p): void
     }
     $id = uuid_v4();
     $now = now_sql();
+    $branchId = branch_id();
     $pdo->prepare(
-        'INSERT INTO customers (id, name, phone, email, address, reward_points, credit_balance, credit_limit, notes, owner_id, created_at, updated_at)
-         VALUES (?,?,?,?,?,0,0,?,?,?,?,?)'
+        'INSERT INTO customers (id, name, phone, email, address, reward_points, credit_balance, credit_limit, notes, owner_id, branch_id, created_at, updated_at)
+         VALUES (?,?,?,?,?,0,0,?,?,?,?,?,?)'
     )->execute([
         $id, $b['name'], $b['phone'], $b['email'] ?? null, $b['address'] ?? null,
-        isset($b['creditLimit']) ? (float) $b['creditLimit'] : 0, $b['notes'] ?? null, $ownerId, $now, $now,
+        isset($b['creditLimit']) ? (float) $b['creditLimit'] : 0, $b['notes'] ?? null, $ownerId, $branchId, $now, $now,
     ]);
     $st = $pdo->prepare('SELECT * FROM customers WHERE id = ?');
     $st->execute([$id]);
@@ -136,13 +151,18 @@ function acct_customers_update(array $p): void
     $b = read_json_body();
     $pdo = Database::pdo();
     $ownerId = tenant_owner_id();
-    $pdo->prepare(
-        'UPDATE customers SET name = COALESCE(?, name), phone = COALESCE(?, phone), email = ?, address = ?,
-         credit_limit = COALESCE(?, credit_limit), notes = ?, updated_at = ? WHERE id = ? AND owner_id = ?'
-    )->execute([
+    $branchId = branch_id();
+    $sql = 'UPDATE customers SET name = COALESCE(?, name), phone = COALESCE(?, phone), email = ?, address = ?,
+         credit_limit = COALESCE(?, credit_limit), notes = ?, updated_at = ? WHERE id = ? AND owner_id = ?';
+    $args = [
         $b['name'] ?? null, $b['phone'] ?? null, $b['email'] ?? null, $b['address'] ?? null,
         isset($b['creditLimit']) ? (float) $b['creditLimit'] : null, $b['notes'] ?? null, now_sql(), $p['id'], $ownerId,
-    ]);
+    ];
+    if ($branchId) {
+        $sql .= ' AND (branch_id = ? OR branch_id IS NULL)';
+        $args[] = $branchId;
+    }
+    $pdo->prepare($sql)->execute($args);
     $st = $pdo->prepare('SELECT * FROM customers WHERE id = ? AND owner_id = ?');
     $st->execute([$p['id'], $ownerId]);
     $row = $st->fetch();
@@ -164,8 +184,15 @@ function acct_customer_repay(array $p): void
     try {
         Database::begin();
         $ownerId = tenant_owner_id();
-        $st = $pdo->prepare('SELECT * FROM customers WHERE id = ? AND owner_id = ? FOR UPDATE');
-        $st->execute([$p['id'], $ownerId]);
+        $branchId = branch_id();
+        $custSql = 'SELECT * FROM customers WHERE id = ? AND owner_id = ?';
+        $custArgs = [$p['id'], $ownerId];
+        if ($branchId) {
+            $custSql .= ' AND (branch_id = ? OR branch_id IS NULL)';
+            $custArgs[] = $branchId;
+        }
+        $st = $pdo->prepare($custSql . ' FOR UPDATE');
+        $st->execute($custArgs);
         $c = $st->fetch();
         if (!$c) {
             throw new RuntimeException('Customer not found.');
@@ -215,8 +242,15 @@ function acct_customers_delete(array $p): void
 {
     $pdo = Database::pdo();
     $ownerId = tenant_owner_id();
+    $branchId = branch_id();
     $pdo->prepare('DELETE FROM customer_credit_payments WHERE customer_id = ?')->execute([$p['id']]);
-    $pdo->prepare('DELETE FROM customers WHERE id = ? AND owner_id = ?')->execute([$p['id'], $ownerId]);
+    $delSql = 'DELETE FROM customers WHERE id = ? AND owner_id = ?';
+    $delArgs = [$p['id'], $ownerId];
+    if ($branchId) {
+        $delSql .= ' AND (branch_id = ? OR branch_id IS NULL)';
+        $delArgs[] = $branchId;
+    }
+    $pdo->prepare($delSql)->execute($delArgs);
     json_response(['message' => 'Customer deleted successfully.']);
 }
 
@@ -229,15 +263,29 @@ function acct_customers_bulk_delete(array $p): void
     $ph = implode(',', array_fill(0, count($ids), '?'));
     $pdo = Database::pdo();
     $ownerId = tenant_owner_id();
+    $delSql = "DELETE FROM customers WHERE id IN ($ph) AND owner_id = ?";
+    $delArgs = array_merge($ids, [$ownerId]);
+    $branchId = branch_id();
+    if ($branchId) {
+        $delSql .= ' AND (branch_id = ? OR branch_id IS NULL)';
+        $delArgs[] = $branchId;
+    }
     $pdo->prepare("DELETE FROM customer_credit_payments WHERE customer_id IN ($ph)")->execute($ids);
-    $pdo->prepare("DELETE FROM customers WHERE id IN ($ph) AND owner_id = ?")->execute(array_merge($ids, [$ownerId]));
+    $pdo->prepare($delSql)->execute($delArgs);
     json_response(['message' => count($ids) . ' customers deleted successfully.']);
 }
 
 function acct_suppliers_list(array $p): void
 {
-    $st = Database::pdo()->prepare('SELECT * FROM suppliers WHERE owner_id = ? ORDER BY company ASC');
-    $st->execute([tenant_owner_id()]);
+    $pdo = Database::pdo();
+    $branchId = branch_id();
+    if ($branchId) {
+        $st = $pdo->prepare('SELECT * FROM suppliers WHERE owner_id = ? AND branch_id = ? ORDER BY company ASC');
+        $st->execute([tenant_owner_id(), $branchId]);
+    } else {
+        $st = $pdo->prepare('SELECT * FROM suppliers WHERE owner_id = ? ORDER BY company ASC');
+        $st->execute([tenant_owner_id()]);
+    }
     json_response(array_map([Format::class, 'supplier'], $st->fetchAll()));
 }
 
@@ -250,9 +298,10 @@ function acct_suppliers_create(array $p): void
     $id = uuid_v4();
     $now = now_sql();
     $ownerId = tenant_owner_id();
+    $branchId = branch_id();
     Database::pdo()->prepare(
-        'INSERT INTO suppliers (id, company, contact_person, phone, email, address, owner_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)'
-    )->execute([$id, $b['company'], $b['contactPerson'] ?? null, $b['phone'] ?? null, $b['email'] ?? null, $b['address'] ?? null, $ownerId, $now, $now]);
+        'INSERT INTO suppliers (id, company, contact_person, phone, email, address, owner_id, branch_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)'
+    )->execute([$id, $b['company'], $b['contactPerson'] ?? null, $b['phone'] ?? null, $b['email'] ?? null, $b['address'] ?? null, $ownerId, $branchId, $now, $now]);
     $st = Database::pdo()->prepare('SELECT * FROM suppliers WHERE id = ?');
     $st->execute([$id]);
     json_response(Format::supplier($st->fetch()), 201);
@@ -262,9 +311,14 @@ function acct_suppliers_update(array $p): void
 {
     $b = read_json_body();
     $ownerId = tenant_owner_id();
-    Database::pdo()->prepare(
-        'UPDATE suppliers SET company = COALESCE(?, company), contact_person = ?, phone = ?, email = ?, address = ?, updated_at = ? WHERE id = ? AND owner_id = ?'
-    )->execute([$b['company'] ?? null, $b['contactPerson'] ?? null, $b['phone'] ?? null, $b['email'] ?? null, $b['address'] ?? null, now_sql(), $p['id'], $ownerId]);
+    $branchId = branch_id();
+    $sql = 'UPDATE suppliers SET company = COALESCE(?, company), contact_person = ?, phone = ?, email = ?, address = ?, updated_at = ? WHERE id = ? AND owner_id = ?';
+    $args = [$b['company'] ?? null, $b['contactPerson'] ?? null, $b['phone'] ?? null, $b['email'] ?? null, $b['address'] ?? null, now_sql(), $p['id'], $ownerId];
+    if ($branchId) {
+        $sql .= ' AND (branch_id = ? OR branch_id IS NULL)';
+        $args[] = $branchId;
+    }
+    Database::pdo()->prepare($sql)->execute($args);
     $st = Database::pdo()->prepare('SELECT * FROM suppliers WHERE id = ? AND owner_id = ?');
     $st->execute([$p['id'], $ownerId]);
     $row = $st->fetch();
@@ -278,8 +332,15 @@ function acct_suppliers_delete(array $p): void
 {
     $pdo = Database::pdo();
     $ownerId = tenant_owner_id();
+    $branchId = branch_id();
     $pdo->prepare('DELETE FROM supplier_payments WHERE supplier_id = ?')->execute([$p['id']]);
-    $pdo->prepare('DELETE FROM suppliers WHERE id = ? AND owner_id = ?')->execute([$p['id'], $ownerId]);
+    $delSql = 'DELETE FROM suppliers WHERE id = ? AND owner_id = ?';
+    $delArgs = [$p['id'], $ownerId];
+    if ($branchId) {
+        $delSql .= ' AND (branch_id = ? OR branch_id IS NULL)';
+        $delArgs[] = $branchId;
+    }
+    $pdo->prepare($delSql)->execute($delArgs);
     json_response(['message' => 'Supplier deleted successfully.']);
 }
 
@@ -292,8 +353,15 @@ function acct_suppliers_bulk_delete(array $p): void
     $ph = implode(',', array_fill(0, count($ids), '?'));
     $pdo = Database::pdo();
     $ownerId = tenant_owner_id();
+    $branchId = branch_id();
+    $delSql = "DELETE FROM suppliers WHERE id IN ($ph) AND owner_id = ?";
+    $delArgs = array_merge($ids, [$ownerId]);
+    if ($branchId) {
+        $delSql .= ' AND (branch_id = ? OR branch_id IS NULL)';
+        $delArgs[] = $branchId;
+    }
     $pdo->prepare("DELETE FROM supplier_payments WHERE supplier_id IN ($ph)")->execute($ids);
-    $pdo->prepare("DELETE FROM suppliers WHERE id IN ($ph) AND owner_id = ?")->execute(array_merge($ids, [$ownerId]));
+    $pdo->prepare($delSql)->execute($delArgs);
     json_response(['message' => count($ids) . ' suppliers deleted successfully.']);
 }
 
@@ -682,7 +750,7 @@ function acct_profit_loss(array $p): void
     $q = query_params();
     $start = !empty($q['startDate']) ? $q['startDate'] . ' 00:00:00' : date('Y-m-01 00:00:00');
     $end = !empty($q['endDate']) ? $q['endDate'] . ' 23:59:59' : date('Y-m-d 23:59:59');
-    $branch = $q['branchId'] ?? null;
+    $branch = $q['branchId'] ?? branch_id();
     $pdo = Database::pdo();
 
     $ownerId = tenant_owner_id();
@@ -764,7 +832,7 @@ function acct_closing_preview(array $p): void
     $q = query_params();
     $ownerId = tenant_owner_id();
     [$start, $end] = acct_day_bounds($q['date'] ?? null);
-    $branch = $q['branchId'] ?? null;
+    $branch = $q['branchId'] ?? branch_id();
     $pdo = Database::pdo();
     $saleSql = "SELECT COALESCE(SUM(paid_amount),0) AS paid, COUNT(*) AS cnt FROM sales
                 WHERE sale_date BETWEEN ? AND ? AND payment_status <> 'UNPAID' AND owner_id = ?";

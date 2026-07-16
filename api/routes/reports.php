@@ -510,7 +510,7 @@ function reports_query(array $params): void
             $type,
             isset($q['startDate']) ? (string) $q['startDate'] : null,
             isset($q['endDate']) ? (string) $q['endDate'] : null,
-            isset($q['branchId']) && $q['branchId'] !== '' ? (string) $q['branchId'] : null
+            isset($q['branchId']) && $q['branchId'] !== '' ? (string) $q['branchId'] : branch_id()
         );
         json_response($data);
     } catch (InvalidArgumentException $e) {
@@ -638,7 +638,7 @@ function reports_export(array $params): void
             $type,
             isset($q['startDate']) ? (string) $q['startDate'] : null,
             isset($q['endDate']) ? (string) $q['endDate'] : null,
-            isset($q['branchId']) && $q['branchId'] !== '' ? (string) $q['branchId'] : null
+            isset($q['branchId']) && $q['branchId'] !== '' ? (string) $q['branchId'] : branch_id()
         );
 
         if ($format === 'csv') {
@@ -682,7 +682,7 @@ function reports_export(array $params): void
 function reports_dashboard_period_filter(): array
 {
     $q = query_params();
-    $branchId = isset($q['branchId']) && $q['branchId'] !== '' ? (string) $q['branchId'] : null;
+    $branchId = isset($q['branchId']) && $q['branchId'] !== '' ? (string) $q['branchId'] : branch_id();
     $startDate = isset($q['startDate']) && $q['startDate'] !== '' ? (string) $q['startDate'] : null;
     $endDate = isset($q['endDate']) && $q['endDate'] !== '' ? (string) $q['endDate'] : null;
     $month = isset($q['month']) && $q['month'] !== '' && $q['month'] !== 'ALL' ? (string) $q['month'] : null;
@@ -811,7 +811,7 @@ function reports_dashboard_stats(array $params): void
 
     $todayStart = date('Y-m-d 00:00:00');
     $monthStart = date('Y-m-01 00:00:00');
-    $branchId = query_params()['branchId'] ?? null;
+    $branchId = query_params()['branchId'] ?? branch_id();
     $branchOnly = '';
     $branchArgs = [];
     if ($branchId) {

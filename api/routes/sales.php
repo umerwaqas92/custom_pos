@@ -662,9 +662,10 @@ function sales_list(array $params): void
     $pdo = Database::pdo();
     $where = ['owner_id = ?'];
     $args = [tenant_owner_id()];
-    if (!empty($q['branchId'])) {
+    $branchId = $q['branchId'] ?? branch_id();
+    if ($branchId) {
         $where[] = 'branch_id = ?';
-        $args[] = $q['branchId'];
+        $args[] = $branchId;
     }
     if (!empty($q['customerId'])) {
         $where[] = 'customer_id = ?';
@@ -701,9 +702,10 @@ function sales_returns_list(array $params): void
         $sql .= ' AND r.sale_id = ?';
         $args[] = $q['saleId'];
     }
-    if (!empty($q['branchId'])) {
+    $branchId = $q['branchId'] ?? branch_id();
+    if ($branchId) {
         $sql .= ' AND s.branch_id = ?';
-        $args[] = $q['branchId'];
+        $args[] = $branchId;
     }
     $sql .= ' ORDER BY r.return_date DESC LIMIT 300';
     $st = $pdo->prepare($sql);

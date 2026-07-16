@@ -127,8 +127,14 @@ function products_suggest(array $params): void
 function products_categories_list(array $params): void
 {
     $pdo = Database::pdo();
-    $st = $pdo->prepare('SELECT * FROM categories WHERE owner_id = ? ORDER BY name ASC');
-    $st->execute([tenant_owner_id()]);
+    $branchId = branch_id();
+    if ($branchId) {
+        $st = $pdo->prepare('SELECT * FROM categories WHERE owner_id = ? AND branch_id = ? ORDER BY name ASC');
+        $st->execute([tenant_owner_id(), $branchId]);
+    } else {
+        $st = $pdo->prepare('SELECT * FROM categories WHERE owner_id = ? ORDER BY name ASC');
+        $st->execute([tenant_owner_id()]);
+    }
     json_response(array_map('products_format_category', $st->fetchAll()));
 }
 
@@ -148,8 +154,9 @@ function products_categories_create(array $params): void
     }
     $id = uuid_v4();
     $now = now_sql();
-    $pdo->prepare('INSERT INTO categories (id, name, owner_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?)')
-        ->execute([$id, $name, $ownerId, $now, $now]);
+    $branchId = branch_id();
+    $pdo->prepare('INSERT INTO categories (id, name, owner_id, branch_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)')
+        ->execute([$id, $name, $ownerId, $branchId, $now, $now]);
     $st = $pdo->prepare('SELECT * FROM categories WHERE id = ?');
     $st->execute([$id]);
     json_response(products_format_category($st->fetch()), 201);
@@ -165,8 +172,14 @@ function products_categories_update(array $params): void
     }
     $pdo = Database::pdo();
     $ownerId = tenant_owner_id();
-    $pdo->prepare('UPDATE categories SET name = ?, updated_at = ? WHERE id = ? AND owner_id = ?')
-        ->execute([$name, now_sql(), $id, $ownerId]);
+    $branchId = branch_id();
+    $sql = 'UPDATE categories SET name = ?, updated_at = ? WHERE id = ? AND owner_id = ?';
+    $args = [$name, now_sql(), $id, $ownerId];
+    if ($branchId) {
+        $sql .= ' AND (branch_id = ? OR branch_id IS NULL)';
+        $args[] = $branchId;
+    }
+    $pdo->prepare($sql)->execute($args);
     $st = $pdo->prepare('SELECT * FROM categories WHERE id = ? AND owner_id = ?');
     $st->execute([$id, $ownerId]);
     $row = $st->fetch();
@@ -181,11 +194,18 @@ function products_categories_delete(array $params): void
     $id = $params['id'];
     $pdo = Database::pdo();
     $ownerId = tenant_owner_id();
+    $branchId = branch_id();
     try {
         Database::begin();
         $pdo->prepare('UPDATE products SET category_id = NULL WHERE category_id = ? AND owner_id = ?')
             ->execute([$id, $ownerId]);
-        $pdo->prepare('DELETE FROM categories WHERE id = ? AND owner_id = ?')->execute([$id, $ownerId]);
+        $delSql = 'DELETE FROM categories WHERE id = ? AND owner_id = ?';
+        $delArgs = [$id, $ownerId];
+        if ($branchId) {
+            $delSql .= ' AND (branch_id = ? OR branch_id IS NULL)';
+            $delArgs[] = $branchId;
+        }
+        $pdo->prepare($delSql)->execute($delArgs);
         Database::commit();
         json_response(['message' => 'Category deleted successfully.']);
     } catch (Throwable $e) {
@@ -203,13 +223,19 @@ function products_categories_bulk_delete(array $params): void
     }
     $pdo = Database::pdo();
     $ownerId = tenant_owner_id();
+    $branchId = branch_id();
     $placeholders = implode(',', array_fill(0, count($ids), '?'));
-    $args = array_merge($ids, [$ownerId]);
     try {
         Database::begin();
         $pdo->prepare("UPDATE products SET category_id = NULL WHERE category_id IN ($placeholders) AND owner_id = ?")
-            ->execute($args);
-        $pdo->prepare("DELETE FROM categories WHERE id IN ($placeholders) AND owner_id = ?")->execute($args);
+            ->execute(array_merge($ids, [$ownerId]));
+        $delSql = "DELETE FROM categories WHERE id IN ($placeholders) AND owner_id = ?";
+        $delArgs = array_merge($ids, [$ownerId]);
+        if ($branchId) {
+            $delSql .= ' AND (branch_id = ? OR branch_id IS NULL)';
+            $delArgs[] = $branchId;
+        }
+        $pdo->prepare($delSql)->execute($delArgs);
         Database::commit();
         json_response(['message' => count($ids) . ' categories deleted successfully.']);
     } catch (Throwable $e) {
@@ -223,8 +249,14 @@ function products_categories_bulk_delete(array $params): void
 function products_brands_list(array $params): void
 {
     $pdo = Database::pdo();
-    $st = $pdo->prepare('SELECT * FROM brands WHERE owner_id = ? ORDER BY name ASC');
-    $st->execute([tenant_owner_id()]);
+    $branchId = branch_id();
+    if ($branchId) {
+        $st = $pdo->prepare('SELECT * FROM brands WHERE owner_id = ? AND branch_id = ? ORDER BY name ASC');
+        $st->execute([tenant_owner_id(), $branchId]);
+    } else {
+        $st = $pdo->prepare('SELECT * FROM brands WHERE owner_id = ? ORDER BY name ASC');
+        $st->execute([tenant_owner_id()]);
+    }
     json_response(array_map('products_format_brand', $st->fetchAll()));
 }
 
@@ -237,15 +269,16 @@ function products_brands_create(array $params): void
     }
     $pdo = Database::pdo();
     $ownerId = tenant_owner_id();
-    $exists = $pdo->prepare('SELECT id FROM brands WHERE name = ? AND owner_id = ? LIMIT 1');
-    $exists->execute([$name, $ownerId]);
+    $branchId = branch_id();
+    $exists = $pdo->prepare('SELECT id FROM brands WHERE name = ? AND owner_id = ? AND (branch_id = ? OR branch_id IS NULL) LIMIT 1');
+    $exists->execute([$name, $ownerId, $branchId]);
     if ($exists->fetch()) {
         json_error('Brand already exists.', 400);
     }
     $id = uuid_v4();
     $now = now_sql();
-    $pdo->prepare('INSERT INTO brands (id, name, owner_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?)')
-        ->execute([$id, $name, $ownerId, $now, $now]);
+    $pdo->prepare('INSERT INTO brands (id, name, owner_id, branch_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)')
+        ->execute([$id, $name, $ownerId, $branchId, $now, $now]);
     $st = $pdo->prepare('SELECT * FROM brands WHERE id = ?');
     $st->execute([$id]);
     json_response(products_format_brand($st->fetch()), 201);
@@ -261,8 +294,14 @@ function products_brands_update(array $params): void
     }
     $pdo = Database::pdo();
     $ownerId = tenant_owner_id();
-    $pdo->prepare('UPDATE brands SET name = ?, updated_at = ? WHERE id = ? AND owner_id = ?')
-        ->execute([$name, now_sql(), $id, $ownerId]);
+    $branchId = branch_id();
+    $sql = 'UPDATE brands SET name = ?, updated_at = ? WHERE id = ? AND owner_id = ?';
+    $args = [$name, now_sql(), $id, $ownerId];
+    if ($branchId) {
+        $sql .= ' AND (branch_id = ? OR branch_id IS NULL)';
+        $args[] = $branchId;
+    }
+    $pdo->prepare($sql)->execute($args);
     $st = $pdo->prepare('SELECT * FROM brands WHERE id = ? AND owner_id = ?');
     $st->execute([$id, $ownerId]);
     $row = $st->fetch();
@@ -277,11 +316,18 @@ function products_brands_delete(array $params): void
     $id = $params['id'];
     $pdo = Database::pdo();
     $ownerId = tenant_owner_id();
+    $branchId = branch_id();
     try {
         Database::begin();
         $pdo->prepare('UPDATE products SET brand_id = NULL WHERE brand_id = ? AND owner_id = ?')
             ->execute([$id, $ownerId]);
-        $pdo->prepare('DELETE FROM brands WHERE id = ? AND owner_id = ?')->execute([$id, $ownerId]);
+        $delSql = 'DELETE FROM brands WHERE id = ? AND owner_id = ?';
+        $delArgs = [$id, $ownerId];
+        if ($branchId) {
+            $delSql .= ' AND (branch_id = ? OR branch_id IS NULL)';
+            $delArgs[] = $branchId;
+        }
+        $pdo->prepare($delSql)->execute($delArgs);
         Database::commit();
         json_response(['message' => 'Brand deleted successfully.']);
     } catch (Throwable $e) {
@@ -299,13 +345,19 @@ function products_brands_bulk_delete(array $params): void
     }
     $pdo = Database::pdo();
     $ownerId = tenant_owner_id();
+    $branchId = branch_id();
     $placeholders = implode(',', array_fill(0, count($ids), '?'));
-    $args = array_merge($ids, [$ownerId]);
     try {
         Database::begin();
         $pdo->prepare("UPDATE products SET brand_id = NULL WHERE brand_id IN ($placeholders) AND owner_id = ?")
-            ->execute($args);
-        $pdo->prepare("DELETE FROM brands WHERE id IN ($placeholders) AND owner_id = ?")->execute($args);
+            ->execute(array_merge($ids, [$ownerId]));
+        $delSql = "DELETE FROM brands WHERE id IN ($placeholders) AND owner_id = ?";
+        $delArgs = array_merge($ids, [$ownerId]);
+        if ($branchId) {
+            $delSql .= ' AND (branch_id = ? OR branch_id IS NULL)';
+            $delArgs[] = $branchId;
+        }
+        $pdo->prepare($delSql)->execute($delArgs);
         Database::commit();
         json_response(['message' => count($ids) . ' brands deleted successfully.']);
     } catch (Throwable $e) {
@@ -438,7 +490,7 @@ function products_list(array $params): void
     $pdo = Database::pdo();
     $ownerId = tenant_owner_id();
     $isLite = isset($q['lite']) && ($q['lite'] === '1' || $q['lite'] === 'true');
-    $branchFilter = isset($q['branchId']) && $q['branchId'] !== '' ? (string) $q['branchId'] : null;
+    $branchFilter = isset($q['branchId']) && $q['branchId'] !== '' ? (string) $q['branchId'] : branch_id();
 
     $where = ['p.owner_id = ?'];
     $args = [$ownerId];

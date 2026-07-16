@@ -33,6 +33,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(uploadsDir));
 
+// Read X-Branch-ID header and inject into query params so all controllers pick it up
+app.use((req, res, next) => {
+  const headerBranchId = req.headers["x-branch-id"];
+  if (headerBranchId && typeof headerBranchId === "string" && !req.query.branchId) {
+    req.query.branchId = headerBranchId;
+  }
+  next();
+});
+
 // Routing API endpoints
 app.use("/api/auth", authRouter);
 app.use("/api/products", productRouter);

@@ -120,14 +120,14 @@ const getSummaryWidgets = (type: string, data: any[]) => {
 };
 
 export default function Reports() {
-  const { addNotification } = useStore();
+  const { addNotification, selectedBranchId } = useStore();
   const [selectedReport, setSelectedReport] = useState<ReportItem | null>(null);
   const [branches, setBranches] = useState<any[]>([]);
 
   // Filter parameters
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [branchId, setBranchId] = useState("");
+  const [branchId, setBranchId] = useState(selectedBranchId || "");
 
   // Report results state
   const [reportData, setReportData] = useState<any[]>([]);

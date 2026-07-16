@@ -147,6 +147,50 @@ function query_params(): array
     return $_GET;
 }
 
+/**
+ * Get the currently selected branch ID from request.
+ * Reads X-Branch-ID header first, falls back to branchId query param.
+ */
+function branch_id(): ?string
+{
+    // Check X-Branch-ID header via $_SERVER
+    $header = $_SERVER['HTTP_X_BRANCH_ID'] ?? null;
+    if ($header && is_string($header) && trim($header) !== '') {
+        return trim($header);
+    }
+
+    // Check apache_request_headers / getallheaders
+    if (function_exists('apache_request_headers')) {
+        $apache = apache_request_headers();
+        if (is_array($apache)) {
+            foreach ($apache as $k => $v) {
+                if (strcasecmp((string) $k, 'X-Branch-ID') === 0) {
+                    return trim((string) $v);
+                }
+            }
+        }
+    }
+
+    if (function_exists('getallheaders')) {
+        $headers = getallheaders();
+        if (is_array($headers)) {
+            foreach ($headers as $k => $v) {
+                if (strcasecmp((string) $k, 'X-Branch-ID') === 0) {
+                    return trim((string) $v);
+                }
+            }
+        }
+    }
+
+    // Fallback to query param
+    $q = $_GET['branchId'] ?? null;
+    if ($q && is_string($q) && trim($q) !== '') {
+        return trim($q);
+    }
+
+    return null;
+}
+
 function get_bearer_token(): ?string
 {
     // InfinityFree / CGI often strips Authorization — check many places + custom header.

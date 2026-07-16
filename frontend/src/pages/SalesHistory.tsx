@@ -45,7 +45,7 @@ const REFUND_METHODS = [
 ];
 
 export default function SalesHistory() {
-  const { addNotification } = useStore();
+  const { addNotification, selectedBranchId } = useStore();
   const navigate = useNavigate();
   const [tab, setTab] = useState<"sales" | "returns">("sales");
   const [sales, setSales] = useState<any[]>([]);
@@ -67,7 +67,7 @@ export default function SalesHistory() {
   // Filters
   const [search, setSearch] = useState("");
   const [returnSearch, setReturnSearch] = useState("");
-  const [selectedBranch, setSelectedBranch] = useState("ALL");
+  const [selectedBranch, setSelectedBranch] = useState(selectedBranchId || "ALL");
   const [selectedCustomer, setSelectedCustomer] = useState("ALL");
   /** Year filter: "ALL" or "2026" */
   const [selectedYear, setSelectedYear] = useState(String(new Date().getFullYear()));

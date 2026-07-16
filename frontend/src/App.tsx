@@ -40,6 +40,12 @@ axios.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`;
     config.headers["X-Access-Token"] = token;
   }
+  // Auto-attach selected branch ID to every request
+  const branchId = typeof localStorage !== "undefined" && localStorage.getItem("pos_branch_id");
+  if (branchId) {
+    config.headers = config.headers ?? {};
+    config.headers["X-Branch-ID"] = branchId;
+  }
   return config;
 });
 

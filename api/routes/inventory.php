@@ -175,7 +175,7 @@ function inventory_alerts(array $params): void
 {
     $pdo = Database::pdo();
     $ownerId = tenant_owner_id();
-    $branchId = query_params()['branchId'] ?? '';
+    $branchId = query_params()['branchId'] ?? branch_id() ?? '';
     $threshold = 3;
     if ($branchId !== '') {
         $st = $pdo->prepare(
