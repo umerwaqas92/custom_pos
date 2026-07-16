@@ -853,9 +853,12 @@ function auth_export_sql_dump(): string
         $out .= 'DROP TABLE IF EXISTS `' . str_replace('`', '``', $table) . "`;\n";
         $out .= $createSql . ";\n\n";
 
-        // Only export data scoped to this owner for owned tables
+        // Export data — owner-scoped for owned tables, full for shared tables
         $isOwned = isset($hasOwnerId[$table]);
-        if ($isOwned) {
+        if ($table === 'system_settings') {
+            // Export ALL system_settings (they may belong to any owner) and rewrite owner_id to current user
+            $rows = $pdo->query('SELECT * FROM `' . str_replace('`', '``', $table) . '`')->fetchAll(PDO::FETCH_ASSOC);
+        } elseif ($isOwned) {
             $stmt = $pdo->prepare('SELECT * FROM `' . str_replace('`', '``', $table) . '` WHERE owner_id = ?');
             $stmt->execute([$ownerId]);
             $rows = $stmt->fetchAll();
@@ -863,6 +866,10 @@ function auth_export_sql_dump(): string
             $rows = $pdo->query('SELECT * FROM `' . str_replace('`', '``', $table) . '`')->fetchAll(PDO::FETCH_ASSOC);
         }
         foreach ($rows as $row) {
+            // Rewrite owner_id to current user for system_settings
+            if ($table === 'system_settings' && array_key_exists('owner_id', $row)) {
+                $row['owner_id'] = $ownerId;
+            }
             $cols = array_map(static fn($c) => '`' . str_replace('`', '``', (string) $c) . '`', array_keys($row));
             $vals = array_map(static function ($v) use ($pdo) {
                 if ($v === null) {
@@ -907,6 +914,28 @@ function auth_import_sql_string(string $sql): void
     }
 
     $pdo->exec('SET FOREIGN_KEY_CHECKS=0');
+
+    // ---- Clean junction tables that reference this owner's data ----
+    // These tables don't have owner_id, but contain rows linked to owned tables via FK.
+    // Without cleanup, INSERTs from the backup would fail on duplicate PKs.
+    $junctionCleanup = [
+        "DELETE FROM branch_stocks WHERE branch_id IN (SELECT id FROM branches WHERE owner_id = ?)",
+        "DELETE FROM sale_return_items WHERE sale_return_id IN (SELECT id FROM sale_returns WHERE sale_id IN (SELECT id FROM sales WHERE owner_id = ?))",
+        "DELETE FROM sale_returns WHERE sale_id IN (SELECT id FROM sales WHERE owner_id = ?)",
+        "DELETE FROM sale_emis WHERE sale_id IN (SELECT id FROM sales WHERE owner_id = ?)",
+        "DELETE FROM emi_installments WHERE sale_emi_id IN (SELECT id FROM sale_emis WHERE sale_id IN (SELECT id FROM sales WHERE owner_id = ?))",
+        "DELETE FROM sale_items WHERE sale_id IN (SELECT id FROM sales WHERE owner_id = ?)",
+        "DELETE FROM purchase_items WHERE purchase_order_id IN (SELECT id FROM purchase_orders WHERE owner_id = ?)",
+        "DELETE FROM customer_credit_payments WHERE customer_id IN (SELECT id FROM customers WHERE owner_id = ?)",
+        "DELETE FROM supplier_payments WHERE supplier_id IN (SELECT id FROM suppliers WHERE owner_id = ?)",
+    ];
+    foreach ($junctionCleanup as $sql) {
+        try {
+            $pdo->prepare($sql)->execute([$ownerId]);
+        } catch (Throwable $e) {
+            // table may not exist or column may be missing — ignore
+        }
+    }
     $pdo->exec('SET NAMES utf8mb4');
 
     $parts = preg_split('/;\s*[\r\n]+/', $sql) ?: [];
