@@ -340,19 +340,19 @@ export default function Settings() {
     try {
       addNotification("Preparing backup package…", "info");
       const res = await axios.get("/api/auth/backup/export", { responseType: "blob" });
-      // Guard against error JSON returned as blob
-      if (res.data?.type === "application/json") {
+      // Guard against error JSON returned as blob (errors lack Content-Disposition)
+      if (!res.headers?.["content-disposition"]) {
         const text = await res.data.text();
         const json = JSON.parse(text);
         throw new Error(json.error || "Export failed");
       }
-      const url = window.URL.createObjectURL(new Blob([res.data], { type: "application/zip" }));
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: "application/json" }));
       const link = document.createElement("a");
       link.href = url;
       // Use filename from server's Content-Disposition header
       const disposition = res.headers?.["content-disposition"] || "";
       const match = disposition.match(/filename="?(.+?)"?\s*(?:;|$)/);
-      const filename = match?.[1] || `pos-backup-${new Date().toISOString().split("T")[0]}.zip`;
+      const filename = match?.[1] || `pos-backup-${new Date().toISOString().split("T")[0]}.sjson`;
       link.setAttribute("download", filename);
       document.body.appendChild(link);
       link.click();
@@ -419,12 +419,14 @@ export default function Settings() {
       const res = await axios.get(`/api/auth/backup/download/${encodeURIComponent(filename)}`, {
         responseType: "blob"
       });
-      if (res.data?.type === "application/json") {
+      // Errors lack Content-Disposition, valid downloads always have it
+      if (!res.headers?.["content-disposition"]) {
         const text = await res.data.text();
         const json = JSON.parse(text);
         throw new Error(json.error || "Download failed");
       }
-      const url = window.URL.createObjectURL(new Blob([res.data], { type: "application/zip" }));
+      const contentType = filename.endsWith(".sjson") || filename.endsWith(".json") ? "application/json" : filename.endsWith(".zip") ? "application/zip" : "application/sql";
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: contentType }));
       const link = document.createElement("a");
       link.href = url;
       link.setAttribute("download", filename);
@@ -785,7 +787,7 @@ export default function Settings() {
             </div>
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Downloads a ZIP containing the SQLite database and all uploaded files (documents, receipts, warranty records).
+            Downloads an SJSON file containing all store data (products, sales, customers, inventory, etc.).
           </p>
           <div className="flex flex-col gap-2">
             <button
@@ -794,7 +796,7 @@ export default function Settings() {
               className="w-full bg-blue-600 hover:bg-blue-600/90 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition disabled:opacity-50"
             >
               <Download className="w-3.5 h-3.5" />
-              {exporting ? "Preparing…" : "Download Backup ZIP"}
+              {exporting ? "Preparing…" : "Download Backup (SJSON)"}
             </button>
             {!isReadOnly && (
               <button
@@ -819,17 +821,17 @@ export default function Settings() {
               </div>
               <div>
                 <h3 className="font-extrabold text-sm text-foreground">Restore Backup</h3>
-                <p className="text-[10px] text-muted-foreground">Upload & restore from ZIP</p>
+                <p className="text-[10px] text-muted-foreground">Upload & restore from file</p>
               </div>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Select a previously exported <code className="font-mono bg-secondary px-1 rounded">.zip</code> file. This <strong>overwrites</strong> all current data.
+              Select a previously exported <code className="font-mono bg-secondary px-1 rounded">.sjson</code> file (or legacy .zip/.sql). This <strong>overwrites</strong> all current data.
             </p>
             <form onSubmit={handleImportBackup} className="space-y-3">
               <div className="border-2 border-dashed border-border hover:border-amber-500/40 rounded-xl p-3 text-center transition-colors cursor-pointer">
                 <input
                   type="file"
-                  accept=".zip"
+                  accept=".sjson,.json,.zip,.sql"
                   onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
                   className="hidden"
                   id="backup-file-input"
@@ -838,7 +840,7 @@ export default function Settings() {
                   {selectedFile ? (
                     <span className="text-xs font-bold text-amber-500">{selectedFile.name}</span>
                   ) : (
-                    <span className="text-xs text-muted-foreground">Click to select .zip file</span>
+                    <span className="text-xs text-muted-foreground">Click to select backup file</span>
                   )}
                 </label>
               </div>

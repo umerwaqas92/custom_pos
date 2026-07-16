@@ -878,7 +878,7 @@ function auth_backup_list(array $params): void
     ensure_dir(backups_path());
     $files = [];
     $ownerPrefix = backup_owner_prefix() . '-';
-    foreach (glob(backups_path() . '/*.{sql,zip}', GLOB_BRACE) ?: [] as $full) {
+    foreach (glob(backups_path() . '/*.{sjson,sql,zip,json}', GLOB_BRACE) ?: [] as $full) {
         $base = basename($full);
         // Only show files belonging to this owner
         if (!str_starts_with($base, $ownerPrefix)) {
@@ -916,40 +916,15 @@ function auth_backup_create(array $params): void
 function auth_write_backup_to_disk(string $prefix = 'manual-backup'): array
 {
     ensure_dir(backups_path());
-    $sql = auth_export_sql_dump();
+    $json = auth_export_json();
     $stamp = date('Y-m-d-His');
 
     // Prefix filename with owner_id for tenant isolation
     $ownerPrefix = backup_owner_prefix();
     $safePrefix = "{$ownerPrefix}-{$prefix}";
-
-    if (class_exists('ZipArchive')) {
-        $filename = "{$safePrefix}-{$stamp}.zip";
-        $path = backups_path() . DIRECTORY_SEPARATOR . $filename;
-        $zip = new ZipArchive();
-        if ($zip->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            throw new RuntimeException('Could not create backup ZIP.');
-        }
-        $zip->addFromString('dump.sql', $sql);
-        $zip->addFromString('README.txt', "MZK POS MySQL backup\nRestore via Settings → Backup, or import dump.sql in phpMyAdmin.\n");
-        $uploads = uploads_path();
-        if (is_dir($uploads)) {
-            foreach (scandir($uploads) ?: [] as $f) {
-                if ($f === '.' || $f === '..' || str_starts_with($f, '.')) {
-                    continue;
-                }
-                $full = $uploads . DIRECTORY_SEPARATOR . $f;
-                if (is_file($full)) {
-                    $zip->addFile($full, 'uploads/' . $f);
-                }
-            }
-        }
-        $zip->close();
-    } else {
-        $filename = "{$safePrefix}-{$stamp}.sql";
-        $path = backups_path() . DIRECTORY_SEPARATOR . $filename;
-        file_put_contents($path, $sql);
-    }
+    $filename = "{$safePrefix}-{$stamp}.sjson";
+    $path = backups_path() . DIRECTORY_SEPARATOR . $filename;
+    file_put_contents($path, $json);
 
     return [
         'filename' => $filename,
@@ -1081,6 +1056,243 @@ function auth_export_sql_dump(): string
     }
     $out .= "SET FOREIGN_KEY_CHECKS=1;\n";
     return $out;
+}
+
+/**
+ * Export store data as JSON (single-store scoped).
+ */
+function auth_export_json(): string
+{
+    $pdo = Database::pdo();
+    $tables = $pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
+    $ownerId = tenant_owner_id();
+    $ownedTables = Tenant::OWNED_TABLES;
+
+    $hasOwnerId = [];
+    foreach ($ownedTables as $t) {
+        $hasOwnerId[$t] = true;
+    }
+
+    $branchId = branch_id();
+    $branchTables = ['categories', 'brands', 'customers', 'suppliers', 'products', 'sales', 'stock_movements', 'transactions', 'daily_closings'];
+
+    $data = [];
+
+    foreach ($tables as $table) {
+        $table = (string) $table;
+
+        // Skip users table — never export user records to prevent login issues on restore
+        if ($table === 'users') {
+            continue;
+        }
+
+        $isOwned = isset($hasOwnerId[$table]);
+        $hasBranchId = in_array($table, $branchTables, true);
+        $rows = [];
+
+        if ($isOwned) {
+            if ($table === 'branches' && $branchId) {
+                $stmt = $pdo->prepare('SELECT * FROM `branches` WHERE owner_id = ? AND id = ?');
+                $stmt->execute([$ownerId, $branchId]);
+            } else {
+                $sql = 'SELECT * FROM `' . str_replace('`', '``', $table) . '` WHERE owner_id = ?';
+                $args = [$ownerId];
+                if ($hasBranchId && $branchId) {
+                    $sql .= ' AND branch_id = ?';
+                    $args[] = $branchId;
+                }
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute($args);
+            }
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } elseif ($table === 'branch_stocks') {
+            $sql = 'SELECT bs.* FROM branch_stocks bs JOIN branches b ON b.id = bs.branch_id WHERE b.owner_id = ?';
+            $args = [$ownerId];
+            if ($branchId) {
+                $sql .= ' AND bs.branch_id = ?';
+                $args[] = $branchId;
+            }
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($args);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } elseif ($table === 'purchase_items') {
+            $stmt = $pdo->prepare('SELECT pi.* FROM purchase_items pi JOIN purchase_orders po ON po.id = pi.purchase_order_id WHERE po.owner_id = ?');
+            $stmt->execute([$ownerId]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } elseif ($table === 'sale_items') {
+            $stmt = $pdo->prepare('SELECT si.* FROM sale_items si JOIN sales s ON s.id = si.sale_id WHERE s.owner_id = ?');
+            $stmt->execute([$ownerId]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } elseif ($table === 'sale_returns') {
+            $stmt = $pdo->prepare('SELECT sr.* FROM sale_returns sr JOIN sales s ON s.id = sr.sale_id WHERE s.owner_id = ?');
+            $stmt->execute([$ownerId]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } elseif ($table === 'sale_return_items') {
+            $stmt = $pdo->prepare('SELECT sri.* FROM sale_return_items sri JOIN sale_returns sr ON sr.id = sri.sale_return_id JOIN sales s ON s.id = sr.sale_id WHERE s.owner_id = ?');
+            $stmt->execute([$ownerId]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } elseif ($table === 'sale_emis') {
+            $stmt = $pdo->prepare('SELECT se.* FROM sale_emis se JOIN sales s ON s.id = se.sale_id WHERE s.owner_id = ?');
+            $stmt->execute([$ownerId]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } elseif ($table === 'emi_installments') {
+            $stmt = $pdo->prepare('SELECT ei.* FROM emi_installments ei JOIN sale_emis se ON se.id = ei.sale_emi_id JOIN sales s ON s.id = se.sale_id WHERE s.owner_id = ?');
+            $stmt->execute([$ownerId]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } elseif ($table === 'customer_credit_payments') {
+            $stmt = $pdo->prepare('SELECT ccp.* FROM customer_credit_payments ccp JOIN customers c ON c.id = ccp.customer_id WHERE c.owner_id = ?');
+            $stmt->execute([$ownerId]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } elseif ($table === 'supplier_payments') {
+            $stmt = $pdo->prepare('SELECT sp.* FROM supplier_payments sp JOIN suppliers s ON s.id = sp.supplier_id WHERE s.owner_id = ?');
+            $stmt->execute([$ownerId]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } elseif ($table === 'activity_logs') {
+            $stmt = $pdo->prepare('SELECT al.* FROM activity_logs al JOIN users u ON u.id = al.user_id WHERE u.owner_id = ?');
+            $stmt->execute([$ownerId]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } else {
+            $rows = $pdo->query('SELECT * FROM `' . str_replace('`', '``', $table) . '`')->fetchAll(PDO::FETCH_ASSOC);
+        }
+
+        if (!empty($rows)) {
+            $data[$table] = $rows;
+        }
+    }
+
+    $payload = [
+        'meta' => [
+            'version' => '1.0',
+            'createdAt' => date('c'),
+            'ownerId' => $ownerId,
+            'branchId' => $branchId,
+        ],
+        'data' => $data,
+    ];
+
+    return json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+}
+
+/**
+ * Import backup JSON, preserving other owners' data.
+ * - Before INSERTing into an owner-scoped table, existing rows for this owner are removed
+ * - owner_id is rewritten for cross-store import
+ * - Junction tables are cleaned first
+ */
+function auth_import_json_string(string $json): void
+{
+    $backup = json_decode($json, true);
+    if (!$backup || !isset($backup['meta']) || !isset($backup['data'])) {
+        throw new RuntimeException('Invalid JSON backup format.');
+    }
+
+    $pdo = Database::pdo();
+    $ownerId = tenant_owner_id();
+    $backupOwnerId = $backup['meta']['ownerId'] ?? null;
+    $ownedTables = Tenant::OWNED_TABLES;
+    $ownedLookup = [];
+    foreach ($ownedTables as $t) {
+        $ownedLookup[$t] = true;
+    }
+
+    $isCrossStore = $backupOwnerId !== null && $backupOwnerId !== $ownerId;
+    error_log('[JSON BACKUP IMPORT] ownerId=' . $ownerId . ' backupOwnerId=' . ($backupOwnerId ?? 'null') . ' crossStore=' . ($isCrossStore ? 'YES' : 'NO'));
+
+    $pdo->exec('SET FOREIGN_KEY_CHECKS=0');
+
+    // Clean junction / shared tables that don't have owner_id
+    $junctionCleanup = [
+        "DELETE FROM app_meta",
+        "DELETE FROM branch_stocks WHERE branch_id IN (SELECT id FROM branches WHERE owner_id = ?)",
+        "DELETE FROM sale_return_items WHERE sale_return_id IN (SELECT id FROM sale_returns WHERE sale_id IN (SELECT id FROM sales WHERE owner_id = ?))",
+        "DELETE FROM sale_returns WHERE sale_id IN (SELECT id FROM sales WHERE owner_id = ?)",
+        "DELETE FROM sale_emis WHERE sale_id IN (SELECT id FROM sales WHERE owner_id = ?)",
+        "DELETE FROM emi_installments WHERE sale_emi_id IN (SELECT id FROM sale_emis WHERE sale_id IN (SELECT id FROM sales WHERE owner_id = ?))",
+        "DELETE FROM sale_items WHERE sale_id IN (SELECT id FROM sales WHERE owner_id = ?)",
+        "DELETE FROM purchase_items WHERE purchase_order_id IN (SELECT id FROM purchase_orders WHERE owner_id = ?)",
+        "DELETE FROM customer_credit_payments WHERE customer_id IN (SELECT id FROM customers WHERE owner_id = ?)",
+        "DELETE FROM supplier_payments WHERE supplier_id IN (SELECT id FROM suppliers WHERE owner_id = ?)",
+    ];
+    foreach ($junctionCleanup as $cleanupSql) {
+        try {
+            if (str_contains($cleanupSql, '?')) {
+                $pdo->prepare($cleanupSql)->execute([$ownerId]);
+            } else {
+                $pdo->exec($cleanupSql);
+            }
+        } catch (Throwable $e) {
+            // table may not exist — ignore
+        }
+    }
+
+    $pdo->exec('SET NAMES utf8mb4');
+
+    // Delete existing owner data from owned tables that we're about to import
+    foreach ($backup['data'] as $table => $rows) {
+        if ($table === 'users' || empty($rows)) {
+            continue;
+        }
+        if (isset($ownedLookup[$table])) {
+            try {
+                $pdo->prepare("DELETE FROM `{$table}` WHERE owner_id = ?")->execute([$ownerId]);
+            } catch (Throwable $e) {
+                // table may not have owner_id column
+            }
+        }
+    }
+
+    // Insert data table by table
+    $ran = 0;
+    $errors = [];
+    foreach ($backup['data'] as $table => $rows) {
+        if ($table === 'users' || empty($rows)) {
+            continue;
+        }
+
+        $columns = array_keys($rows[0]);
+        $colList = '`' . implode('`, `', array_map(static fn($c) => str_replace('`', '``', $c), $columns)) . '`';
+        $placeholders = implode(', ', array_fill(0, count($columns), '?'));
+
+        $stmt = $pdo->prepare("INSERT INTO `{$table}` ({$colList}) VALUES ({$placeholders})");
+
+        foreach ($rows as $row) {
+            $values = [];
+            foreach ($columns as $col) {
+                $val = $row[$col] ?? null;
+                // Rewrite owner_id for cross-store import
+                if ($col === 'owner_id' && $isCrossStore && isset($ownedLookup[$table])) {
+                    $val = $ownerId;
+                }
+                $values[] = $val;
+            }
+
+            try {
+                $stmt->execute($values);
+                $ran++;
+            } catch (Throwable $e) {
+                if (str_contains($e->getMessage(), '1062') || str_contains($e->getMessage(), 'Duplicate entry')) {
+                    continue;
+                }
+                $errors[] = substr($e->getMessage(), 0, 80) . ' @ ' . $table;
+                if (count($errors) > 100) {
+                    break 2;
+                }
+            }
+        }
+    }
+
+    try {
+        $pdo->exec('SET FOREIGN_KEY_CHECKS=1');
+    } catch (Throwable $e) {
+        // ignore
+    }
+
+    if ($ran < 1) {
+        throw new RuntimeException('No data was imported. Invalid or empty backup.');
+    }
+    if (count($errors) > 0 && $ran < 3) {
+        throw new RuntimeException('Import failed: ' . $errors[0]);
+    }
 }
 
 /**
@@ -1390,45 +1602,72 @@ WHERE (SELECT COUNT(*) FROM bank_accounts) < 2;";
 }
 
 /**
- * Extract SQL (or convert SQLite desktop zip) and restore upload files.
- * Returns SQL string for auth_import_sql_string().
+ * Extract SQL or JSON from uploaded file (.sql, .json, .zip).
+ * Returns [content, format] where format is 'sql' or 'json'.
+ * @return array{0:string,1:string}
  */
-function auth_extract_sql_from_upload(string $tmpPath, string $originalName): string
+function auth_extract_backup_content(string $tmpPath, string $originalName): array
 {
     $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+
+    // Direct JSON / SJSON file
+    if ($ext === 'json' || $ext === 'sjson') {
+        $json = file_get_contents($tmpPath);
+        if ($json === false) {
+            throw new RuntimeException('Could not read uploaded JSON file.');
+        }
+        return [$json, 'sjson'];
+    }
+
+    // Direct SQL / text file
     if ($ext === 'sql' || $ext === 'txt') {
         $sql = file_get_contents($tmpPath);
         if ($sql === false) {
             throw new RuntimeException('Could not read uploaded SQL file.');
         }
-        return $sql;
+        return [$sql, 'sql'];
     }
 
     if ($ext === 'zip') {
         if (!class_exists('ZipArchive')) {
-            throw new RuntimeException('ZIP support is not available on this host. Upload a .sql dump instead.');
+            throw new RuntimeException('ZIP support is not available on this host. Upload a .json or .sql file instead.');
         }
         $zip = new ZipArchive();
         if ($zip->open($tmpPath) !== true) {
             throw new RuntimeException('Could not open ZIP backup.');
         }
-        $sql = null;
+        $content = null;
+        $format = 'sql';
         $sqliteIndex = null;
-        $sqliteName = null;
+
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $name = str_replace('\\', '/', (string) $zip->getNameIndex($i));
             $base = strtolower(basename($name));
             if ($base === 'dev.db' || str_ends_with(strtolower($name), 'prisma/dev.db') || $base === 'dev.db-wal') {
                 if ($base === 'dev.db' || str_ends_with(strtolower($name), '/dev.db') || $base === 'dev.db') {
                     $sqliteIndex = $i;
-                    $sqliteName = $name;
                 }
             }
             if ($base === 'dump.sql' || $base === 'backup.sql' || str_ends_with($base, '.sql')) {
                 $chunk = $zip->getFromIndex($i);
                 if ($chunk !== false && trim((string) $chunk) !== '') {
-                    $sql = $chunk;
-                    break;
+                    $content = $chunk;
+                    $format = 'sql';
+                }
+            }
+            if ($base === 'dump.sjson' || $base === 'backup.sjson' || str_ends_with($base, '.sjson')) {
+                $chunk = $zip->getFromIndex($i);
+                if ($chunk !== false && trim((string) $chunk) !== '' && json_decode($chunk, true) !== null) {
+                    $content = $chunk;
+                    $format = 'sjson';
+                }
+            }
+            // Also support legacy .json inside zip
+            if ($base === 'dump.json' || $base === 'backup.json' || str_ends_with($base, '.json')) {
+                $chunk = $zip->getFromIndex($i);
+                if ($chunk !== false && trim((string) $chunk) !== '' && json_decode($chunk, true) !== null) {
+                    $content = $chunk;
+                    $format = 'sjson';
                 }
             }
         }
@@ -1449,9 +1688,9 @@ function auth_extract_sql_from_upload(string $tmpPath, string $originalName): st
             }
         }
 
-        if ($sql !== null && trim((string) $sql) !== '') {
+        if ($content !== null && trim((string) $content) !== '') {
             $zip->close();
-            return (string) $sql;
+            return [$content, $format];
         }
 
         // Desktop SQLite backup → convert on the fly
@@ -1465,7 +1704,6 @@ function auth_extract_sql_from_upload(string $tmpPath, string $originalName): st
                 throw new RuntimeException('Could not read prisma/dev.db from ZIP.');
             }
             file_put_contents($dbPath, $dbData);
-            // Also extract WAL/SHM if present for checkpoint
             for ($i = 0; $i < $zip->numFiles; $i++) {
                 $name = str_replace('\\', '/', (string) $zip->getNameIndex($i));
                 $base = basename($name);
@@ -1485,14 +1723,38 @@ function auth_extract_sql_from_upload(string $tmpPath, string $originalName): st
                 }
                 @rmdir($tmpDir);
             }
-            return $converted;
+            return [$converted, 'sql'];
         }
 
         $zip->close();
-        throw new RuntimeException('No dump.sql or prisma/dev.db found inside the ZIP.');
+        throw new RuntimeException('No backup data found inside the ZIP.');
     }
 
-    throw new RuntimeException('Unsupported backup type. Upload a .sql or .zip backup file.');
+    throw new RuntimeException('Unsupported backup type. Upload a .sjson, .json, .sql, or .zip backup file.');
+}
+
+/**
+ * Detect if backup content is JSON or SQL and route to the appropriate import function.
+ */
+function auth_import_backup_string(string $content): void
+{
+    $trimmed = trim($content);
+    // Detect JSON: valid JSON starting with '{'
+    if (str_starts_with($trimmed, '{') && json_decode($trimmed, true) !== null) {
+        auth_import_json_string($content);
+    } else {
+        auth_import_sql_string($content);
+    }
+}
+
+/**
+ * Extract SQL (or convert SQLite desktop zip) and restore upload files.
+ * Returns SQL or JSON string.
+ */
+function auth_extract_sql_from_upload(string $tmpPath, string $originalName): string
+{
+    [$content, ] = auth_extract_backup_content($tmpPath, $originalName);
+    return $content;
 }
 
 function auth_backup_download(array $params): void
@@ -1502,7 +1764,14 @@ function auth_backup_download(array $params): void
     if (!is_file($full) || str_contains($filename, '..') || !backup_is_owned($filename)) {
         json_error('Backup not found.', 404);
     }
-    $mime = str_ends_with(strtolower($filename), '.zip') ? 'application/zip' : 'application/sql';
+    $lower = strtolower($filename);
+    if (str_ends_with($lower, '.sjson') || str_ends_with($lower, '.json')) {
+        $mime = 'application/json';
+    } elseif (str_ends_with($lower, '.zip')) {
+        $mime = 'application/zip';
+    } else {
+        $mime = 'application/sql';
+    }
     header('Content-Type: ' . $mime);
     header('Content-Disposition: attachment; filename="' . $filename . '"');
     header('Content-Length: ' . filesize($full));
@@ -1524,7 +1793,7 @@ function auth_backup_delete(array $params): void
 function auth_backup_export(array $params): void
 {
     try {
-        $sql = auth_export_sql_dump();
+        $json = auth_export_json();
 
         // Build store name for filename
         $storeName = '';
@@ -1569,42 +1838,11 @@ function auth_backup_export(array $params): void
             }
         }
 
-        if (class_exists('ZipArchive')) {
-            $tmp = tempnam(sys_get_temp_dir(), 'posbk');
-            $zipPath = $tmp . '.zip';
-            @unlink($tmp);
-            $zip = new ZipArchive();
-            if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-                throw new RuntimeException('Could not build export ZIP.');
-            }
-            $zip->addFromString('dump.sql', $sql);
-            $uploads = uploads_path();
-            if (is_dir($uploads)) {
-                foreach (scandir($uploads) ?: [] as $f) {
-                    if ($f === '.' || $f === '..' || str_starts_with($f, '.')) {
-                        continue;
-                    }
-                    $full = $uploads . DIRECTORY_SEPARATOR . $f;
-                    if (is_file($full)) {
-                        $zip->addFile($full, 'uploads/' . $f);
-                    }
-                }
-            }
-            $zip->close();
-            $name = 'pos-backup-' . rtrim($storeName, '-') . '-' . date('Y-m-d') . '.zip';
-            header('Content-Type: application/zip');
-            header('Content-Disposition: attachment; filename="' . $name . '"');
-            header('Content-Length: ' . filesize($zipPath));
-            readfile($zipPath);
-            @unlink($zipPath);
-            exit;
-        }
-
-        $name = 'pos-backup-' . rtrim($storeName, '-') . '-' . date('Y-m-d') . '.sql';
-        header('Content-Type: application/sql');
+        $name = 'pos-backup-' . rtrim($storeName, '-') . '-' . date('Y-m-d') . '.sjson';
+        header('Content-Type: application/json');
         header('Content-Disposition: attachment; filename="' . $name . '"');
-        header('Content-Length: ' . strlen($sql));
-        echo $sql;
+        header('Content-Length: ' . strlen($json));
+        echo $json;
         exit;
     } catch (Throwable $e) {
         json_error($e->getMessage() ?: 'Failed to export backup.', 500);
@@ -1620,8 +1858,8 @@ function auth_backup_restore(array $params): void
     }
 
     try {
-        $sql = auth_extract_sql_from_upload($full, $filename);
-        auth_import_sql_string($sql);
+        [$content, $format] = auth_extract_backup_content($full, $filename);
+        auth_import_backup_string($content);
         json_response([
             'message' => 'System data restored from backup. Reloading is recommended.',
         ]);
@@ -1650,7 +1888,7 @@ function auth_backup_auto(array $params): void
     $autoPattern = $ownerPrefix . '-auto-backup-*';
 
     // Skip if an auto-backup newer than 6 days exists for THIS owner
-    $autos = glob(backups_path() . '/' . $autoPattern . '.{sql,zip}', GLOB_BRACE) ?: [];
+    $autos = glob(backups_path() . '/' . $autoPattern . '.{sjson,json,sql,zip}', GLOB_BRACE) ?: [];
     usort($autos, static fn($a, $b) => filemtime($b) <=> filemtime($a));
     if ($autos && (time() - (int) filemtime($autos[0])) < 6 * 24 * 3600) {
         json_response([
@@ -1663,7 +1901,7 @@ function auth_backup_auto(array $params): void
     try {
         $meta = auth_write_backup_to_disk('auto-backup');
         // Keep last 5 auto backups for THIS owner
-        $all = glob(backups_path() . '/' . $autoPattern . '.{sql,zip}', GLOB_BRACE) ?: [];
+        $all = glob(backups_path() . '/' . $autoPattern . '.{sjson,json,sql,zip}', GLOB_BRACE) ?: [];
         usort($all, static fn($a, $b) => filemtime($b) <=> filemtime($a));
         foreach (array_slice($all, 5) as $old) {
             @unlink($old);
@@ -1677,21 +1915,21 @@ function auth_backup_auto(array $params): void
 function auth_backup_import(array $params): void
 {
     if (empty($_FILES['backup']) || ($_FILES['backup']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
-        json_error('Please upload a valid backup zip or sql file.', 400);
+        json_error('Please upload a valid backup file.', 400);
     }
 
     $file = $_FILES['backup'];
     $tmp = $file['tmp_name'];
-    $name = $file['name'] ?? 'backup.sql';
+    $name = $file['name'] ?? 'backup.json';
 
     try {
         ensure_dir(backups_path());
         $safeName = 'import-' . date('Y-m-d-His') . '-' . preg_replace('/[^a-zA-Z0-9._-]/', '_', basename($name));
         $stored = backups_path() . DIRECTORY_SEPARATOR . $safeName;
         // Keep a server copy; import from the upload temp path first
-        $sql = auth_extract_sql_from_upload($tmp, $name);
+        [$content, $format] = auth_extract_backup_content($tmp, $name);
         @copy($tmp, $stored);
-        auth_import_sql_string($sql);
+        auth_import_backup_string($content);
 
         json_response([
             'message' => 'Data restored successfully from backup. The page will reload.',
