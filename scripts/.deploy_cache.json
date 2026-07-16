@@ -124,7 +124,7 @@
   "/htdocs/icons/sidebar/reports.png": "2bc1a124ad39adde98c4c11656eea9a7",
   "/htdocs/icons/sidebar/sales-history.png": "c9f24fdde57e5ca19059ca4872854158",
   "/htdocs/icons/sidebar/settings.png": "b6c4b77bb0161f60dc59fcd487c1ff0b",
-  "/htdocs/index.html": "f34c05cf42a0c21049b74346535368ac",
+  "/htdocs/index.html": "7cda0e51f9737a15487746e068f426b1",
   "/htdocs/uploads/.htaccess": "5cb758e7e20bba1501af71c9501c58f5",
   "/htdocs/assets/index-DXU-5Jex.js": "cd744db30ec9d19edd193508f9d7aac3",
   "/htdocs/assets/index-oQap_TSk.css": "8404e19c0cdad43ddf80d36fd4cc38e5",
@@ -135,5 +135,8 @@
   "/htdocs/assets/index-2afsAZa_.js": "53593de2f53a2d7c56a5493f8d11c0a4",
   "/htdocs/assets/index-AgpvKJWC.js": "9db2b881f1d1170e4aae1131d0d99fdc",
   "/htdocs/assets/index-HDnroGt4.css": "8687657ea086bfb6cbd7d4bf97462e3c",
-  "/htdocs/assets/index-C7JvFFcU.js": "3b5fb6a6a2caa1228773bfa582256c9c"
+  "/htdocs/assets/index-C7JvFFcU.js": "3b5fb6a6a2caa1228773bfa582256c9c",
+  "/htdocs/assets/index-B65KWt4E.js": "b9d4c4527b7df1a928f17727389a2ac2",
+  "/htdocs/manifest.webmanifest": "40b6ca25cf7e0c216f7622b980d362b9",
+  "/htdocs/service-worker.js": "d37ea2d8c77e958579050893ce9b16c0"
 }
