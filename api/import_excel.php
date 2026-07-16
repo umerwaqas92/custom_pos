@@ -103,8 +103,8 @@ foreach (['Skyair', 'Aeris'] as $name) {
     $b = $st->fetch();
     if (!$b) {
         $id = uuid_v4();
-        $pdo->prepare("INSERT INTO brands (id,name,owner_id,created_at,updated_at) VALUES (?,?,?,?,?)")
-            ->execute([$id, $name, $ownerId, $now, $now]);
+        $pdo->prepare("INSERT INTO brands (id,name,branch_id,owner_id,created_at,updated_at) VALUES (?,?,?,?,?,?)")
+            ->execute([$id, $name, $branchId, $ownerId, $now, $now]);
         $brandMap[strtolower($name)] = $id;
         $imported['brands']++;
     } else {
@@ -123,8 +123,8 @@ foreach (['Wall Mounted Type Unit', 'Floor Standing Type Unit'] as $name) {
     $c = $st->fetch();
     if (!$c) {
         $id = uuid_v4();
-        $pdo->prepare("INSERT INTO categories (id,name,owner_id,created_at,updated_at) VALUES (?,?,?,?,?)")
-            ->execute([$id, $name, $ownerId, $now, $now]);
+        $pdo->prepare("INSERT INTO categories (id,name,branch_id,owner_id,created_at,updated_at) VALUES (?,?,?,?,?,?)")
+            ->execute([$id, $name, $branchId, $ownerId, $now, $now]);
         $catMap[$name] = $id;
         $imported['categories']++;
     } else {
@@ -157,8 +157,8 @@ function ensureProduct(PDO $pdo, string $brandId, string $brandName, string $cap
     $name = "{$brandName} {$type} {$capacity}";
     $id = uuid_v4();
 
-    $pdo->prepare("INSERT INTO products (id,name,sku,category_id,brand_id,model,purchase_price,selling_price,stock_quantity,min_stock,type,images,owner_id,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,0,5,'SINGLE','[]',?,?,?)")
-        ->execute([$id, $name, $sku, $catId, $brandId, $model, $purchasePrice, $sellingPrice, $ownerId, $now, $now]);
+    $pdo->prepare("INSERT INTO products (id,name,sku,category_id,brand_id,model,purchase_price,selling_price,stock_quantity,min_stock,type,images,branch_id,owner_id,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,0,5,'SINGLE','[]',?,?,?,?)")
+        ->execute([$id, $name, $sku, $catId, $brandId, $model, $purchasePrice, $sellingPrice, $branchId, $ownerId, $now, $now]);
 
     // Branch stock row
     $st = $pdo->prepare("SELECT id FROM branch_stocks WHERE branch_id=? AND product_id=?");
@@ -233,8 +233,8 @@ foreach ($customerList as $name) {
     $c = $st->fetch();
     if (!$c) {
         $cid = uuid_v4();
-        $pdo->prepare("INSERT INTO customers (id,name,phone,credit_limit,owner_id,created_at,updated_at) VALUES (?,?,?,5000000,?,?,?)")
-            ->execute([$cid, ucwords($name), $phone, $ownerId, $now, $now]);
+        $pdo->prepare("INSERT INTO customers (id,name,phone,credit_limit,branch_id,owner_id,created_at,updated_at) VALUES (?,?,?,5000000,?,?,?,?)")
+            ->execute([$cid, ucwords($name), $phone, $branchId, $ownerId, $now, $now]);
         $customerMap[strtolower(trim($name))] = $cid;
         $imported['customers']++;
     } else {
