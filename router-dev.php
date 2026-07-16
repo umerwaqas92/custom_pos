@@ -12,16 +12,51 @@
 
 $uri = urldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?: '/');
 $method = $_SERVER['REQUEST_METHOD'];
+$query = $_SERVER['QUERY_STRING'] ?? '';
 $start = microtime(true);
+$debug_log = [];
 
-// Log every request
-error_log(sprintf('[%s] %s %s', date('Y-m-d H:i:s'), $method, $uri));
+// Debug: collect request details
+$debug_log['ip'] = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+$debug_log['query'] = $query ?: '-';
+$debug_log['ua'] = substr($_SERVER['HTTP_USER_AGENT'] ?? '-', 0, 120);
 
-// Log response status on shutdown (works even when json_response calls exit)
+// Log incoming request with IP, query, user-agent
+error_log(sprintf('[%s] → %s %s | qs=%s | ip=%s | ua=%s',
+    date('Y-m-d H:i:s'), $method, $uri, $debug_log['query'], $debug_log['ip'], $debug_log['ua']));
+
+// Log POST form fields (doesn't consume php://input)
+if (!empty($_POST)) {
+    $post_safe = [];
+    foreach ($_POST as $k => $v) {
+        $post_safe[$k] = strlen($v) > 500 ? substr($v, 0, 500) . '...' : $v;
+    }
+    error_log(sprintf('[%s] POST: %s', date('Y-m-d H:i:s'), json_encode($post_safe, JSON_UNESCAPED_UNICODE)));
+}
+unset($post_safe);
+
+// Custom error handler to capture PHP notices/warnings/errors with stack traces
+set_error_handler(function (int $severity, string $msg, string $file, int $line) {
+    $level = match ($severity) {
+        E_ERROR, E_USER_ERROR, E_RECOVERABLE_ERROR => 'FATAL',
+        E_WARNING, E_USER_WARNING => 'WARN',
+        E_NOTICE, E_USER_NOTICE, E_DEPRECATED, E_USER_DEPRECATED => 'NOTICE',
+        default => "ERR($severity)",
+    };
+    error_log(sprintf('[%s] PHP %s: %s in %s:%d', date('Y-m-d H:i:s'), $level, $msg, $file, $line));
+});
+
+// Log uncaught exceptions on shutdown (works even when json_response calls exit)
 register_shutdown_function(function () use ($method, $uri, $start) {
+    $err = error_get_last();
+    if ($err !== null && in_array($err['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR], true)) {
+        error_log(sprintf('[%s] PHP FATAL: %s in %s:%d', date('Y-m-d H:i:s'), $err['message'], $err['file'], $err['line']));
+    }
     $status = http_response_code() ?: 200;
     $elapsed = round((microtime(true) - $start) * 1000, 1);
-    error_log(sprintf('[%s] %s %s → %d (%sms)', date('Y-m-d H:i:s'), $method, $uri, $status, $elapsed));
+    $mem = round(memory_get_peak_usage(true) / 1024 / 1024, 2);
+    error_log(sprintf('[%s] ← %s %s → %d (%sms | %sMB)',
+        date('Y-m-d H:i:s'), $method, $uri, $status, $elapsed, $mem));
 });
 
 // API
