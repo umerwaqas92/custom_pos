@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { X, CheckCircle, AlertTriangle, Info } from "lucide-react";
+import { X, CheckCircle, AlertTriangle, Info, XCircle } from "lucide-react";
 import { useStore, SystemNotification } from "../store/useStore";
 
 interface ToastProps {
@@ -27,6 +27,12 @@ export function Toast({ notification, onClose }: ToastProps) {
       text: "text-foreground",
       iconColor: "text-amber-500",
       icon: AlertTriangle,
+    },
+    error: {
+      border: "border-l-4 border-l-rose-500 border-y border-r border-border",
+      text: "text-foreground",
+      iconColor: "text-rose-500",
+      icon: XCircle,
     },
     info: {
       border: "border-l-4 border-l-blue-500 border-y border-r border-border",

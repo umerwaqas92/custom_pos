@@ -69,14 +69,10 @@ export default function SalesHistory() {
   const [returnSearch, setReturnSearch] = useState("");
   const [selectedBranch, setSelectedBranch] = useState("ALL");
   const [selectedCustomer, setSelectedCustomer] = useState("ALL");
-  const [dateFilter, setDateFilter] = useState("ALL");
   /** Year filter: "ALL" or "2026" */
   const [selectedYear, setSelectedYear] = useState(String(new Date().getFullYear()));
   /** Month filter: "ALL" or "01"…"12" */
-  const [selectedMonth, setSelectedMonth] = useState(
-    String(new Date().getMonth() + 1).padStart(2, "0")
-  );
-  const [showCashier, setShowCashier] = useState(true);
+  const [selectedMonth, setSelectedMonth] = useState("ALL");
 
   // Receipt
   const [activeSale, setActiveSale] = useState<any | null>(null);
@@ -400,14 +396,12 @@ export default function SalesHistory() {
   const filteredSales = (Array.isArray(sales) ? sales : []).filter((s) => {
     const matchesSearch =
       s.id.toLowerCase().includes(search.toLowerCase()) ||
-      (s.customer?.name && s.customer.name.toLowerCase().includes(search.toLowerCase())) ||
-      (s.cashier?.name && s.cashier.name.toLowerCase().includes(search.toLowerCase()));
+      (s.customer?.name && s.customer.name.toLowerCase().includes(search.toLowerCase()));
 
     const matchesBranch = selectedBranch === "ALL" || s.branchId === selectedBranch;
     const matchesCustomer = selectedCustomer === "ALL" || s.customerId === selectedCustomer;
 
     const saleDate = new Date(s.saleDate);
-    const now = new Date();
 
     // Year / month filters (preferred when set)
     let matchesMonthYear = true;
@@ -421,26 +415,7 @@ export default function SalesHistory() {
       }
     }
 
-    let matchesDate = true;
-    // Quick date range only when not using specific month (month already narrows the range)
-    if (selectedMonth === "ALL" && selectedYear === "ALL") {
-      if (dateFilter === "TODAY") {
-        matchesDate =
-          saleDate.getDate() === now.getDate() &&
-          saleDate.getMonth() === now.getMonth() &&
-          saleDate.getFullYear() === now.getFullYear();
-      } else if (dateFilter === "7_DAYS") {
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(now.getDate() - 7);
-        matchesDate = saleDate >= sevenDaysAgo;
-      } else if (dateFilter === "30_DAYS") {
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(now.getDate() - 30);
-        matchesDate = saleDate >= thirtyDaysAgo;
-      }
-    }
-
-    return matchesSearch && matchesBranch && matchesCustomer && matchesMonthYear && matchesDate;
+    return matchesSearch && matchesBranch && matchesCustomer && matchesMonthYear;
   });
 
   const paymentMethodNames: Record<string, string> = {
@@ -536,7 +511,7 @@ export default function SalesHistory() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by invoice ID, customer, cashier..."
+              placeholder="Search by invoice ID, customer..."
               className="w-full bg-secondary text-foreground text-xs border border-border pl-9 pr-4 py-3 rounded-xl focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
@@ -580,7 +555,6 @@ export default function SalesHistory() {
               value={selectedYear}
               onChange={(e) => {
                 setSelectedYear(e.target.value);
-                setDateFilter("ALL");
               }}
               className="flex-1 bg-transparent text-xs text-foreground focus:outline-none cursor-pointer"
             >
@@ -599,7 +573,6 @@ export default function SalesHistory() {
               value={selectedMonth}
               onChange={(e) => {
                 setSelectedMonth(e.target.value);
-                setDateFilter("ALL");
               }}
               className="flex-1 bg-transparent text-xs text-foreground focus:outline-none cursor-pointer"
             >
@@ -621,13 +594,12 @@ export default function SalesHistory() {
               Quick month
               {selectedYear !== "ALL" ? ` · ${selectedYear}` : " · all years"}
             </span>
-            {(selectedMonth !== "ALL" || selectedYear !== "ALL" || dateFilter !== "ALL") && (
+            {(selectedMonth !== "ALL" || selectedYear !== "ALL") && (
               <button
                 type="button"
                 onClick={() => {
                   setSelectedMonth("ALL");
                   setSelectedYear("ALL");
-                  setDateFilter("ALL");
                 }}
                 className="text-[10px] font-bold text-primary hover:underline"
               >
@@ -640,7 +612,6 @@ export default function SalesHistory() {
               type="button"
               onClick={() => {
                 setSelectedMonth("ALL");
-                setDateFilter("ALL");
               }}
               className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition border ${
                 selectedMonth === "ALL"
@@ -660,7 +631,6 @@ export default function SalesHistory() {
                   onClick={() => {
                     // Month only — do NOT auto-switch year (was forcing 2027)
                     setSelectedMonth(m.value);
-                    setDateFilter("ALL");
                   }}
                   className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition border min-w-[3rem] ${
                     active
@@ -683,47 +653,7 @@ export default function SalesHistory() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/60">
-          <span className="text-[10px] font-bold uppercase text-muted-foreground">Quick range:</span>
-          {(
-            [
-              { value: "ALL", label: "All time" },
-              { value: "TODAY", label: "Today" },
-              { value: "7_DAYS", label: "7 days" },
-              { value: "30_DAYS", label: "30 days" },
-            ] as const
-          ).map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => {
-                setDateFilter(opt.value);
-                setSelectedMonth("ALL");
-                setSelectedYear("ALL");
-              }}
-              className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition border ${
-                dateFilter === opt.value && selectedMonth === "ALL" && selectedYear === "ALL"
-                  ? "bg-primary/15 text-primary border-primary/30"
-                  : "bg-secondary border-border text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-          <span className="w-px h-5 bg-border/60 mx-1" />
-          <button
-            type="button"
-            onClick={() => setShowCashier(!showCashier)}
-            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition border ${
-              showCashier
-                ? "bg-secondary border-border text-muted-foreground hover:text-foreground"
-                : "bg-primary/15 text-primary border-primary/30"
-            }`}
-            title={showCashier ? "Hide Cashier column" : "Show Cashier column"}
-          >
-            {showCashier ? "Hide Cashier" : "Show Cashier"}
-          </button>
-        </div>
+
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -759,8 +689,7 @@ export default function SalesHistory() {
               <tr className="border-b border-border text-muted-foreground font-semibold">
                 <th className="pb-3 pl-2">Invoice ID</th>
                 <th className="pb-3">Sale Date</th>
-                <th className="pb-3">Customer Profile</th>
-                {showCashier && <th className="pb-3">Cashier</th>}
+                <th className="pb-3 font-semibold">Customer Profile</th>
                 <th className="pb-3 text-center">Payment Method</th>
                 <th className="pb-3 text-right">Grand Total</th>
                 <th className="pb-3 text-center">Return</th>
@@ -770,7 +699,7 @@ export default function SalesHistory() {
             <tbody className="divide-y divide-border/50">
               {filteredSales.length === 0 ? (
                 <tr>
-                  <td colSpan={showCashier ? 8 : 7} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={7} className="py-8 text-center text-muted-foreground">
                     No sales matching filters or transactions logged yet.
                   </td>
                 </tr>
@@ -796,7 +725,6 @@ export default function SalesHistory() {
                         <span className="text-muted-foreground italic">Walk-in Customer</span>
                       )}
                     </td>
-                    {showCashier && <td className="py-4 text-foreground">{s.cashier?.name || "-"}</td>}
                     <td className="py-4 text-center">
                       <span className="bg-secondary px-2 py-0.5 rounded font-black text-[10px]">
                         {paymentMethodNames[s.paymentMethod] || s.paymentMethod}

@@ -504,9 +504,11 @@ export default function Layout() {
                         key={n.id}
                         className={`p-2.5 rounded-lg text-xs flex justify-between gap-2 border bg-card/60 backdrop-blur-sm ${n.type === "warning"
                             ? "border-l-4 border-l-amber-500 border-y border-r border-border text-foreground"
-                            : n.type === "success"
-                              ? "border-l-4 border-l-emerald-500 border-y border-r border-border text-foreground"
-                              : "border-l-4 border-l-blue-500 border-y border-r border-border text-foreground"
+                            : n.type === "error"
+                              ? "border-l-4 border-l-rose-500 border-y border-r border-border text-foreground"
+                              : n.type === "success"
+                                ? "border-l-4 border-l-emerald-500 border-y border-r border-border text-foreground"
+                                : "border-l-4 border-l-blue-500 border-y border-r border-border text-foreground"
                           }`}
                       >
                         <div>

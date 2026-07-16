@@ -39,7 +39,7 @@ export interface CartItem {
 export interface SystemNotification {
   id: string;
   message: string;
-  type: "info" | "warning" | "success";
+  type: "info" | "warning" | "success" | "error";
   timestamp: Date;
 }
 
@@ -65,7 +65,7 @@ interface StateStore {
   updateCartQty: (productId: string, quantity: number) => void;
   updateCartItemDetails: (productId: string, details: Partial<CartItem>) => void;
   clearCart: () => void;
-  addNotification: (message: string, type?: "info" | "warning" | "success") => void;
+  addNotification: (message: string, type?: "info" | "warning" | "success" | "error") => void;
   clearNotification: (id: string) => void;
   toggleTheme: () => void;
   setGstSettings: (enabled: boolean, rate: number) => void;
