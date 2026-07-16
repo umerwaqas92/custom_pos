@@ -1295,6 +1295,7 @@ function auth_import_json_string(string $json): void
 
     $pdo = Database::pdo();
     $ownerId = tenant_owner_id();
+    $importBranchId = branch_id();
     $backupOwnerId = $backup['meta']['ownerId'] ?? null;
     $ownedTables = Tenant::OWNED_TABLES;
     $ownedLookup = [];
@@ -1303,7 +1304,7 @@ function auth_import_json_string(string $json): void
     }
 
     $isCrossStore = $backupOwnerId !== null && $backupOwnerId !== $ownerId;
-    error_log('[JSON BACKUP IMPORT] ownerId=' . $ownerId . ' backupOwnerId=' . ($backupOwnerId ?? 'null') . ' crossStore=' . ($isCrossStore ? 'YES' : 'NO'));
+    error_log('[JSON BACKUP IMPORT] ownerId=' . $ownerId . ' backupOwnerId=' . ($backupOwnerId ?? 'null') . ' crossStore=' . ($isCrossStore ? 'YES' : 'NO') . ' branchId=' . ($importBranchId ?? 'null'));
 
     $pdo->exec('SET FOREIGN_KEY_CHECKS=0');
     $pdo->exec('SET NAMES utf8mb4');
@@ -1334,6 +1335,10 @@ function auth_import_json_string(string $json): void
                 // Rewrite owner_id for cross-store import
                 if ($col === 'owner_id' && $isCrossStore && isset($ownedLookup[$table])) {
                     $val = $ownerId;
+                }
+                // Rewrite branch_id to the current branch when a branch is selected
+                if ($col === 'branch_id' && $importBranchId && isset($ownedLookup[$table])) {
+                    $val = $importBranchId;
                 }
                 $values[] = $val;
             }
