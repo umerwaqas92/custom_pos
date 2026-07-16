@@ -8,6 +8,12 @@
   # Keep API on PHP front controller
   RewriteRule ^api(?:/|$) - [L]
 
+  # These browser assets must never receive the SPA HTML fallback. If they
+  # are missing, let the server return a normal 404 instead of invalid JSON
+  # or JavaScript content.
+  RewriteRule ^manifest\.webmanifest$ - [L]
+  RewriteRule ^service-worker\.js$ - [L]
+
   # Static uploads
   RewriteRule ^uploads(?:/|$) - [L]
 
