@@ -717,10 +717,21 @@ function backup_owner_pattern(): string
     return backup_owner_prefix() . '-*';
 }
 
-/** Format backup filename with owner prefix so backups are tenant-isolated. */
+/** Format backup filename with owner prefix and store name so backups are tenant-isolated and identifiable. */
 function backup_filename(string $prefix): string
 {
-    return backup_owner_prefix() . '-' . $prefix . '-' . date('Y-m-d-His');
+    $store = 'all-stores';
+    $branchId = branch_id();
+    if ($branchId) {
+        $pdo = Database::pdo();
+        $st = $pdo->prepare('SELECT name FROM branches WHERE id = ?');
+        $st->execute([$branchId]);
+        $name = $st->fetchColumn();
+        if ($name) {
+            $store = preg_replace('/[^a-zA-Z0-9_-]/', '_', (string) $name);
+        }
+    }
+    return backup_owner_prefix() . '-' . $store . '-' . $prefix . '-' . date('Y-m-d-His');
 }
 
 /** Check if a backup filename belongs to the current owner. */
