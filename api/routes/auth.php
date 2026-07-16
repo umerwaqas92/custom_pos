@@ -1118,6 +1118,7 @@ function auth_import_sql_string(string $sql): void
     if (preg_match('/^--\s+Owner-scoped\s+\(owner_id:\s*(\S+)\)/m', $sql, $m)) {
         $backupOwnerId = $m[1];
     }
+    error_log('[BACKUP IMPORT] ownerId=' . $ownerId . ' backupOwnerId=' . ($backupOwnerId ?? 'null') . ' diff=' . ($backupOwnerId !== null && $backupOwnerId !== $ownerId ? 'YES' : 'NO'));
 
     $pdo->exec('SET FOREIGN_KEY_CHECKS=0');
 
@@ -1217,8 +1218,9 @@ function auth_import_sql_string(string $sql): void
                     try {
                         $pdo->prepare("UPDATE `{$insTable}` SET owner_id = ? WHERE owner_id = ?")
                             ->execute([$ownerId, $backupOwnerId]);
+                        error_log('[BACKUP IMPORT] Rewrote owner_id for ' . $insTable . ' from ' . $backupOwnerId . ' to ' . $ownerId . ' (rows=' . $pdo->rowCount() . ')');
                     } catch (Throwable $e) {
-                        // table may not have owner_id column — ignore
+                        error_log('[BACKUP IMPORT] Rewrite FAILED for ' . $insTable . ': ' . $e->getMessage());
                     }
                 }
             }
