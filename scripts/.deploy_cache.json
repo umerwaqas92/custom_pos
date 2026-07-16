@@ -124,7 +124,7 @@
   "/htdocs/icons/sidebar/reports.png": "2bc1a124ad39adde98c4c11656eea9a7",
   "/htdocs/icons/sidebar/sales-history.png": "c9f24fdde57e5ca19059ca4872854158",
   "/htdocs/icons/sidebar/settings.png": "b6c4b77bb0161f60dc59fcd487c1ff0b",
-  "/htdocs/index.html": "fa710d21c0ba6d62c4e0a894641d7490",
+  "/htdocs/index.html": "890f9c99e7700b48e40e6d0d97e537b8",
   "/htdocs/uploads/.htaccess": "5cb758e7e20bba1501af71c9501c58f5",
   "/htdocs/assets/index-DXU-5Jex.js": "cd744db30ec9d19edd193508f9d7aac3",
   "/htdocs/assets/index-oQap_TSk.css": "8404e19c0cdad43ddf80d36fd4cc38e5",
@@ -139,5 +139,6 @@
   "/htdocs/assets/index-B65KWt4E.js": "b9d4c4527b7df1a928f17727389a2ac2",
   "/htdocs/manifest.webmanifest": "40b6ca25cf7e0c216f7622b980d362b9",
   "/htdocs/service-worker.js": "d37ea2d8c77e958579050893ce9b16c0",
-  "/htdocs/assets/index-CVfPgZNP.js": "4263059c7aa099016426dd600df87673"
+  "/htdocs/assets/index-CVfPgZNP.js": "4263059c7aa099016426dd600df87673",
+  "/htdocs/manifest.json": "40b6ca25cf7e0c216f7622b980d362b9"
 }
