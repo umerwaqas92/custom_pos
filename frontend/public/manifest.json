@@ -1,6 +1,6 @@
 {
-  "name": "MZK POS",
-  "short_name": "MZK POS",
+  "name": "Quick AI POS",
+  "short_name": "Quick AI POS",
   "description": "Point of sale and shop management system.",
   "start_url": "/",
   "scope": "/",

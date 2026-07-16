@@ -1,5 +1,5 @@
 {
-  "/htdocs/.htaccess": "0c110e19cb5502010f9028fa5ac94d31",
+  "/htdocs/.htaccess": "0e423e69dbfc43511362dab1f7e323dd",
   "/htdocs/api/.htaccess": "5f4b332e8712af51558827d94531f24f",
   "/htdocs/api/backups/.gitkeep": "d41d8cd98f00b204e9800998ecf8427e",
   "/htdocs/api/backups/.htaccess": "6b34a10cca63717cca83a6c54fb26de4",
@@ -124,7 +124,7 @@
   "/htdocs/icons/sidebar/reports.png": "2bc1a124ad39adde98c4c11656eea9a7",
   "/htdocs/icons/sidebar/sales-history.png": "c9f24fdde57e5ca19059ca4872854158",
   "/htdocs/icons/sidebar/settings.png": "b6c4b77bb0161f60dc59fcd487c1ff0b",
-  "/htdocs/index.html": "890f9c99e7700b48e40e6d0d97e537b8",
+  "/htdocs/index.html": "0f70c02fe4c3c22ab37966bebc59b596",
   "/htdocs/uploads/.htaccess": "5cb758e7e20bba1501af71c9501c58f5",
   "/htdocs/assets/index-DXU-5Jex.js": "cd744db30ec9d19edd193508f9d7aac3",
   "/htdocs/assets/index-oQap_TSk.css": "8404e19c0cdad43ddf80d36fd4cc38e5",
@@ -138,7 +138,7 @@
   "/htdocs/assets/index-C7JvFFcU.js": "3b5fb6a6a2caa1228773bfa582256c9c",
   "/htdocs/assets/index-B65KWt4E.js": "b9d4c4527b7df1a928f17727389a2ac2",
   "/htdocs/manifest.webmanifest": "40b6ca25cf7e0c216f7622b980d362b9",
-  "/htdocs/service-worker.js": "d37ea2d8c77e958579050893ce9b16c0",
+  "/htdocs/service-worker.js": "76f044e58f0913ab1b52ffcc59890927",
   "/htdocs/assets/index-CVfPgZNP.js": "4263059c7aa099016426dd600df87673",
-  "/htdocs/manifest.json": "40b6ca25cf7e0c216f7622b980d362b9"
+  "/htdocs/manifest.json": "e31914c97deedce3d0fe1715f4f9d7d7"
 }

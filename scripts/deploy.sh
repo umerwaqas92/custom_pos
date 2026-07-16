@@ -548,7 +548,7 @@ st, body = get("/api/health")
 print(f"  /api/health → {st} {body[:80]!r}")
 assert st == 200, "health failed"
 
-for path in ("/manifest.webmanifest", "/service-worker.js"):
+for path in ("/manifest.json", "/service-worker.js"):
     st, body = get(path)
     print(f"  {path} → {st}")
     assert st == 200, f"{path} missing"

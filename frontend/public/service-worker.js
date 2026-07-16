@@ -1,5 +1,5 @@
-const CACHE_NAME = "mzk-pos-v1";
-const APP_SHELL = ["/", "/index.html", "/manifest.webmanifest", "/favicon.png", "/favicon.svg"];
+const CACHE_NAME = "mzk-pos-v8";
+const APP_SHELL = ["/", "/index.html", "/manifest.json", "/favicon.png", "/favicon.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
