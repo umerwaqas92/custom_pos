@@ -11,6 +11,18 @@
  */
 
 $uri = urldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?: '/');
+$method = $_SERVER['REQUEST_METHOD'];
+$start = microtime(true);
+
+// Log every request
+error_log(sprintf('[%s] %s %s', date('Y-m-d H:i:s'), $method, $uri));
+
+// Log response status on shutdown (works even when json_response calls exit)
+register_shutdown_function(function () use ($method, $uri, $start) {
+    $status = http_response_code() ?: 200;
+    $elapsed = round((microtime(true) - $start) * 1000, 1);
+    error_log(sprintf('[%s] %s %s → %d (%sms)', date('Y-m-d H:i:s'), $method, $uri, $status, $elapsed));
+});
 
 // API
 if (str_starts_with($uri, '/api')) {

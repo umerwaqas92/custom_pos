@@ -980,6 +980,12 @@ function auth_import_sql_string(string $sql): void
         $ownedLookup[$t] = true;
     }
 
+    // Parse backup owner_id from header comment for cross-store owner_id rewriting
+    $backupOwnerId = null;
+    if (preg_match('/^--\s+Owner-scoped\s+\(owner_id:\s*(\S+)\)/m', $sql, $m)) {
+        $backupOwnerId = $m[1];
+    }
+
     $pdo->exec('SET FOREIGN_KEY_CHECKS=0');
 
     // ---- Clean junction / shared tables that don't have owner_id ----
@@ -996,12 +1002,12 @@ function auth_import_sql_string(string $sql): void
         "DELETE FROM customer_credit_payments WHERE customer_id IN (SELECT id FROM customers WHERE owner_id = ?)",
         "DELETE FROM supplier_payments WHERE supplier_id IN (SELECT id FROM suppliers WHERE owner_id = ?)",
     ];
-    foreach ($junctionCleanup as $sql) {
+    foreach ($junctionCleanup as $cleanupSql) {
         try {
-            if (str_contains($sql, '?')) {
-                $pdo->prepare($sql)->execute([$ownerId]);
+            if (str_contains($cleanupSql, '?')) {
+                $pdo->prepare($cleanupSql)->execute([$ownerId]);
             } else {
-                $pdo->exec($sql);
+                $pdo->exec($cleanupSql);
             }
         } catch (Throwable $e) {
             // table may not exist or column may be missing — ignore
@@ -1069,6 +1075,20 @@ function auth_import_sql_string(string $sql): void
         try {
             $pdo->exec($stmt);
             $ran++;
+
+            // Cross-store import: rewrite owner_id from backup owner to current owner
+            if ($backupOwnerId !== null && $backupOwnerId !== $ownerId
+                && preg_match('/^INSERT\s+INTO\s+`?(\w+)`?/i', $stmt, $ins)) {
+                $insTable = $ins[1];
+                if ($insTable !== 'users' && isset($ownedLookup[$insTable])) {
+                    try {
+                        $pdo->prepare("UPDATE `{$insTable}` SET owner_id = ? WHERE owner_id = ?")
+                            ->execute([$ownerId, $backupOwnerId]);
+                    } catch (Throwable $e) {
+                        // table may not have owner_id column — ignore
+                    }
+                }
+            }
         } catch (Throwable $e) {
             // MySQL error code 23000 / 1062 is for Duplicate Entry
             if (str_contains($e->getMessage(), '1062') || str_contains($e->getMessage(), 'Duplicate entry')) {

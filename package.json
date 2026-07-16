@@ -9,7 +9,7 @@
   "scripts": {
     "dev:backend": "npm --prefix backend run dev",
     "dev:frontend": "npm --prefix frontend run dev",
-    "dev:php": "php -d error_log=php.logs -S localhost:5001 router-dev.php 2>> php.logs",
+    "dev:php": "php -d error_log=php.logs -S localhost:5001 router-dev.php >> php.logs 2>&1",
     "dev": "concurrently -n frontend,php \"npm run dev:frontend\" \"npm run dev:php\"",
     "build:backend": "npm --prefix backend run build",
     "build:frontend": "npm --prefix frontend run build",
