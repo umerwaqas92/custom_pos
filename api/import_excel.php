@@ -1,7 +1,7 @@
 <?php
 /**
  * CLI import script — reads MZK_SALES.json and imports into POS database.
- * Usage: php api/import_excel.php
+ * Usage: php api/import_excel.php [username] [branch_name]
  */
 declare(strict_types=1);
 
@@ -37,6 +37,21 @@ if (isset($argv[1]) && trim($argv[1]) !== '') {
 if ($targetUser) {
     $ownerId = $targetUser['id'];
     $branchId = $targetUser['branch_id'];
+
+    // Allow overriding branch by name (2nd CLI arg)
+    if (isset($argv[2]) && trim($argv[2]) !== '') {
+        $branchName = trim($argv[2]);
+        $st = $pdo->prepare("SELECT id FROM branches WHERE name = ? AND owner_id = ? LIMIT 1");
+        $st->execute([$branchName, $ownerId]);
+        $namedBranch = $st->fetchColumn();
+        if ($namedBranch) {
+            $branchId = $namedBranch;
+            echo "Using branch: {$branchName} ({$branchId})\n";
+        } else {
+            echo "[WARN] Branch '{$branchName}' not found for this owner. Using default.\n";
+        }
+    }
+
     if (!$branchId) {
         // Fetch first branch of this owner
         $st = $pdo->prepare("SELECT id FROM branches WHERE owner_id = ? LIMIT 1");
@@ -53,7 +68,7 @@ if ($targetUser) {
 
 $cashierId = $ownerId;
 
-$jsonPath = '/Users/themacstore/Downloads/MZK_SALES.json';
+$jsonPath = '/Users/themacstore/Desktop/MZK_SALES.json';
 if (!is_file($jsonPath)) {
     die("JSON file not found at {$jsonPath}\n");
 }
