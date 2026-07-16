@@ -80,6 +80,26 @@ function inventory_transfer(array $params): void
     $pdo = Database::pdo();
     try {
         Database::begin();
+        $ownerId = tenant_owner_id();
+        
+        // Assert ownership of product
+        $st = $pdo->prepare('SELECT id FROM products WHERE id = ? AND owner_id = ? LIMIT 1');
+        $st->execute([$b['productId'], $ownerId]);
+        if (!$st->fetch()) {
+            throw new RuntimeException('Product not found.');
+        }
+
+        // Assert ownership of branches
+        $st = $pdo->prepare('SELECT id FROM branches WHERE id = ? AND owner_id = ? LIMIT 1');
+        $st->execute([$b['fromBranchId'], $ownerId]);
+        if (!$st->fetch()) {
+            throw new RuntimeException('Source branch not found.');
+        }
+        $st->execute([$b['toBranchId'], $ownerId]);
+        if (!$st->fetch()) {
+            throw new RuntimeException('Destination branch not found.');
+        }
+
         $st = $pdo->prepare('SELECT quantity FROM branch_stocks WHERE branch_id = ? AND product_id = ? FOR UPDATE');
         $st->execute([$b['fromBranchId'], $b['productId']]);
         $from = $st->fetch();
@@ -100,11 +120,11 @@ function inventory_transfer(array $params): void
         $now = now_sql();
         $notes = $b['notes'] ?? '';
         $pdo->prepare(
-            'INSERT INTO stock_movements (id, product_id, quantity, type, branch_id, notes, created_at) VALUES (?,?,?,?,?,?,?)'
-        )->execute([uuid_v4(), $b['productId'], -$qty, 'TRANSFER', $b['fromBranchId'], "Transferred to branch: {$b['toBranchId']}. {$notes}", $now]);
+            'INSERT INTO stock_movements (id, product_id, quantity, type, branch_id, notes, owner_id, created_at) VALUES (?,?,?,?,?,?,?,?)'
+        )->execute([uuid_v4(), $b['productId'], -$qty, 'TRANSFER', $b['fromBranchId'], "Transferred to branch: {$b['toBranchId']}. {$notes}", $ownerId, $now]);
         $pdo->prepare(
-            'INSERT INTO stock_movements (id, product_id, quantity, type, branch_id, notes, created_at) VALUES (?,?,?,?,?,?,?)'
-        )->execute([uuid_v4(), $b['productId'], $qty, 'TRANSFER', $b['toBranchId'], "Transferred from branch: {$b['fromBranchId']}. {$notes}", $now]);
+            'INSERT INTO stock_movements (id, product_id, quantity, type, branch_id, notes, owner_id, created_at) VALUES (?,?,?,?,?,?,?,?)'
+        )->execute([uuid_v4(), $b['productId'], $qty, 'TRANSFER', $b['toBranchId'], "Transferred from branch: {$b['fromBranchId']}. {$notes}", $ownerId, $now]);
         Database::commit();
         json_response(['success' => true, 'transferred' => $qty]);
     } catch (Throwable $e) {

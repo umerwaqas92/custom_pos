@@ -164,12 +164,22 @@ function repairs_warranty_create(array $p): void
     if (empty($b['saleId']) || empty($b['productId'])) {
         json_error('Sale ID and Product ID are required.', 400);
     }
+    $pdo = Database::pdo();
+    $ownerId = tenant_owner_id();
+    
+    // Assert ownership of the sale record
+    $st = $pdo->prepare('SELECT id FROM sales WHERE id = ? AND owner_id = ? LIMIT 1');
+    $st->execute([$b['saleId'], $ownerId]);
+    if (!$st->fetch()) {
+        json_error('Sale not found.', 404);
+    }
+
     $id = uuid_v4();
     $now = now_sql();
-    Database::pdo()->prepare(
-        'INSERT INTO warranty_claims (id, sale_id, product_id, claim_date, status, notes, created_at, updated_at)
-         VALUES (?,?,?,?,?,?,?,?)'
-    )->execute([$id, $b['saleId'], $b['productId'], $now, 'PENDING', $b['notes'] ?? null, $now, $now]);
+    $pdo->prepare(
+        'INSERT INTO warranty_claims (id, sale_id, product_id, claim_date, status, notes, owner_id, created_at, updated_at)
+         VALUES (?,?,?,?,?,?,?,?,?)'
+    )->execute([$id, $b['saleId'], $b['productId'], $now, 'PENDING', $b['notes'] ?? null, $ownerId, $now, $now]);
     json_response([
         'id' => $id, 'saleId' => $b['saleId'], 'productId' => $b['productId'],
         'claimDate' => $now, 'status' => 'PENDING', 'notes' => $b['notes'] ?? null,
@@ -179,7 +189,10 @@ function repairs_warranty_create(array $p): void
 function repairs_warranty_list(array $p): void
 {
     $pdo = Database::pdo();
-    $rows = $pdo->query('SELECT * FROM warranty_claims ORDER BY claim_date DESC')->fetchAll();
+    $ownerId = tenant_owner_id();
+    $st = $pdo->prepare('SELECT * FROM warranty_claims WHERE owner_id = ? ORDER BY claim_date DESC');
+    $st->execute([$ownerId]);
+    $rows = $st->fetchAll();
     $out = [];
     foreach ($rows as $r) {
         $sale = null;
@@ -205,13 +218,18 @@ function repairs_warranty_list(array $p): void
 function repairs_warranty_update(array $p): void
 {
     $b = read_json_body();
-    Database::pdo()->prepare(
+    $pdo = Database::pdo();
+    $ownerId = tenant_owner_id();
+    $pdo->prepare(
         'UPDATE warranty_claims SET status = COALESCE(?, status), resolution_details = COALESCE(?, resolution_details),
-         notes = COALESCE(?, notes), updated_at = ? WHERE id = ?'
-    )->execute([$b['status'] ?? null, $b['resolutionDetails'] ?? null, $b['notes'] ?? null, now_sql(), $p['id']]);
-    $st = Database::pdo()->prepare('SELECT * FROM warranty_claims WHERE id = ?');
-    $st->execute([$p['id']]);
+         notes = COALESCE(?, notes), updated_at = ? WHERE id = ? AND owner_id = ?'
+    )->execute([$b['status'] ?? null, $b['resolutionDetails'] ?? null, $b['notes'] ?? null, now_sql(), $p['id'], $ownerId]);
+    $st = $pdo->prepare('SELECT * FROM warranty_claims WHERE id = ? AND owner_id = ?');
+    $st->execute([$p['id'], $ownerId]);
     $r = $st->fetch();
+    if (!$r) {
+        json_error('Warranty claim not found.', 404);
+    }
     json_response([
         'id' => $r['id'], 'saleId' => $r['sale_id'], 'productId' => $r['product_id'],
         'claimDate' => $r['claim_date'], 'status' => $r['status'],

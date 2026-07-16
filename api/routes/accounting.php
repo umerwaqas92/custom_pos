@@ -664,11 +664,11 @@ function acct_tx_transfer(array $p): void
         $outId = uuid_v4();
         $inId = uuid_v4();
         $ins = $pdo->prepare(
-            'INSERT INTO transactions (id, bank_account_id, type, category, amount, description, created_by, created_at)
-             VALUES (?,?,?,?,?,?,?,?)'
+            'INSERT INTO transactions (id, bank_account_id, type, category, amount, description, created_by, owner_id, created_at)
+             VALUES (?,?,?,?,?,?,?,?,?)'
         );
-        $ins->execute([$outId, $b['fromAccountId'], 'TRANSFER', 'TRANSFER', $amt, $desc, $user['id'], $now]);
-        $ins->execute([$inId, $b['toAccountId'], 'TRANSFER', 'TRANSFER', $amt, $desc, $user['id'], $now]);
+        $ins->execute([$outId, $b['fromAccountId'], 'TRANSFER', 'TRANSFER', $amt, $desc, $user['id'], $ownerId, $now]);
+        $ins->execute([$inId, $b['toAccountId'], 'TRANSFER', 'TRANSFER', $amt, $desc, $user['id'], $ownerId, $now]);
         Database::commit();
         json_response(['outTx' => ['id' => $outId], 'inTx' => ['id' => $inId]], 201);
     } catch (Throwable $e) {
@@ -762,12 +762,13 @@ function acct_day_bounds(?string $date): array
 function acct_closing_preview(array $p): void
 {
     $q = query_params();
+    $ownerId = tenant_owner_id();
     [$start, $end] = acct_day_bounds($q['date'] ?? null);
     $branch = $q['branchId'] ?? null;
     $pdo = Database::pdo();
     $saleSql = "SELECT COALESCE(SUM(paid_amount),0) AS paid, COUNT(*) AS cnt FROM sales
-                WHERE sale_date BETWEEN ? AND ? AND payment_status <> 'UNPAID'";
-    $args = [$start, $end];
+                WHERE sale_date BETWEEN ? AND ? AND payment_status <> 'UNPAID' AND owner_id = ?";
+    $args = [$start, $end, $ownerId];
     if ($branch) {
         $saleSql .= ' AND branch_id = ?';
         $args[] = $branch;
@@ -775,12 +776,12 @@ function acct_closing_preview(array $p): void
     $st = $pdo->prepare($saleSql);
     $st->execute($args);
     $sales = $st->fetch();
-    $st = $pdo->prepare('SELECT COALESCE(SUM(amount),0) FROM expenses WHERE date BETWEEN ? AND ?');
-    $st->execute([$start, $end]);
+    $st = $pdo->prepare('SELECT COALESCE(SUM(amount),0) FROM expenses WHERE date BETWEEN ? AND ? AND owner_id = ?');
+    $st->execute([$start, $end, $ownerId]);
     $exp = (float) $st->fetchColumn();
     $retSql = "SELECT COALESCE(SUM(refund_amount),0) FROM sale_returns r JOIN sales s ON s.id = r.sale_id
-               WHERE r.status='COMPLETED' AND r.return_date BETWEEN ? AND ?";
-    $rargs = [$start, $end];
+               WHERE r.status='COMPLETED' AND r.return_date BETWEEN ? AND ? AND s.owner_id = ?";
+    $rargs = [$start, $end, $ownerId];
     if ($branch) {
         $retSql .= ' AND s.branch_id = ?';
         $rargs[] = $branch;
@@ -805,17 +806,18 @@ function acct_closing_create(array $p): void
         json_error('Actual balance is required.', 400);
     }
     $pdo = Database::pdo();
+    $ownerId = tenant_owner_id();
     [$start, $end] = acct_day_bounds($b['closingDate'] ?? null);
     $branchId = $b['branchId'] ?? null;
 
-    $st = $pdo->prepare('SELECT id FROM daily_closings WHERE closing_date BETWEEN ? AND ? LIMIT 1');
-    $st->execute([$start, $end]);
+    $st = $pdo->prepare('SELECT id FROM daily_closings WHERE closing_date BETWEEN ? AND ? AND owner_id = ? LIMIT 1');
+    $st->execute([$start, $end, $ownerId]);
     if ($st->fetch()) {
         json_error('Daily closing already exists for this date.', 400);
     }
 
-    $saleSql = "SELECT COALESCE(SUM(paid_amount),0) FROM sales WHERE sale_date BETWEEN ? AND ? AND payment_status <> 'UNPAID'";
-    $args = [$start, $end];
+    $saleSql = "SELECT COALESCE(SUM(paid_amount),0) FROM sales WHERE sale_date BETWEEN ? AND ? AND payment_status <> 'UNPAID' AND owner_id = ?";
+    $args = [$start, $end, $ownerId];
     if ($branchId) {
         $saleSql .= ' AND branch_id = ?';
         $args[] = $branchId;
@@ -823,12 +825,12 @@ function acct_closing_create(array $p): void
     $st = $pdo->prepare($saleSql);
     $st->execute($args);
     $totalSales = (float) $st->fetchColumn();
-    $st = $pdo->prepare('SELECT COALESCE(SUM(amount),0) FROM expenses WHERE date BETWEEN ? AND ?');
-    $st->execute([$start, $end]);
+    $st = $pdo->prepare('SELECT COALESCE(SUM(amount),0) FROM expenses WHERE date BETWEEN ? AND ? AND owner_id = ?');
+    $st->execute([$start, $end, $ownerId]);
     $totalExpenses = (float) $st->fetchColumn();
     $retSql = "SELECT COALESCE(SUM(r.refund_amount),0) FROM sale_returns r JOIN sales s ON s.id=r.sale_id
-               WHERE r.status='COMPLETED' AND r.return_date BETWEEN ? AND ?";
-    $rargs = [$start, $end];
+               WHERE r.status='COMPLETED' AND r.return_date BETWEEN ? AND ? AND s.owner_id = ?";
+    $rargs = [$start, $end, $ownerId];
     if ($branchId) {
         $retSql .= ' AND s.branch_id = ?';
         $rargs[] = $branchId;
@@ -847,11 +849,11 @@ function acct_closing_create(array $p): void
     $now = now_sql();
     $pdo->prepare(
         'INSERT INTO daily_closings (id, closing_date, branch_id, opening_balance, total_sales, total_expenses, total_returns,
-         cash_in, cash_out, expected_balance, actual_balance, variance, status, notes, closed_by, created_at, updated_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+         cash_in, cash_out, expected_balance, actual_balance, variance, status, notes, closed_by, owner_id, created_at, updated_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
     )->execute([
         $id, $start, $branchId, $ob, $totalSales, $totalExpenses, $totalReturns, $ci, $co,
-        $expected, $actual, $variance, 'CLOSED', $b['notes'] ?? null, $user['id'], $now, $now,
+        $expected, $actual, $variance, 'CLOSED', $b['notes'] ?? null, $user['id'], $ownerId, $now, $now,
     ]);
     $st = $pdo->prepare('SELECT * FROM daily_closings WHERE id = ?');
     $st->execute([$id]);

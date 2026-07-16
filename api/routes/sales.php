@@ -862,6 +862,7 @@ function sales_return_create(array $params): void
 {
     $body = read_json_body();
     $user = Auth::requireUser();
+    $ownerId = tenant_owner_id();
     $saleId = $body['saleId'] ?? null;
     $items = $body['items'] ?? null;
     if (!$saleId || !is_array($items) || count($items) === 0) {
@@ -941,14 +942,14 @@ function sales_return_create(array $params): void
                 $pdo->prepare('INSERT INTO branch_stocks (id, branch_id, product_id, quantity) VALUES (?,?,?,?)')
                     ->execute([uuid_v4(), $sale['branchId'], $original['productId'], $qty]);
             }
-            $pdo->prepare('UPDATE products SET stock_quantity = stock_quantity + ?, updated_at = ? WHERE id = ?')
-                ->execute([$qty, $now, $original['productId']]);
+            $pdo->prepare('UPDATE products SET stock_quantity = stock_quantity + ?, updated_at = ? WHERE id = ? AND owner_id = ?')
+                ->execute([$qty, $now, $original['productId'], $ownerId]);
             $pdo->prepare(
-                'INSERT INTO stock_movements (id, product_id, quantity, type, branch_id, reference_id, notes, created_at)
-                 VALUES (?,?,?,?,?,?,?,?)'
+                'INSERT INTO stock_movements (id, product_id, quantity, type, branch_id, reference_id, notes, owner_id, created_at)
+                 VALUES (?,?,?,?,?,?,?,?,?)'
             )->execute([
                 uuid_v4(), $original['productId'], $qty, 'RETURN', $sale['branchId'], $saleId,
-                'Customer return: ' . ($item['reason'] ?? $body['reason'] ?? 'No reason'), $now,
+                'Customer return: ' . ($item['reason'] ?? $body['reason'] ?? 'No reason'), $ownerId, $now,
             ]);
         }
 
@@ -979,23 +980,24 @@ function sales_return_create(array $params): void
         if ($cashOut > 0) {
             $map = ['CASH' => 'CASH', 'CARD' => 'BANK', 'MOBILE' => 'MOBILE_WALLET'];
             $accType = $map[$method] ?? 'CASH';
-            $st = $pdo->prepare('SELECT id FROM bank_accounts WHERE type = ? AND is_active = 1 LIMIT 1');
-            $st->execute([$accType]);
+            $st = $pdo->prepare('SELECT id FROM bank_accounts WHERE type = ? AND is_active = 1 AND owner_id = ? LIMIT 1');
+            $st->execute([$accType, $ownerId]);
             $acc = $st->fetch();
             if (!$acc && $accType !== 'CASH') {
-                $st = $pdo->query("SELECT id FROM bank_accounts WHERE type = 'CASH' AND is_active = 1 LIMIT 1");
+                $st = $pdo->prepare("SELECT id FROM bank_accounts WHERE type = 'CASH' AND is_active = 1 AND owner_id = ? LIMIT 1");
+                $st->execute([$ownerId]);
                 $acc = $st->fetch();
             }
             if ($acc) {
                 $pdo->prepare(
-                    'INSERT INTO transactions (id, bank_account_id, type, category, amount, reference_type, reference_id, description, branch_id, created_by, created_at)
-                     VALUES (?,?,?,?,?,?,?,?,?,?,?)'
+                    'INSERT INTO transactions (id, bank_account_id, type, category, amount, reference_type, reference_id, description, branch_id, created_by, owner_id, created_at)
+                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)'
                 )->execute([
                     uuid_v4(), $acc['id'], 'EXPENSE', 'SALE', $cashOut, 'SALE', $saleId,
-                    'Refund for return on Invoice #' . substr($saleId, 0, 8), $sale['branchId'], $user['id'], $now,
+                    'Refund for return on Invoice #' . substr($saleId, 0, 8), $sale['branchId'], $user['id'], $ownerId, $now,
                 ]);
-                $pdo->prepare('UPDATE bank_accounts SET balance = balance - ?, updated_at = ? WHERE id = ?')
-                    ->execute([$cashOut, $now, $acc['id']]);
+                $pdo->prepare('UPDATE bank_accounts SET balance = balance - ?, updated_at = ? WHERE id = ? AND owner_id = ?')
+                    ->execute([$cashOut, $now, $acc['id'], $ownerId]);
             }
         }
 
@@ -1041,8 +1043,8 @@ function sales_return_create(array $params): void
         $noteAdd = '[Return ' . substr($returnId, 0, 8) . "] Rs.{$refundValue} via {$method}";
         $notes = $sale['notes'] ? ($sale['notes'] . "\n" . $noteAdd) : $noteAdd;
         $pdo->prepare(
-            'UPDATE sales SET return_status = ?, paid_amount = ?, payment_status = ?, notes = ?, updated_at = ? WHERE id = ?'
-        )->execute([$newReturnStatus, $newPaid, $newPayStatus, $notes, $now, $saleId]);
+            'UPDATE sales SET return_status = ?, paid_amount = ?, payment_status = ?, notes = ?, updated_at = ? WHERE id = ? AND owner_id = ?'
+        )->execute([$newReturnStatus, $newPaid, $newPayStatus, $notes, $now, $saleId, $ownerId]);
 
         if ($newReturnStatus === 'FULL' && $sale['emiDetails']) {
             $pdo->prepare(

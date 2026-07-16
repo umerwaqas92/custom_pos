@@ -7,8 +7,50 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
 
-$ownerId = 'd5c385de-1abe-42c4-8af8-ac4cb1579e91';
-$branchId = 'cb05546e-daff-481c-bdd5-5edb6377263b';
+$pdo = Database::pdo();
+
+// Dynamically resolve owner and branch (from CLI arg or first owner in DB)
+$targetUser = null;
+if (isset($argv[1]) && trim($argv[1]) !== '') {
+    $identifier = trim($argv[1]);
+    $st = $pdo->prepare("SELECT id, branch_id FROM users WHERE (username = ? OR email = ?) AND role = 'OWNER' LIMIT 1");
+    $st->execute([$identifier, $identifier]);
+    $targetUser = $st->fetch();
+    if (!$targetUser) {
+        // Try any user if OWNER role not found
+        $st = $pdo->prepare("SELECT id, branch_id FROM users WHERE username = ? OR email = ? LIMIT 1");
+        $st->execute([$identifier, $identifier]);
+        $targetUser = $st->fetch();
+    }
+    if (!$targetUser) {
+        die("User '{$identifier}' not found in the database. Please specify a valid username or email.\n");
+    }
+} else {
+    // Default to the first OWNER user in the database
+    $targetUser = $pdo->query("SELECT id, branch_id FROM users WHERE role = 'OWNER' ORDER BY created_at ASC LIMIT 1")->fetch();
+    if (!$targetUser) {
+        // Try any user
+        $targetUser = $pdo->query("SELECT id, branch_id FROM users ORDER BY created_at ASC LIMIT 1")->fetch();
+    }
+}
+
+if ($targetUser) {
+    $ownerId = $targetUser['id'];
+    $branchId = $targetUser['branch_id'];
+    if (!$branchId) {
+        // Fetch first branch of this owner
+        $st = $pdo->prepare("SELECT id FROM branches WHERE owner_id = ? LIMIT 1");
+        $st->execute([$ownerId]);
+        $branchId = $st->fetchColumn() ?: 'cb05546e-daff-481c-bdd5-5edb6377263b';
+    }
+    echo "Using resolved Owner ID: {$ownerId}\n";
+    echo "Using resolved Branch ID: {$branchId}\n";
+} else {
+    $ownerId = 'd5c385de-1abe-42c4-8af8-ac4cb1579e91';
+    $branchId = 'cb05546e-daff-481c-bdd5-5edb6377263b';
+    echo "No users found in database. Using default fallback Owner ID: {$ownerId}\n";
+}
+
 $cashierId = $ownerId;
 
 $jsonPath = '/Users/themacstore/Downloads/MZK_SALES.json';
@@ -17,8 +59,6 @@ if (!is_file($jsonPath)) {
 }
 $sheets = json_decode(file_get_contents($jsonPath), true);
 if (!$sheets) die("Failed to parse JSON.\n");
-
-$pdo = Database::pdo();
 $now = now_sql();
 $imported = ['brands' => 0, 'categories' => 0, 'products' => 0, 'customers' => 0, 'sales' => 0];
 

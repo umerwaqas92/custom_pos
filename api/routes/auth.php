@@ -862,6 +862,46 @@ function auth_export_sql_dump(): string
             $stmt = $pdo->prepare('SELECT * FROM `' . str_replace('`', '``', $table) . '` WHERE owner_id = ?');
             $stmt->execute([$ownerId]);
             $rows = $stmt->fetchAll();
+        } elseif ($table === 'branch_stocks') {
+            $stmt = $pdo->prepare('SELECT bs.* FROM branch_stocks bs JOIN branches b ON b.id = bs.branch_id WHERE b.owner_id = ?');
+            $stmt->execute([$ownerId]);
+            $rows = $stmt->fetchAll();
+        } elseif ($table === 'purchase_items') {
+            $stmt = $pdo->prepare('SELECT pi.* FROM purchase_items pi JOIN purchase_orders po ON po.id = pi.purchase_order_id WHERE po.owner_id = ?');
+            $stmt->execute([$ownerId]);
+            $rows = $stmt->fetchAll();
+        } elseif ($table === 'sale_items') {
+            $stmt = $pdo->prepare('SELECT si.* FROM sale_items si JOIN sales s ON s.id = si.sale_id WHERE s.owner_id = ?');
+            $stmt->execute([$ownerId]);
+            $rows = $stmt->fetchAll();
+        } elseif ($table === 'sale_returns') {
+            $stmt = $pdo->prepare('SELECT sr.* FROM sale_returns sr JOIN sales s ON s.id = sr.sale_id WHERE s.owner_id = ?');
+            $stmt->execute([$ownerId]);
+            $rows = $stmt->fetchAll();
+        } elseif ($table === 'sale_return_items') {
+            $stmt = $pdo->prepare('SELECT sri.* FROM sale_return_items sri JOIN sale_returns sr ON sr.id = sri.sale_return_id JOIN sales s ON s.id = sr.sale_id WHERE s.owner_id = ?');
+            $stmt->execute([$ownerId]);
+            $rows = $stmt->fetchAll();
+        } elseif ($table === 'sale_emis') {
+            $stmt = $pdo->prepare('SELECT se.* FROM sale_emis se JOIN sales s ON s.id = se.sale_id WHERE s.owner_id = ?');
+            $stmt->execute([$ownerId]);
+            $rows = $stmt->fetchAll();
+        } elseif ($table === 'emi_installments') {
+            $stmt = $pdo->prepare('SELECT ei.* FROM emi_installments ei JOIN sale_emis se ON se.id = ei.sale_emi_id JOIN sales s ON s.id = se.sale_id WHERE s.owner_id = ?');
+            $stmt->execute([$ownerId]);
+            $rows = $stmt->fetchAll();
+        } elseif ($table === 'customer_credit_payments') {
+            $stmt = $pdo->prepare('SELECT ccp.* FROM customer_credit_payments ccp JOIN customers c ON c.id = ccp.customer_id WHERE c.owner_id = ?');
+            $stmt->execute([$ownerId]);
+            $rows = $stmt->fetchAll();
+        } elseif ($table === 'supplier_payments') {
+            $stmt = $pdo->prepare('SELECT sp.* FROM supplier_payments sp JOIN suppliers s ON s.id = sp.supplier_id WHERE s.owner_id = ?');
+            $stmt->execute([$ownerId]);
+            $rows = $stmt->fetchAll();
+        } elseif ($table === 'activity_logs') {
+            $stmt = $pdo->prepare('SELECT al.* FROM activity_logs al JOIN users u ON u.id = al.user_id WHERE u.owner_id = ?');
+            $stmt->execute([$ownerId]);
+            $rows = $stmt->fetchAll();
         } else {
             $rows = $pdo->query('SELECT * FROM `' . str_replace('`', '``', $table) . '`')->fetchAll(PDO::FETCH_ASSOC);
         }
@@ -1003,8 +1043,12 @@ function auth_import_sql_string(string $sql): void
             $pdo->exec($stmt);
             $ran++;
         } catch (Throwable $e) {
+            // MySQL error code 23000 / 1062 is for Duplicate Entry
+            if (str_contains($e->getMessage(), '1062') || str_contains($e->getMessage(), 'Duplicate entry')) {
+                continue;
+            }
             $errors[] = substr($e->getMessage(), 0, 80) . ' @ ' . substr($stmt, 0, 60);
-            if (count($errors) > 15) {
+            if (count($errors) > 100) {
                 break;
             }
         }

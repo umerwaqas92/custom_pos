@@ -398,7 +398,7 @@ function products_attach_relations(PDO $pdo, array $productRow, ?string $branchF
             'SELECT bs.branch_id, bs.quantity, b.name AS branch_name
              FROM branch_stocks bs
              LEFT JOIN branches b ON b.id = bs.branch_id
-             WHERE bs.product_id = ? AND bs.branch_id = ? AND bs.owner_id = ?'
+             WHERE bs.product_id = ? AND bs.branch_id = ? AND b.owner_id = ?'
         );
         $st->execute([$productRow['id'], $branchFilter, $ownerId]);
         $stocks = [];
@@ -415,7 +415,7 @@ function products_attach_relations(PDO $pdo, array $productRow, ?string $branchF
             'SELECT bs.branch_id, bs.quantity, b.id AS b_id, b.name AS b_name
              FROM branch_stocks bs
              LEFT JOIN branches b ON b.id = bs.branch_id
-             WHERE bs.product_id = ? AND bs.owner_id = ?'
+             WHERE bs.product_id = ? AND b.owner_id = ?'
         );
         $st->execute([$productRow['id'], $ownerId]);
         $stocks = [];
@@ -553,8 +553,8 @@ function products_list(array $params): void
                 : null;
         }
         // Prefer branch stock quantity when branch filtered + lite (POS stock display)
-        if ($branchFilter && !empty($extras['branchStocks'][0])) {
-            $row['stock_quantity'] = $extras['branchStocks'][0]['quantity'];
+        if ($branchFilter) {
+            $row['stock_quantity'] = !empty($extras['branchStocks'][0]) ? $extras['branchStocks'][0]['quantity'] : 0;
         }
         $out[] = products_format_product($row, $extras);
     }
