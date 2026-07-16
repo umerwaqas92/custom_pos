@@ -128,6 +128,8 @@ CREATE TABLE products (
   processor VARCHAR(128) NULL,
   warranty_months INT NOT NULL DEFAULT 0,
   supplier_id CHAR(36) NULL,
+  owner_id CHAR(36) NULL,
+  branch_id CHAR(36) NULL,
   purchase_price DECIMAL(14,2) NOT NULL,
   selling_price DECIMAL(14,2) NOT NULL,
   wholesale_price DECIMAL(14,2) NULL,

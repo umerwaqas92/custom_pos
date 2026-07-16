@@ -494,6 +494,10 @@ function products_list(array $params): void
 
     $where = ['p.owner_id = ?'];
     $args = [$ownerId];
+    if ($branchFilter) {
+        $where[] = 'p.branch_id = ?';
+        $args[] = $branchFilter;
+    }
     if (!empty($q['sku'])) {
         $where[] = 'p.sku = ?';
         $args[] = (string) $q['sku'];
@@ -662,13 +666,14 @@ function products_create(array $params): void
 
     $id = uuid_v4();
     $now = now_sql();
+    $branchId = branch_id();
     $pdo->prepare(
         'INSERT INTO products (
             id, name, sku, barcode, qr_code, category_id, brand_id, model, serial_number, imei,
-            color, storage, ram, processor, warranty_months, supplier_id, purchase_price, selling_price,
+            color, storage, ram, processor, warranty_months, supplier_id, branch_id, purchase_price, selling_price,
             wholesale_price, tax_rate, discount_rate, images, description, weight, stock_quantity,
             min_stock, type, owner_id, created_at, updated_at
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
     )->execute([
         $id,
         $name,
@@ -686,6 +691,7 @@ function products_create(array $params): void
         $body['processor'] ?? null,
         (int) ($body['warrantyMonths'] ?? 0),
         $body['supplierId'] ?? null,
+        $branchId,
         (float) $purchasePrice,
         (float) $sellingPrice,
         isset($body['wholesalePrice']) && $body['wholesalePrice'] !== '' && $body['wholesalePrice'] !== null
@@ -704,15 +710,17 @@ function products_create(array $params): void
         $now,
     ]);
 
-    // Init branch stocks at 0 for this shop only
-    $bst = $pdo->prepare('SELECT id FROM branches WHERE owner_id = ?');
-    $bst->execute([$ownerId]);
-    $branches = $bst->fetchAll();
-    $ins = $pdo->prepare(
-        'INSERT INTO branch_stocks (id, branch_id, product_id, quantity) VALUES (?, ?, ?, 0)'
-    );
-    foreach ($branches as $br) {
-        $ins->execute([uuid_v4(), $br['id'], $id]);
+    // Init branch stock at 0 for the product's branch only
+    $targetBranch = $branchId;
+    if (!$targetBranch) {
+        $bst = $pdo->prepare('SELECT id FROM branches WHERE owner_id = ? LIMIT 1');
+        $bst->execute([$ownerId]);
+        $targetBranch = $bst->fetchColumn();
+    }
+    if ($targetBranch) {
+        $pdo->prepare(
+            'INSERT INTO branch_stocks (id, branch_id, product_id, quantity) VALUES (?, ?, ?, 0)'
+        )->execute([uuid_v4(), $targetBranch, $id]);
     }
 
     $st = $pdo->prepare('SELECT * FROM products WHERE id = ?');
@@ -726,9 +734,16 @@ function products_update(array $params): void
     $body = read_json_body();
     $pdo = Database::pdo();
     $ownerId = tenant_owner_id();
+    $branchId = branch_id();
 
-    $st = $pdo->prepare('SELECT id FROM products WHERE id = ? AND owner_id = ?');
-    $st->execute([$id, $ownerId]);
+    $prodWhere = 'id = ? AND owner_id = ?';
+    $prodArgs = [$id, $ownerId];
+    if ($branchId) {
+        $prodWhere .= ' AND (branch_id = ? OR branch_id IS NULL)';
+        $prodArgs[] = $branchId;
+    }
+    $st = $pdo->prepare("SELECT id FROM products WHERE $prodWhere");
+    $st->execute($prodArgs);
     if (!$st->fetch()) {
         json_error('Product not found.', 404);
     }
@@ -807,7 +822,12 @@ function products_update(array $params): void
         $vals[] = now_sql();
         $vals[] = $id;
         $vals[] = $ownerId;
-        $pdo->prepare('UPDATE products SET ' . implode(', ', $sets) . ' WHERE id = ? AND owner_id = ?')->execute($vals);
+        $updateSql = 'UPDATE products SET ' . implode(', ', $sets) . ' WHERE id = ? AND owner_id = ?';
+        if ($branchId) {
+            $updateSql .= ' AND (branch_id = ? OR branch_id IS NULL)';
+            $vals[] = $branchId;
+        }
+        $pdo->prepare($updateSql)->execute($vals);
     }
 
     $st = $pdo->prepare('SELECT * FROM products WHERE id = ? AND owner_id = ?');
@@ -820,9 +840,16 @@ function products_delete(array $params): void
     $id = $params['id'];
     $pdo = Database::pdo();
     $ownerId = tenant_owner_id();
+    $branchId = branch_id();
 
-    $own = $pdo->prepare('SELECT id FROM products WHERE id = ? AND owner_id = ? LIMIT 1');
-    $own->execute([$id, $ownerId]);
+    $ownSql = 'SELECT id FROM products WHERE id = ? AND owner_id = ?';
+    $ownArgs = [$id, $ownerId];
+    if ($branchId) {
+        $ownSql .= ' AND (branch_id = ? OR branch_id IS NULL)';
+        $ownArgs[] = $branchId;
+    }
+    $own = $pdo->prepare($ownSql);
+    $own->execute($ownArgs);
     if (!$own->fetch()) {
         json_error('Product not found.', 404);
     }

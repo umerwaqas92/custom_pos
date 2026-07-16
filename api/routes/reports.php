@@ -857,10 +857,14 @@ function reports_dashboard_stats(array $params): void
         "SELECT COUNT(*) AS cnt, COALESCE(SUM(stock_quantity),0) AS units,
                 SUM(CASE WHEN stock_quantity <= min_stock AND stock_quantity > 0 THEN 1 ELSE 0 END) AS low,
                 SUM(CASE WHEN stock_quantity <= 0 THEN 1 ELSE 0 END) AS outq
-         FROM products WHERE owner_id = ?",
-        [$ownerId]
+         FROM products WHERE owner_id = ?" . ($branchId ? ' AND branch_id = ?' : ''),
+        $branchId ? [$ownerId, $branchId] : [$ownerId]
     );
-    $customers = $q($pdo, "SELECT COUNT(*) AS cnt FROM customers WHERE owner_id = ?", [$ownerId]);
+    $customers = $q(
+        $pdo,
+        "SELECT COUNT(*) AS cnt FROM customers WHERE owner_id = ?" . ($branchId ? ' AND branch_id = ?' : ''),
+        $branchId ? [$ownerId, $branchId] : [$ownerId]
+    );
     $bst = $pdo->prepare(
         "SELECT type, COALESCE(SUM(balance),0) AS bal FROM bank_accounts WHERE is_active = 1 AND owner_id = ? GROUP BY type"
     );

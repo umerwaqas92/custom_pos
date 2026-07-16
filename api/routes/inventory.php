@@ -187,10 +187,10 @@ function inventory_alerts(array $params): void
              LEFT JOIN branch_stocks bs ON bs.product_id = p.id AND bs.branch_id = ?
              LEFT JOIN brands b ON b.id = p.brand_id
              LEFT JOIN categories c ON c.id = p.category_id
-             WHERE p.owner_id = ?
+             WHERE p.owner_id = ? AND p.branch_id = ?
              ORDER BY qty ASC'
         );
-        $st->execute([$branchId, $ownerId]);
+        $st->execute([$branchId, $ownerId, $branchId]);
     } else {
         $st = $pdo->prepare(
             'SELECT p.id, p.name, p.sku, p.stock_quantity AS qty, p.min_stock,
