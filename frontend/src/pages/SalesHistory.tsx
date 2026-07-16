@@ -362,22 +362,19 @@ export default function SalesHistory() {
     { value: "12", short: "Dec", full: "December" },
   ];
 
-  /** Years that appear in sales data (most sales first, then newest) */
+  /** Years that appear in sales data (newest first) */
   const yearOptions = useMemo(() => {
-    const counts = new Map<number, number>();
+    const yearsSet = new Set<number>();
     sales.forEach((s) => {
       const d = new Date(s.saleDate);
       if (isNaN(d.getTime())) return;
       const y = d.getFullYear();
       // Ignore far-future typo years (e.g. one bad 2027 import)
       if (y > new Date().getFullYear() + 1) return;
-      counts.set(y, (counts.get(y) || 0) + 1);
+      yearsSet.add(y);
     });
-    const nowY = new Date().getFullYear();
-    if (!counts.has(nowY)) counts.set(nowY, 0);
-    return Array.from(counts.entries())
-      .sort((a, b) => b[1] - a[1] || b[0] - a[0])
-      .map(([y]) => y);
+    yearsSet.add(new Date().getFullYear());
+    return Array.from(yearsSet).sort((a, b) => b - a);
   }, [sales]);
 
   /** Months that have sales in the selected year (for chip highlight counts) */

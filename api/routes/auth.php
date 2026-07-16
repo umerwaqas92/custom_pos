@@ -915,10 +915,10 @@ function auth_import_sql_string(string $sql): void
 
     $pdo->exec('SET FOREIGN_KEY_CHECKS=0');
 
-    // ---- Clean junction tables that reference this owner's data ----
-    // These tables don't have owner_id, but contain rows linked to owned tables via FK.
+    // ---- Clean junction / shared tables that don't have owner_id ----
     // Without cleanup, INSERTs from the backup would fail on duplicate PKs.
     $junctionCleanup = [
+        "DELETE FROM app_meta",
         "DELETE FROM branch_stocks WHERE branch_id IN (SELECT id FROM branches WHERE owner_id = ?)",
         "DELETE FROM sale_return_items WHERE sale_return_id IN (SELECT id FROM sale_returns WHERE sale_id IN (SELECT id FROM sales WHERE owner_id = ?))",
         "DELETE FROM sale_returns WHERE sale_id IN (SELECT id FROM sales WHERE owner_id = ?)",
@@ -931,7 +931,11 @@ function auth_import_sql_string(string $sql): void
     ];
     foreach ($junctionCleanup as $sql) {
         try {
-            $pdo->prepare($sql)->execute([$ownerId]);
+            if (str_contains($sql, '?')) {
+                $pdo->prepare($sql)->execute([$ownerId]);
+            } else {
+                $pdo->exec($sql);
+            }
         } catch (Throwable $e) {
             // table may not exist or column may be missing — ignore
         }
