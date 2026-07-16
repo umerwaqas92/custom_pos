@@ -352,7 +352,7 @@ export default function Settings() {
       // Use filename from server's Content-Disposition header
       const disposition = res.headers?.["content-disposition"] || "";
       const match = disposition.match(/filename="?(.+?)"?\s*(?:;|$)/);
-      const filename = match?.[1] || `pos-backup-${new Date().toISOString().split("T")[0]}.sjson`;
+      const filename = match?.[1] || `pos-backup-${new Date().toISOString().split("T")[0]}.json`;
       link.setAttribute("download", filename);
       document.body.appendChild(link);
       link.click();
@@ -425,7 +425,7 @@ export default function Settings() {
         const json = JSON.parse(text);
         throw new Error(json.error || "Download failed");
       }
-      const contentType = filename.endsWith(".sjson") || filename.endsWith(".json") ? "application/json" : filename.endsWith(".zip") ? "application/zip" : "application/sql";
+      const contentType = filename.endsWith(".json") ? "application/json" : filename.endsWith(".zip") ? "application/zip" : "application/sql";
       const url = window.URL.createObjectURL(new Blob([res.data], { type: contentType }));
       const link = document.createElement("a");
       link.href = url;
@@ -787,7 +787,7 @@ export default function Settings() {
             </div>
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Downloads an SJSON file containing all store data (products, sales, customers, inventory, etc.).
+            Downloads a JSON file containing all store data (products, sales, customers, inventory, etc.).
           </p>
           <div className="flex flex-col gap-2">
             <button
@@ -796,7 +796,7 @@ export default function Settings() {
               className="w-full bg-blue-600 hover:bg-blue-600/90 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition disabled:opacity-50"
             >
               <Download className="w-3.5 h-3.5" />
-              {exporting ? "Preparing…" : "Download Backup (SJSON)"}
+              {exporting ? "Preparing…" : "Download Backup JSON"}
             </button>
             {!isReadOnly && (
               <button
@@ -825,13 +825,13 @@ export default function Settings() {
               </div>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Select a previously exported <code className="font-mono bg-secondary px-1 rounded">.sjson</code> file (or legacy .zip/.sql). This <strong>overwrites</strong> all current data.
+              Select a previously exported <code className="font-mono bg-secondary px-1 rounded">.json</code> file (or .zip/.sql). This <strong>overwrites</strong> all current data.
             </p>
             <form onSubmit={handleImportBackup} className="space-y-3">
               <div className="border-2 border-dashed border-border hover:border-amber-500/40 rounded-xl p-3 text-center transition-colors cursor-pointer">
                 <input
                   type="file"
-                  accept=".sjson,.json,.zip,.sql"
+                  accept=".json,.zip,.sql"
                   onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
                   className="hidden"
                   id="backup-file-input"

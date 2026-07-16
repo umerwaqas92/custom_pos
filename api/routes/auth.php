@@ -878,7 +878,7 @@ function auth_backup_list(array $params): void
     ensure_dir(backups_path());
     $files = [];
     $ownerPrefix = backup_owner_prefix() . '-';
-    foreach (glob(backups_path() . '/*.{sjson,sql,zip,json}', GLOB_BRACE) ?: [] as $full) {
+    foreach (glob(backups_path() . '/*.{json,sql,zip}', GLOB_BRACE) ?: [] as $full) {
         $base = basename($full);
         // Only show files belonging to this owner
         if (!str_starts_with($base, $ownerPrefix)) {
@@ -922,7 +922,7 @@ function auth_write_backup_to_disk(string $prefix = 'manual-backup'): array
     // Prefix filename with owner_id for tenant isolation
     $ownerPrefix = backup_owner_prefix();
     $safePrefix = "{$ownerPrefix}-{$prefix}";
-    $filename = "{$safePrefix}-{$stamp}.sjson";
+    $filename = "{$safePrefix}-{$stamp}.json";
     $path = backups_path() . DIRECTORY_SEPARATOR . $filename;
     file_put_contents($path, $json);
 
@@ -1610,13 +1610,13 @@ function auth_extract_backup_content(string $tmpPath, string $originalName): arr
 {
     $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
 
-    // Direct JSON / SJSON file
-    if ($ext === 'json' || $ext === 'sjson') {
+    // Direct JSON file
+    if ($ext === 'json') {
         $json = file_get_contents($tmpPath);
         if ($json === false) {
             throw new RuntimeException('Could not read uploaded JSON file.');
         }
-        return [$json, 'sjson'];
+        return [$json, 'json'];
     }
 
     // Direct SQL / text file
@@ -1655,19 +1655,12 @@ function auth_extract_backup_content(string $tmpPath, string $originalName): arr
                     $format = 'sql';
                 }
             }
-            if ($base === 'dump.sjson' || $base === 'backup.sjson' || str_ends_with($base, '.sjson')) {
-                $chunk = $zip->getFromIndex($i);
-                if ($chunk !== false && trim((string) $chunk) !== '' && json_decode($chunk, true) !== null) {
-                    $content = $chunk;
-                    $format = 'sjson';
-                }
-            }
-            // Also support legacy .json inside zip
+            // Support .json inside zip
             if ($base === 'dump.json' || $base === 'backup.json' || str_ends_with($base, '.json')) {
                 $chunk = $zip->getFromIndex($i);
                 if ($chunk !== false && trim((string) $chunk) !== '' && json_decode($chunk, true) !== null) {
                     $content = $chunk;
-                    $format = 'sjson';
+                    $format = 'json';
                 }
             }
         }
@@ -1730,7 +1723,7 @@ function auth_extract_backup_content(string $tmpPath, string $originalName): arr
         throw new RuntimeException('No backup data found inside the ZIP.');
     }
 
-    throw new RuntimeException('Unsupported backup type. Upload a .sjson, .json, .sql, or .zip backup file.');
+    throw new RuntimeException('Unsupported backup type. Upload a .json, .sql, or .zip backup file.');
 }
 
 /**
@@ -1765,7 +1758,7 @@ function auth_backup_download(array $params): void
         json_error('Backup not found.', 404);
     }
     $lower = strtolower($filename);
-    if (str_ends_with($lower, '.sjson') || str_ends_with($lower, '.json')) {
+    if (str_ends_with($lower, '.json')) {
         $mime = 'application/json';
     } elseif (str_ends_with($lower, '.zip')) {
         $mime = 'application/zip';
@@ -1838,7 +1831,7 @@ function auth_backup_export(array $params): void
             }
         }
 
-        $name = 'pos-backup-' . rtrim($storeName, '-') . '-' . date('Y-m-d') . '.sjson';
+        $name = 'pos-backup-' . rtrim($storeName, '-') . '-' . date('Y-m-d') . '.json';
         header('Content-Type: application/json');
         header('Content-Disposition: attachment; filename="' . $name . '"');
         header('Content-Length: ' . strlen($json));
@@ -1888,7 +1881,7 @@ function auth_backup_auto(array $params): void
     $autoPattern = $ownerPrefix . '-auto-backup-*';
 
     // Skip if an auto-backup newer than 6 days exists for THIS owner
-    $autos = glob(backups_path() . '/' . $autoPattern . '.{sjson,json,sql,zip}', GLOB_BRACE) ?: [];
+    $autos = glob(backups_path() . '/' . $autoPattern . '.{json,sql,zip}', GLOB_BRACE) ?: [];
     usort($autos, static fn($a, $b) => filemtime($b) <=> filemtime($a));
     if ($autos && (time() - (int) filemtime($autos[0])) < 6 * 24 * 3600) {
         json_response([
@@ -1901,7 +1894,7 @@ function auth_backup_auto(array $params): void
     try {
         $meta = auth_write_backup_to_disk('auto-backup');
         // Keep last 5 auto backups for THIS owner
-        $all = glob(backups_path() . '/' . $autoPattern . '.{sjson,json,sql,zip}', GLOB_BRACE) ?: [];
+        $all = glob(backups_path() . '/' . $autoPattern . '.{json,sql,zip}', GLOB_BRACE) ?: [];
         usort($all, static fn($a, $b) => filemtime($b) <=> filemtime($a));
         foreach (array_slice($all, 5) as $old) {
             @unlink($old);
