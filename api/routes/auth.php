@@ -1003,10 +1003,7 @@ function auth_export_sql_dump(): string
         $branchTables = ['categories', 'brands', 'customers', 'suppliers', 'products', 'sales', 'stock_movements', 'transactions', 'daily_closings'];
         $hasBranchId = in_array($table, $branchTables, true);
         $branchId = branch_id();
-        if ($table === 'system_settings') {
-            // Export ALL system_settings (they may belong to any owner) and rewrite owner_id to current user
-            $rows = $pdo->query('SELECT * FROM `' . str_replace('`', '``', $table) . '`')->fetchAll(PDO::FETCH_ASSOC);
-        } elseif ($isOwned) {
+        if ($isOwned) {
             $sql = 'SELECT * FROM `' . str_replace('`', '``', $table) . '` WHERE owner_id = ?';
             $args = [$ownerId];
             if ($hasBranchId && $branchId) {
@@ -1066,10 +1063,6 @@ function auth_export_sql_dump(): string
             $rows = $pdo->query('SELECT * FROM `' . str_replace('`', '``', $table) . '`')->fetchAll(PDO::FETCH_ASSOC);
         }
         foreach ($rows as $row) {
-            // Rewrite owner_id to current user for system_settings
-            if ($table === 'system_settings' && array_key_exists('owner_id', $row)) {
-                $row['owner_id'] = $ownerId;
-            }
             $cols = array_map(static fn($c) => '`' . str_replace('`', '``', (string) $c) . '`', array_keys($row));
             $vals = array_map(static function ($v) use ($pdo) {
                 if ($v === null) {
@@ -1527,6 +1520,50 @@ function auth_backup_export(array $params): void
 {
     try {
         $sql = auth_export_sql_dump();
+
+        // Build store name for filename
+        $storeName = '';
+        $oid = tenant_owner_id();
+        $bid = branch_id();
+
+        // 1) If a branch is selected, use the branch name
+        if ($bid && $oid) {
+            try {
+                $st = Database::pdo()->prepare("SELECT `name` FROM `branches` WHERE id = ? AND owner_id = ? LIMIT 1");
+                $st->execute([$bid, $oid]);
+                $bName = $st->fetchColumn();
+                if ($bName) {
+                    $storeName = preg_replace('/[^a-zA-Z0-9_-]/', '_', (string) $bName) . '-';
+                }
+            } catch (Throwable $e) {
+                // skip
+            }
+        }
+
+        // 2) Fallback to system_settings shopName → user name
+        if (!$storeName && $oid) {
+            $sName = null;
+            try {
+                $st = Database::pdo()->prepare("SELECT `value` FROM system_settings WHERE `key` = 'shopName' AND owner_id = ? LIMIT 1");
+                $st->execute([$oid]);
+                $sName = $st->fetchColumn();
+            } catch (Throwable $e) {
+                // skip
+            }
+            if (!$sName) {
+                try {
+                    $st = Database::pdo()->prepare("SELECT `name` FROM `users` WHERE id = ? LIMIT 1");
+                    $st->execute([$oid]);
+                    $sName = $st->fetchColumn();
+                } catch (Throwable $e) {
+                    // skip
+                }
+            }
+            if ($sName) {
+                $storeName = preg_replace('/[^a-zA-Z0-9_-]/', '_', (string) $sName) . '-';
+            }
+        }
+
         if (class_exists('ZipArchive')) {
             $tmp = tempnam(sys_get_temp_dir(), 'posbk');
             $zipPath = $tmp . '.zip';
@@ -1549,7 +1586,7 @@ function auth_backup_export(array $params): void
                 }
             }
             $zip->close();
-            $name = 'pos-backup-' . date('Y-m-d') . '.zip';
+            $name = rtrim($storeName, '-') . '.zip';
             header('Content-Type: application/zip');
             header('Content-Disposition: attachment; filename="' . $name . '"');
             header('Content-Length: ' . filesize($zipPath));
@@ -1558,7 +1595,7 @@ function auth_backup_export(array $params): void
             exit;
         }
 
-        $name = 'pos-backup-' . date('Y-m-d') . '.sql';
+        $name = rtrim($storeName, '-') . '.sql';
         header('Content-Type: application/sql');
         header('Content-Disposition: attachment; filename="' . $name . '"');
         header('Content-Length: ' . strlen($sql));

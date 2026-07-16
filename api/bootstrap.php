@@ -18,6 +18,7 @@ if ($origin && in_array($origin, $allowed, true)) {
 }
 header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Access-Token, X-Authorization, X-Branch-ID');
+header('Access-Control-Expose-Headers: Content-Disposition');
 header('Access-Control-Max-Age: 86400');
 
 if (strtoupper($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
