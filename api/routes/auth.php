@@ -855,16 +855,32 @@ function auth_export_sql_dump(): string
 
         // Export data — owner-scoped for owned tables, full for shared tables
         $isOwned = isset($hasOwnerId[$table]);
+        // Tables that also have branch_id for store-scoped backups
+        $branchTables = ['categories', 'brands', 'customers', 'suppliers', 'products', 'sales', 'stock_movements', 'transactions', 'daily_closings'];
+        $hasBranchId = in_array($table, $branchTables, true);
+        $branchId = branch_id();
         if ($table === 'system_settings') {
             // Export ALL system_settings (they may belong to any owner) and rewrite owner_id to current user
             $rows = $pdo->query('SELECT * FROM `' . str_replace('`', '``', $table) . '`')->fetchAll(PDO::FETCH_ASSOC);
         } elseif ($isOwned) {
-            $stmt = $pdo->prepare('SELECT * FROM `' . str_replace('`', '``', $table) . '` WHERE owner_id = ?');
-            $stmt->execute([$ownerId]);
+            $sql = 'SELECT * FROM `' . str_replace('`', '``', $table) . '` WHERE owner_id = ?';
+            $args = [$ownerId];
+            if ($hasBranchId && $branchId) {
+                $sql .= ' AND branch_id = ?';
+                $args[] = $branchId;
+            }
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($args);
             $rows = $stmt->fetchAll();
         } elseif ($table === 'branch_stocks') {
-            $stmt = $pdo->prepare('SELECT bs.* FROM branch_stocks bs JOIN branches b ON b.id = bs.branch_id WHERE b.owner_id = ?');
-            $stmt->execute([$ownerId]);
+            $sql = 'SELECT bs.* FROM branch_stocks bs JOIN branches b ON b.id = bs.branch_id WHERE b.owner_id = ?';
+            $args = [$ownerId];
+            if ($branchId) {
+                $sql .= ' AND bs.branch_id = ?';
+                $args[] = $branchId;
+            }
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($args);
             $rows = $stmt->fetchAll();
         } elseif ($table === 'purchase_items') {
             $stmt = $pdo->prepare('SELECT pi.* FROM purchase_items pi JOIN purchase_orders po ON po.id = pi.purchase_order_id WHERE po.owner_id = ?');
