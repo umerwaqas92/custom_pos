@@ -132,24 +132,24 @@ function auth_token_user_response(array $row): array
 function auth_login(array $params): void
 {
     $body = read_json_body();
-    $email = trim((string) ($body['email'] ?? ''));
+    $identifier = trim((string) ($body['username'] ?? $body['email'] ?? ''));
     $password = (string) ($body['password'] ?? '');
 
-    if ($email === '' || $password === '') {
-        json_error('Email and password are required.', 400);
+    if ($identifier === '' || $password === '') {
+        json_error('Username or email and password are required.', 400);
     }
 
     $pdo = Database::pdo();
-    $stmt = $pdo->prepare(auth_user_select_sql() . ' WHERE u.email = ? LIMIT 1');
-    $stmt->execute([$email]);
+    $stmt = $pdo->prepare(auth_user_select_sql() . ' WHERE u.username = ? OR u.email = ? LIMIT 1');
+    $stmt->execute([$identifier, $identifier]);
     $row = $stmt->fetch();
 
     if (!$row || !(int) $row['is_active']) {
-        json_error('Invalid email or password.', 401);
+        json_error('Invalid username or password.', 401);
     }
 
     if (!password_verify($password, $row['password_hash'])) {
-        json_error('Invalid email or password.', 401);
+        json_error('Invalid username or password.', 401);
     }
 
     json_response(auth_token_user_response($row));

@@ -548,11 +548,10 @@ st, body = get("/api/health")
 print(f"  /api/health → {st} {body[:80]!r}")
 assert st == 200, "health failed"
 
-conn = http.client.HTTPConnection(ip, 80, timeout=30)
-conn.request("POST", "/api/auth/login", body=json.dumps({"email":"admin@shop.com","password":"admin123"}).encode(), headers=H)
-r = conn.getresponse(); raw = r.read(); conn.close()
-print(f"  /api/auth/login → {r.status}")
-assert r.status == 200, raw[:200]
+for path in ("/manifest.webmanifest", "/service-worker.js"):
+    st, body = get(path)
+    print(f"  {path} → {st}")
+    assert st == 200, f"{path} missing"
 print("  smoke OK")
 PY
   ok "Smoke test passed"

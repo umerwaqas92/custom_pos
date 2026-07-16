@@ -65,7 +65,7 @@ function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username || !password) {
-      addNotification("Please enter both username and password.", "warning");
+      addNotification("Please enter both username or email and password.", "warning");
       return;
     }
     setLoading(true);
@@ -161,8 +161,8 @@ function Login() {
         {mode === "login" ? (
           <form onSubmit={handleLogin} className="space-y-4" autoComplete="on">
             <div>
-              <label htmlFor="login-username" className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Username</label>
-              <input id="login-username" name="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="admin" className={inputCls} autoComplete="username" required />
+              <label htmlFor="login-username" className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Username or email</label>
+              <input id="login-username" name="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="admin or admin@shop.com" className={inputCls} autoComplete="username" required />
             </div>
             <div>
               <label htmlFor="login-password" className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Password</label>
