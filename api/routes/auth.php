@@ -1586,7 +1586,7 @@ function auth_backup_export(array $params): void
                 }
             }
             $zip->close();
-            $name = rtrim($storeName, '-') . '.zip';
+            $name = 'pos-backup-' . rtrim($storeName, '-') . '-' . date('Y-m-d') . '.zip';
             header('Content-Type: application/zip');
             header('Content-Disposition: attachment; filename="' . $name . '"');
             header('Content-Length: ' . filesize($zipPath));
@@ -1595,7 +1595,7 @@ function auth_backup_export(array $params): void
             exit;
         }
 
-        $name = rtrim($storeName, '-') . '.sql';
+        $name = 'pos-backup-' . rtrim($storeName, '-') . '-' . date('Y-m-d') . '.sql';
         header('Content-Type: application/sql');
         header('Content-Disposition: attachment; filename="' . $name . '"');
         header('Content-Length: ' . strlen($sql));
