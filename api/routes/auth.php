@@ -1004,14 +1004,19 @@ function auth_export_sql_dump(): string
         $hasBranchId = in_array($table, $branchTables, true);
         $branchId = branch_id();
         if ($isOwned) {
-            $sql = 'SELECT * FROM `' . str_replace('`', '``', $table) . '` WHERE owner_id = ?';
-            $args = [$ownerId];
-            if ($hasBranchId && $branchId) {
-                $sql .= ' AND branch_id = ?';
-                $args[] = $branchId;
+            if ($table === 'branches' && $branchId) {
+                $stmt = $pdo->prepare('SELECT * FROM `branches` WHERE owner_id = ? AND id = ?');
+                $stmt->execute([$ownerId, $branchId]);
+            } else {
+                $sql = 'SELECT * FROM `' . str_replace('`', '``', $table) . '` WHERE owner_id = ?';
+                $args = [$ownerId];
+                if ($hasBranchId && $branchId) {
+                    $sql .= ' AND branch_id = ?';
+                    $args[] = $branchId;
+                }
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute($args);
             }
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute($args);
             $rows = $stmt->fetchAll();
         } elseif ($table === 'branch_stocks') {
             $sql = 'SELECT bs.* FROM branch_stocks bs JOIN branches b ON b.id = bs.branch_id WHERE b.owner_id = ?';

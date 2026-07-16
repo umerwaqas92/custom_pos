@@ -4803,3 +4803,20 @@
 [16-Jul-2026 13:05:43 UTC] [2026-07-16 13:05:43] → GET /api/auth/backup/export | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
 [16-Jul-2026 13:05:43 UTC] [2026-07-16 13:05:43] ← GET /api/auth/backup/export → 200 (46.9ms | 2MB)
 [Thu Jul 16 18:05:43 2026] [::1]:59203 Closing
+[Thu Jul 16 18:06:54 2026] [::1]:59539 Accepted
+[16-Jul-2026 13:06:54 UTC] [2026-07-16 13:06:54] → GET /api/auth/backup/export | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[16-Jul-2026 13:06:54 UTC] [2026-07-16 13:06:54] ← GET /api/auth/backup/export → 200 (75.9ms | 2MB)
+[Thu Jul 16 18:06:54 2026] [::1]:59539 Closing
+[Thu Jul 16 18:07:27 2026] [::1]:59690 Accepted
+[16-Jul-2026 13:07:27 UTC] [2026-07-16 13:07:27] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[16-Jul-2026 13:07:27 UTC] [2026-07-16 13:07:27] ← GET /api/inventory/alerts → 200 (2.8ms | 2MB)
+[Thu Jul 16 18:07:27 2026] [::1]:59690 Closing
+[Thu Jul 16 18:07:59 2026] [::1]:59852 Accepted
+[16-Jul-2026 13:07:59 UTC] [2026-07-16 13:07:59] → GET /api/auth/backup/export | qs=- | ip=::1 | ua=curl/8.7.1
+[16-Jul-2026 13:07:59 UTC] [2026-07-16 13:07:59] ← GET /api/auth/backup/export → 200 (27.3ms | 2MB)
+[Thu Jul 16 18:07:59 2026] [::1]:59852 Closing
+[Thu Jul 16 18:08:18 2026] PHP 8.5.4 Development Server (http://localhost:5001) started
+[Thu Jul 16 18:08:23 2026] [::1]:59982 Accepted
+[16-Jul-2026 13:08:23 UTC] [2026-07-16 13:08:23] → GET /api/auth/backup/export | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[16-Jul-2026 13:08:23 UTC] [2026-07-16 13:08:23] ← GET /api/auth/backup/export → 200 (40.4ms | 2MB)
+[Thu Jul 16 18:08:23 2026] [::1]:59982 Closing
