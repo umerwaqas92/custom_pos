@@ -79,7 +79,7 @@ const Modal = ({ title, onClose, onSubmit, children, submitLabel = "Save" }: {
 );
 
 export default function Settings() {
-  const { addNotification, gstEnabled, gstRate, setGstSettings, setBranches: setStoreBranches, user, selectedBranchId } = useStore();
+  const { addNotification, gstEnabled, gstRate, setGstSettings, setBranches: setStoreBranches, user, selectedBranchId, setSelectedBranchId } = useStore();
   const [activeTab, setActiveTab] = useState<TabId>("shops");
   const isOwner = user?.role === "OWNER" || user?.role === "SUPER_ADMIN";
   const isReadOnly = user?.role === "SUPER_ADMIN";
@@ -558,7 +558,7 @@ export default function Settings() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {branches.map((b) => (
-            <div key={b.id} className={`group bg-card border rounded-2xl p-5 space-y-4 transition-all ${b.id === selectedBranchId ? "border-primary/50 ring-1 ring-primary/20 shadow-md" : "border-border hover:border-primary/40 hover:shadow-md"}`}>
+            <div key={b.id} onClick={() => { if (b.id !== selectedBranchId) { setSelectedBranchId(b.id); window.location.reload(); } }} className={`group bg-card border rounded-2xl p-5 space-y-4 transition-all cursor-pointer ${b.id === selectedBranchId ? "border-primary/50 ring-1 ring-primary/20 shadow-md" : "border-border hover:border-primary/40 hover:shadow-md"}`}>
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2.5">
                   <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${b.id === selectedBranchId ? "bg-primary/20" : "bg-primary/10"}`}>
