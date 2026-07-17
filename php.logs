@@ -11285,3 +11285,6 @@
 [Thu Jul 16 19:06:54 2026] [::1]:64815 Closing
 [17-Jul-2026 12:08:03 UTC] [2026-07-17 12:08:03] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
 [17-Jul-2026 12:08:03 UTC] [2026-07-17 12:08:03] ← GET /api/inventory/alerts → 200 (1.6ms | 2MB)
+[17-Jul-2026 12:13:03 UTC] [2026-07-17 12:13:03] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 12:13:03 UTC] [2026-07-17 12:13:03] ← GET /api/inventory/alerts → 200 (2.8ms | 2MB)
+[Fri Jul 17 17:14:31 2026] PHP 8.5.4 Development Server (http://localhost:5001) started

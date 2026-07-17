@@ -45,8 +45,8 @@ function sales_hydrate(PDO $pdo, array $sale, bool $full = true): array
     $id = $sale['id'];
     $cust = null;
     if ($sale['customer_id']) {
-        $s = $pdo->prepare('SELECT * FROM customers WHERE id = ?');
-        $s->execute([$sale['customer_id']]);
+        $s = $pdo->prepare('SELECT * FROM customers WHERE id = ? AND owner_id = ?');
+        $s->execute([$sale['customer_id'], $sale['owner_id']]);
         $cust = Format::customer($s->fetch() ?: null);
     }
     $cashier = null;
@@ -791,8 +791,9 @@ function sales_returns_list(array $params): void
 function sales_return_get(array $params): void
 {
     $pdo = Database::pdo();
-    $st = $pdo->prepare('SELECT * FROM sale_returns WHERE id = ?');
-    $st->execute([$params['returnId']]);
+    $ownerId = tenant_owner_id();
+    $st = $pdo->prepare('SELECT r.* FROM sale_returns r JOIN sales s ON s.id = r.sale_id WHERE r.id = ? AND s.owner_id = ?');
+    $st->execute([$params['returnId'], $ownerId]);
     $row = $st->fetch();
     if (!$row) {
         json_error('Return record not found.', 404);
@@ -1126,6 +1127,7 @@ function sales_emi_create(array $params): void
 
         $pdo = Database::pdo();
         Database::begin();
+        $ownerId = tenant_owner_id();
         $sale = sales_fetch_sale($pdo, $id, true);
         if (!$sale) {
             throw new RuntimeException('Sale transaction not found.');
@@ -1152,11 +1154,11 @@ function sales_emi_create(array $params): void
         $now = now_sql();
 
         $pdo->prepare(
-            'UPDATE sales SET payable_amount = ?, paid_amount = ?, payment_status = ?, notes = ?, updated_at = ? WHERE id = ?'
+            'UPDATE sales SET payable_amount = ?, paid_amount = ?, payment_status = ?, notes = ?, updated_at = ? WHERE id = ? AND owner_id = ?'
         )->execute([
             $totalPrincipal, $updatedPaid, $updatedStatus,
             ($sale['notes'] ?? '') . "\n[EMI Plan Activated: {$parsedMonths} months at {$parsedInterest}% markup]",
-            $now, $id,
+            $now, $id, $ownerId,
         ]);
 
         if ($sale['customerId'] && $creditDelta != 0.0) {
@@ -1185,18 +1187,19 @@ function sales_emi_create(array $params): void
         }
 
         if ($parsedDown > 0) {
-            $st = $pdo->query("SELECT id FROM bank_accounts WHERE type = 'CASH' AND is_active = 1 LIMIT 1");
+            $st = $pdo->prepare("SELECT id FROM bank_accounts WHERE type = 'CASH' AND is_active = 1 AND owner_id = ? LIMIT 1");
+            $st->execute([$ownerId]);
             $acc = $st->fetch();
             if ($acc) {
                 $pdo->prepare(
-                    'INSERT INTO transactions (id, bank_account_id, type, category, amount, reference_type, reference_id, description, branch_id, created_at)
-                     VALUES (?,?,?,?,?,?,?,?,?,?)'
+                    'INSERT INTO transactions (id, bank_account_id, type, category, amount, reference_type, reference_id, description, branch_id, owner_id, created_at)
+                     VALUES (?,?,?,?,?,?,?,?,?,?,?)'
                 )->execute([
                     uuid_v4(), $acc['id'], 'INCOME', 'CREDIT_PAYMENT', $parsedDown, 'SALE', $id,
-                    'EMI Down Payment collected for Invoice #' . substr($id, 0, 8), $sale['branchId'], $now,
+                    'EMI Down Payment collected for Invoice #' . substr($id, 0, 8), $sale['branchId'], $ownerId, $now,
                 ]);
-                $pdo->prepare('UPDATE bank_accounts SET balance = balance + ?, updated_at = ? WHERE id = ?')
-                    ->execute([$parsedDown, $now, $acc['id']]);
+                $pdo->prepare('UPDATE bank_accounts SET balance = balance + ?, updated_at = ? WHERE id = ? AND owner_id = ?')
+                    ->execute([$parsedDown, $now, $acc['id'], $ownerId]);
             }
         }
 
@@ -1217,11 +1220,14 @@ function sales_installment_pay(array $params): void
     $pdo = Database::pdo();
     try {
         Database::begin();
+        $ownerId = tenant_owner_id();
         $st = $pdo->prepare(
             'SELECT i.*, e.sale_id, e.id AS emi_id, e.status AS emi_status
-             FROM emi_installments i JOIN sale_emis e ON e.id = i.sale_emi_id WHERE i.id = ? FOR UPDATE'
+             FROM emi_installments i JOIN sale_emis e ON e.id = i.sale_emi_id
+             JOIN sales s ON s.id = e.sale_id
+             WHERE i.id = ? AND s.owner_id = ? FOR UPDATE'
         );
-        $st->execute([$installmentId]);
+        $st->execute([$installmentId, $ownerId]);
         $inst = $st->fetch();
         if (!$inst || $inst['sale_id'] !== $saleId) {
             throw new RuntimeException('Installment record not found.');
@@ -1235,31 +1241,32 @@ function sales_installment_pay(array $params): void
             "UPDATE emi_installments SET amount_paid = ?, paid_date = ?, status = 'PAID', updated_at = ? WHERE id = ?"
         )->execute([$amount, $now, $now, $installmentId]);
 
-        $st = $pdo->prepare('SELECT * FROM sales WHERE id = ? FOR UPDATE');
-        $st->execute([$saleId]);
+        $st = $pdo->prepare('SELECT * FROM sales WHERE id = ? AND owner_id = ? FOR UPDATE');
+        $st->execute([$saleId, $ownerId]);
         $sale = $st->fetch();
         $newPaid = round_money((float) $sale['paid_amount'] + $amount);
         $status = $newPaid >= (float) $sale['payable_amount'] ? 'PAID' : 'PARTIAL';
-        $pdo->prepare('UPDATE sales SET paid_amount = ?, payment_status = ?, updated_at = ? WHERE id = ?')
-            ->execute([$newPaid, $status, $now, $saleId]);
+        $pdo->prepare('UPDATE sales SET paid_amount = ?, payment_status = ?, updated_at = ? WHERE id = ? AND owner_id = ?')
+            ->execute([$newPaid, $status, $now, $saleId, $ownerId]);
 
         if ($sale['customer_id']) {
-            $pdo->prepare('UPDATE customers SET credit_balance = GREATEST(0, credit_balance - ?), updated_at = ? WHERE id = ?')
-                ->execute([$amount, $now, $sale['customer_id']]);
+            $pdo->prepare('UPDATE customers SET credit_balance = GREATEST(0, credit_balance - ?), updated_at = ? WHERE id = ? AND owner_id = ?')
+                ->execute([$amount, $now, $sale['customer_id'], $ownerId]);
         }
 
-        $st = $pdo->query("SELECT id FROM bank_accounts WHERE type = 'CASH' AND is_active = 1 LIMIT 1");
+        $st = $pdo->prepare("SELECT id FROM bank_accounts WHERE type = 'CASH' AND is_active = 1 AND owner_id = ? LIMIT 1");
+        $st->execute([$ownerId]);
         $acc = $st->fetch();
         if ($acc) {
             $pdo->prepare(
-                'INSERT INTO transactions (id, bank_account_id, type, category, amount, reference_type, reference_id, description, branch_id, created_at)
-                 VALUES (?,?,?,?,?,?,?,?,?,?)'
+                'INSERT INTO transactions (id, bank_account_id, type, category, amount, reference_type, reference_id, description, branch_id, owner_id, created_at)
+                 VALUES (?,?,?,?,?,?,?,?,?,?,?)'
             )->execute([
                 uuid_v4(), $acc['id'], 'INCOME', 'CREDIT_PAYMENT', $amount, 'SALE', $saleId,
-                'EMI installment payment #' . $inst['installment_number'], $sale['branch_id'], $now,
+                'EMI installment payment #' . $inst['installment_number'], $sale['branch_id'], $ownerId, $now,
             ]);
-            $pdo->prepare('UPDATE bank_accounts SET balance = balance + ?, updated_at = ? WHERE id = ?')
-                ->execute([$amount, $now, $acc['id']]);
+            $pdo->prepare('UPDATE bank_accounts SET balance = balance + ?, updated_at = ? WHERE id = ? AND owner_id = ?')
+                ->execute([$amount, $now, $acc['id'], $ownerId]);
         }
 
         $st = $pdo->prepare("SELECT COUNT(*) FROM emi_installments WHERE sale_emi_id = ? AND status <> 'PAID'");

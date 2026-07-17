@@ -26,6 +26,11 @@ function inventory_adjust(array $params): void
         if (!$st->fetch()) {
             throw new RuntimeException('Product not found.');
         }
+        $st = $pdo->prepare('SELECT id FROM branches WHERE id = ? AND owner_id = ?');
+        $st->execute([$b['branchId'], $ownerId]);
+        if (!$st->fetch()) {
+            throw new RuntimeException('Branch not found.');
+        }
         $st = $pdo->prepare('SELECT quantity FROM branch_stocks WHERE branch_id = ? AND product_id = ? FOR UPDATE');
         $st->execute([$b['branchId'], $b['productId']]);
         $bs = $st->fetch();

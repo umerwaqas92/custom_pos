@@ -243,14 +243,20 @@ function acct_customers_delete(array $p): void
     $pdo = Database::pdo();
     $ownerId = tenant_owner_id();
     $branchId = branch_id();
-    $pdo->prepare('DELETE FROM customer_credit_payments WHERE customer_id = ?')->execute([$p['id']]);
-    $delSql = 'DELETE FROM customers WHERE id = ? AND owner_id = ?';
-    $delArgs = [$p['id'], $ownerId];
+    // Verify customer belongs to current owner before deleting related records
+    $chkSql = 'SELECT id FROM customers WHERE id = ? AND owner_id = ?';
+    $chkArgs = [$p['id'], $ownerId];
     if ($branchId) {
-        $delSql .= ' AND (branch_id = ? OR branch_id IS NULL)';
-        $delArgs[] = $branchId;
+        $chkSql .= ' AND (branch_id = ? OR branch_id IS NULL)';
+        $chkArgs[] = $branchId;
     }
-    $pdo->prepare($delSql)->execute($delArgs);
+    $st = $pdo->prepare($chkSql);
+    $st->execute($chkArgs);
+    if (!$st->fetch()) {
+        json_error('Customer not found.', 404);
+    }
+    $pdo->prepare('DELETE FROM customer_credit_payments WHERE customer_id = ?')->execute([$p['id']]);
+    $pdo->prepare('DELETE FROM customers WHERE id = ? AND owner_id = ?')->execute([$p['id'], $ownerId]);
     json_response(['message' => 'Customer deleted successfully.']);
 }
 
@@ -263,16 +269,24 @@ function acct_customers_bulk_delete(array $p): void
     $ph = implode(',', array_fill(0, count($ids), '?'));
     $pdo = Database::pdo();
     $ownerId = tenant_owner_id();
-    $delSql = "DELETE FROM customers WHERE id IN ($ph) AND owner_id = ?";
-    $delArgs = array_merge($ids, [$ownerId]);
     $branchId = branch_id();
+    // Verify all customers belong to current owner before deleting related records
+    $chkSql = "SELECT id FROM customers WHERE id IN ($ph) AND owner_id = ?";
+    $chkArgs = array_merge($ids, [$ownerId]);
     if ($branchId) {
-        $delSql .= ' AND (branch_id = ? OR branch_id IS NULL)';
-        $delArgs[] = $branchId;
+        $chkSql .= ' AND (branch_id = ? OR branch_id IS NULL)';
+        $chkArgs[] = $branchId;
     }
-    $pdo->prepare("DELETE FROM customer_credit_payments WHERE customer_id IN ($ph)")->execute($ids);
-    $pdo->prepare($delSql)->execute($delArgs);
-    json_response(['message' => count($ids) . ' customers deleted successfully.']);
+    $st = $pdo->prepare($chkSql);
+    $st->execute($chkArgs);
+    $ownedIds = array_column($st->fetchAll(), 'id');
+    if (!$ownedIds) {
+        json_error('No matching customers found.', 404);
+    }
+    $ownedPh = implode(',', array_fill(0, count($ownedIds), '?'));
+    $pdo->prepare("DELETE FROM customer_credit_payments WHERE customer_id IN ($ownedPh)")->execute($ownedIds);
+    $pdo->prepare("DELETE FROM customers WHERE id IN ($ownedPh) AND owner_id = ?")->execute(array_merge($ownedIds, [$ownerId]));
+    json_response(['message' => count($ownedIds) . ' customers deleted successfully.']);
 }
 
 function acct_suppliers_list(array $p): void
@@ -333,14 +347,20 @@ function acct_suppliers_delete(array $p): void
     $pdo = Database::pdo();
     $ownerId = tenant_owner_id();
     $branchId = branch_id();
-    $pdo->prepare('DELETE FROM supplier_payments WHERE supplier_id = ?')->execute([$p['id']]);
-    $delSql = 'DELETE FROM suppliers WHERE id = ? AND owner_id = ?';
-    $delArgs = [$p['id'], $ownerId];
+    // Verify supplier belongs to current owner before deleting related records
+    $chkSql = 'SELECT id FROM suppliers WHERE id = ? AND owner_id = ?';
+    $chkArgs = [$p['id'], $ownerId];
     if ($branchId) {
-        $delSql .= ' AND (branch_id = ? OR branch_id IS NULL)';
-        $delArgs[] = $branchId;
+        $chkSql .= ' AND (branch_id = ? OR branch_id IS NULL)';
+        $chkArgs[] = $branchId;
     }
-    $pdo->prepare($delSql)->execute($delArgs);
+    $st = $pdo->prepare($chkSql);
+    $st->execute($chkArgs);
+    if (!$st->fetch()) {
+        json_error('Supplier not found.', 404);
+    }
+    $pdo->prepare('DELETE FROM supplier_payments WHERE supplier_id = ?')->execute([$p['id']]);
+    $pdo->prepare('DELETE FROM suppliers WHERE id = ? AND owner_id = ?')->execute([$p['id'], $ownerId]);
     json_response(['message' => 'Supplier deleted successfully.']);
 }
 
@@ -354,21 +374,29 @@ function acct_suppliers_bulk_delete(array $p): void
     $pdo = Database::pdo();
     $ownerId = tenant_owner_id();
     $branchId = branch_id();
-    $delSql = "DELETE FROM suppliers WHERE id IN ($ph) AND owner_id = ?";
-    $delArgs = array_merge($ids, [$ownerId]);
+    // Verify all suppliers belong to current owner before deleting related records
+    $chkSql = "SELECT id FROM suppliers WHERE id IN ($ph) AND owner_id = ?";
+    $chkArgs = array_merge($ids, [$ownerId]);
     if ($branchId) {
-        $delSql .= ' AND (branch_id = ? OR branch_id IS NULL)';
-        $delArgs[] = $branchId;
+        $chkSql .= ' AND (branch_id = ? OR branch_id IS NULL)';
+        $chkArgs[] = $branchId;
     }
-    $pdo->prepare("DELETE FROM supplier_payments WHERE supplier_id IN ($ph)")->execute($ids);
-    $pdo->prepare($delSql)->execute($delArgs);
-    json_response(['message' => count($ids) . ' suppliers deleted successfully.']);
+    $st = $pdo->prepare($chkSql);
+    $st->execute($chkArgs);
+    $ownedIds = array_column($st->fetchAll(), 'id');
+    if (!$ownedIds) {
+        json_error('No matching suppliers found.', 404);
+    }
+    $ownedPh = implode(',', array_fill(0, count($ownedIds), '?'));
+    $pdo->prepare("DELETE FROM supplier_payments WHERE supplier_id IN ($ownedPh)")->execute($ownedIds);
+    $pdo->prepare("DELETE FROM suppliers WHERE id IN ($ownedPh) AND owner_id = ?")->execute(array_merge($ownedIds, [$ownerId]));
+    json_response(['message' => count($ownedIds) . ' suppliers deleted successfully.']);
 }
 
 function acct_format_purchase(PDO $pdo, array $po): array
 {
-    $st = $pdo->prepare('SELECT * FROM suppliers WHERE id = ?');
-    $st->execute([$po['supplier_id']]);
+    $st = $pdo->prepare('SELECT * FROM suppliers WHERE id = ? AND owner_id = ?');
+    $st->execute([$po['supplier_id'], $po['owner_id']]);
     $supplier = Format::supplier($st->fetch() ?: null);
     $st = $pdo->prepare(
         'SELECT pi.*, p.name AS p_name, p.sku AS p_sku FROM purchase_items pi
@@ -429,6 +457,12 @@ function acct_purchases_create(array $p): void
     $pdo = Database::pdo();
     $ownerId = tenant_owner_id();
     $branchId = branch_id();
+    // Verify supplier belongs to current owner
+    $st = $pdo->prepare('SELECT id FROM suppliers WHERE id = ? AND owner_id = ?');
+    $st->execute([$b['supplierId'], $ownerId]);
+    if (!$st->fetch()) {
+        json_error('Supplier not found.', 404);
+    }
     $id = uuid_v4();
     $now = now_sql();
     $pdo->prepare(
@@ -615,15 +649,16 @@ function acct_banks_create(array $p): void
 function acct_banks_update(array $p): void
 {
     $b = read_json_body();
+    $ownerId = tenant_owner_id();
     Database::pdo()->prepare(
         'UPDATE bank_accounts SET name = COALESCE(?, name), type = COALESCE(?, type), account_number = ?, bank_name = ?,
          notes = ?, is_active = COALESCE(?, is_active), updated_at = ? WHERE id = ? AND owner_id = ?'
     )->execute([
         $b['name'] ?? null, $b['type'] ?? null, $b['accountNumber'] ?? null, $b['bankName'] ?? null,
-        $b['notes'] ?? null, isset($b['isActive']) ? ($b['isActive'] ? 1 : 0) : null, now_sql(), $p['id'], tenant_owner_id(),
+        $b['notes'] ?? null, isset($b['isActive']) ? ($b['isActive'] ? 1 : 0) : null, now_sql(), $p['id'], $ownerId,
     ]);
-    $st = Database::pdo()->prepare('SELECT * FROM bank_accounts WHERE id = ?');
-    $st->execute([$p['id']]);
+    $st = Database::pdo()->prepare('SELECT * FROM bank_accounts WHERE id = ? AND owner_id = ?');
+    $st->execute([$p['id'], $ownerId]);
     json_response(Format::bankAccount($st->fetch()));
 }
 
@@ -738,10 +773,10 @@ function acct_tx_transfer(array $p): void
             throw new RuntimeException('Insufficient balance in source account.');
         }
         $now = now_sql();
-        $pdo->prepare('UPDATE bank_accounts SET balance = balance - ?, updated_at = ? WHERE id = ?')
-            ->execute([$amt, $now, $b['fromAccountId']]);
-        $pdo->prepare('UPDATE bank_accounts SET balance = balance + ?, updated_at = ? WHERE id = ?')
-            ->execute([$amt, $now, $b['toAccountId']]);
+        $pdo->prepare('UPDATE bank_accounts SET balance = balance - ?, updated_at = ? WHERE id = ? AND owner_id = ?')
+            ->execute([$amt, $now, $b['fromAccountId'], $ownerId]);
+        $pdo->prepare('UPDATE bank_accounts SET balance = balance + ?, updated_at = ? WHERE id = ? AND owner_id = ?')
+            ->execute([$amt, $now, $b['toAccountId'], $ownerId]);
         $desc = $b['description'] ?? ("Transfer from {$from['name']} to {$to['name']}");
         $outId = uuid_v4();
         $inId = uuid_v4();

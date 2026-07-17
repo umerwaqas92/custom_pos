@@ -17,8 +17,8 @@ function repairs_format(PDO $pdo, array $j): array
 {
     $cust = null;
     if ($j['customer_id']) {
-        $st = $pdo->prepare('SELECT * FROM customers WHERE id = ?');
-        $st->execute([$j['customer_id']]);
+        $st = $pdo->prepare('SELECT * FROM customers WHERE id = ? AND owner_id = ?');
+        $st->execute([$j['customer_id'], $j['owner_id']]);
         $cust = Format::customer($st->fetch() ?: null);
     }
     $tech = null;
@@ -147,14 +147,16 @@ function repairs_update(array $p): void
         $sets[] = 'estimated_delivery = ?';
         $vals[] = date('Y-m-d H:i:s', strtotime($b['estimatedDelivery']));
     }
+    $ownerId = tenant_owner_id();
     if ($sets) {
         $sets[] = 'updated_at = ?';
         $vals[] = now_sql();
         $vals[] = $p['id'];
-        Database::pdo()->prepare('UPDATE repair_jobs SET ' . implode(', ', $sets) . ' WHERE id = ?')->execute($vals);
+        $vals[] = $ownerId;
+        Database::pdo()->prepare('UPDATE repair_jobs SET ' . implode(', ', $sets) . ' WHERE id = ? AND owner_id = ?')->execute($vals);
     }
-    $st = Database::pdo()->prepare('SELECT * FROM repair_jobs WHERE id = ?');
-    $st->execute([$p['id']]);
+    $st = Database::pdo()->prepare('SELECT * FROM repair_jobs WHERE id = ? AND owner_id = ?');
+    $st->execute([$p['id'], $ownerId]);
     json_response(repairs_format(Database::pdo(), $st->fetch()));
 }
 

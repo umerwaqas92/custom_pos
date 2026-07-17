@@ -871,7 +871,7 @@ function products_delete(array $params): void
 
     try {
         Database::begin();
-        $pdo->prepare('DELETE FROM branch_stocks WHERE product_id = ?')->execute([$id]);
+        $pdo->prepare("DELETE bs FROM branch_stocks bs JOIN products p ON p.id = bs.product_id WHERE bs.product_id = ? AND p.owner_id = ?")->execute([$id, $ownerId]);
         $pdo->prepare('DELETE FROM stock_movements WHERE product_id = ? AND owner_id = ?')->execute([$id, $ownerId]);
         $pdo->prepare('DELETE FROM products WHERE id = ? AND owner_id = ?')->execute([$id, $ownerId]);
         Database::commit();
@@ -915,9 +915,9 @@ function products_bulk_delete(array $params): void
 
     try {
         Database::begin();
-        $pdo->prepare("DELETE FROM branch_stocks WHERE product_id IN ($placeholders)")->execute($ids);
-        $pdo->prepare("DELETE FROM stock_movements WHERE product_id IN ($placeholders)")->execute($ids);
-        $pdo->prepare("DELETE FROM products WHERE id IN ($placeholders)")->execute($ids);
+        $pdo->prepare("DELETE bs FROM branch_stocks bs JOIN products p ON p.id = bs.product_id WHERE bs.product_id IN ($placeholders) AND p.owner_id = ?")->execute(array_merge($ids, [$ownerId]));
+        $pdo->prepare("DELETE FROM stock_movements WHERE product_id IN ($placeholders) AND owner_id = ?")->execute(array_merge($ids, [$ownerId]));
+        $pdo->prepare("DELETE FROM products WHERE id IN ($placeholders) AND owner_id = ?")->execute(array_merge($ids, [$ownerId]));
         Database::commit();
         json_response(['message' => count($ids) . ' products deleted successfully.']);
     } catch (Throwable $e) {
