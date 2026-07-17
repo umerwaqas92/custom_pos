@@ -20,7 +20,8 @@ import {
   Landmark,
   Wallet,
   FileText,
-  RefreshCw
+  RefreshCw,
+  ChevronDown
 } from "lucide-react";
 
 export default function POS() {
@@ -53,6 +54,13 @@ export default function POS() {
   const [cartDiscount, setCartDiscount] = useState(0); // overall dollar discount
   const [paymentMethod, setPaymentMethod] = useState("CASH");
   const [amountPaid, setAmountPaid] = useState("");
+
+  // Searchable customer
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [customerOpen, setCustomerOpen] = useState(false);
+  const customerRef = useRef<HTMLDivElement>(null);
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const paymentRef = useRef<HTMLDivElement>(null);
 
   // UI States
   const [loading, setLoading] = useState(false);
@@ -182,6 +190,20 @@ export default function POS() {
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, [addNotification, cart.length, clearCart, custModalOpen, receiptResult, selectedBranchId, paymentMethod, amountPaid, cartDiscount, products, selectedCustId]);
+
+  // Click outside to close dropdowns
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (customerRef.current && !customerRef.current.contains(e.target as Node)) {
+        setCustomerOpen(false);
+      }
+      if (paymentRef.current && !paymentRef.current.contains(e.target as Node)) {
+        setPaymentOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   // Filtered Products List
   const filteredProducts = (Array.isArray(products) ? products : []).filter((p) => {
@@ -658,22 +680,80 @@ export default function POS() {
         <div className="border-t border-border pt-4 space-y-3">
 
           {/* Customer Selection */}
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2 bg-secondary/50 border border-border p-2 rounded-xl">
+          <div className="space-y-1.5" ref={customerRef}>
+            <div className="relative flex items-center gap-2 bg-secondary/50 border border-border p-2 rounded-xl">
               <img src="/icons/pos/customer.png?v=1" alt="" className="w-4 h-4 object-contain opacity-80 shrink-0" draggable={false} />
-              <select
-                value={selectedCustId}
-                onChange={(e) => setSelectedCustId(e.target.value)}
-                className="flex-1 bg-transparent text-xs text-foreground focus:outline-none cursor-pointer"
-              >
-                <option value="">Walk-in Customer</option>
-                {customers.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} ({c.phone}) - Due: Rs. {Number(c.creditBalance).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                  </option>
-                ))}
-              </select>
+              <input
+                type="text"
+                value={customerSearch}
+                onChange={(e) => {
+                  setCustomerSearch(e.target.value);
+                  setCustomerOpen(true);
+                  if (!e.target.value) setSelectedCustId("");
+                }}
+                onFocus={() => setCustomerOpen(true)}
+                placeholder="Walk-in Customer"
+                className="flex-1 bg-transparent text-xs text-foreground focus:outline-none"
+              />
+              {selectedCustId && !customerOpen && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCustId("");
+                    setCustomerSearch("");
+                  }}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
+            {customerOpen && (
+              <div className="relative">
+                <div className="absolute z-20 top-0 left-0 right-0 bg-card border border-border rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                  <button
+                    type="button"
+                    className={`w-full text-left px-3 py-2 text-xs transition ${!selectedCustId && !customerSearch ? "bg-primary/10 text-primary" : "hover:bg-secondary text-foreground"}`}
+                    onClick={() => {
+                      setSelectedCustId("");
+                      setCustomerSearch("");
+                      setCustomerOpen(false);
+                    }}
+                  >
+                    Walk-in Customer
+                  </button>
+                  {customers
+                    .filter((c) => {
+                      if (!customerSearch) return true;
+                      const q = customerSearch.toLowerCase();
+                      return c.name.toLowerCase().includes(q) || c.phone.includes(q);
+                    })
+                    .map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        className={`w-full text-left px-3 py-2 text-xs transition ${selectedCustId === c.id ? "bg-primary/10 text-primary" : "hover:bg-secondary text-foreground"}`}
+                        onClick={() => {
+                          setSelectedCustId(c.id);
+                          setCustomerSearch(c.name);
+                          setCustomerOpen(false);
+                        }}
+                      >
+                        <span className="font-medium">{c.name}</span>
+                        <span className="text-muted-foreground ml-1">({c.phone})</span>
+                        <span className="text-muted-foreground ml-1">- Due: Rs. {Number(c.creditBalance).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                      </button>
+                    ))}
+                  {customers.filter((c) => {
+                    if (!customerSearch) return true;
+                    const q = customerSearch.toLowerCase();
+                    return c.name.toLowerCase().includes(q) || c.phone.includes(q);
+                  }).length === 0 && (
+                    <div className="px-3 py-2 text-xs text-muted-foreground">No customers found.</div>
+                  )}
+                </div>
+              </div>
+            )}
             <button
               type="button"
               onClick={() => setCustModalOpen(true)}
@@ -708,80 +788,68 @@ export default function POS() {
                 className="w-24 bg-secondary text-right border border-border px-2 py-1 rounded text-sm font-bold focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
-            <div className="flex justify-between text-foreground items-center">
-              <span className="text-xs font-semibold text-muted-foreground">Estimated Tax:</span>
-              <span className="text-base font-bold">Rs. {finalTax.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-            </div>
+            {gstEnabled && (
+              <div className="flex justify-between text-foreground items-center">
+                <span className="text-xs font-semibold text-muted-foreground">Estimated Tax:</span>
+                <span className="text-base font-bold">Rs. {finalTax.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              </div>
+            )}
             <div className="flex justify-between items-center pt-2 border-t border-border/50">
               <span className="text-xs font-bold text-muted-foreground">Grand Total:</span>
               <span className="text-xl font-black text-primary">Rs. {payableAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
             </div>
           </div>
 
-          {/* Payment Method Selector Grid */}
-          <div className="space-y-1.5">
+          {/* Payment Method — collapsible */}
+          <div ref={paymentRef} className="space-y-1.5">
             <label className="text-[10px] font-bold text-muted-foreground uppercase">Payment Method</label>
-            <div className="grid grid-cols-3 gap-1.5">
-              <button
-                type="button"
-                onClick={() => setPaymentMethod("CASH")}
-                className={`flex items-center justify-center gap-1 p-2 rounded-lg border text-left transition-all ${paymentMethod === "CASH"
-                    ? "bg-primary/10 border-primary text-primary font-bold shadow"
-                    : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                  }`}
-              >
-                <img src="/icons/pos/cash.png?v=1" alt="" className="w-3.5 h-3.5 object-contain flex-shrink-0" draggable={false} />
-                <span className="text-[10px] font-extrabold font-black">Cash</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPaymentMethod("CARD")}
-                className={`flex items-center justify-center gap-1 p-2 rounded-lg border text-left transition-all ${paymentMethod === "CARD"
-                    ? "bg-primary/10 border-primary text-primary font-bold shadow"
-                    : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                  }`}
-              >
-                <img src="/icons/pos/bank.png?v=1" alt="" className="w-3.5 h-3.5 object-contain flex-shrink-0" draggable={false} />
-                <span className="text-[10px] font-extrabold font-black">Bank</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPaymentMethod("MOBILE")}
-                className={`flex items-center justify-center gap-1 p-2 rounded-lg border text-left transition-all ${paymentMethod === "MOBILE"
-                    ? "bg-primary/10 border-primary text-primary font-bold shadow"
-                    : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                  }`}
-              >
-                <img src="/icons/pos/wallet.png?v=1" alt="" className="w-3.5 h-3.5 object-contain flex-shrink-0" draggable={false} />
-                <span className="text-[10px] font-extrabold font-black">Wallet</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPaymentMethod("CREDIT")}
-                className={`flex items-center justify-center gap-1 p-2 rounded-lg border text-left transition-all ${paymentMethod === "CREDIT"
-                    ? "bg-primary/10 border-primary text-primary font-bold shadow"
-                    : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                  }`}
-              >
-                <img src="/icons/pos/credit.png?v=1" alt="" className="w-3.5 h-3.5 object-contain flex-shrink-0" draggable={false} />
-                <span className="text-[10px] font-extrabold font-black">Credit</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPaymentMethod("EMI")}
-                className={`flex items-center justify-center gap-1 p-2 rounded-lg border text-left transition-all ${paymentMethod === "EMI"
-                    ? "bg-primary/10 border-primary text-primary font-bold shadow"
-                    : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                  }`}
-              >
-                <img src="/icons/pos/emi.png?v=1" alt="" className="w-3.5 h-3.5 object-contain flex-shrink-0" draggable={false} />
-                <span className="text-[10px] font-extrabold font-black">EMI</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setPaymentOpen(!paymentOpen)}
+              className="w-full flex items-center justify-between bg-secondary/50 border border-border p-2.5 rounded-xl text-xs font-bold text-foreground hover:bg-secondary/70 transition"
+            >
+              <span className="flex items-center gap-2">
+                {paymentMethod === "CASH" && <img src="/icons/pos/cash.png?v=1" alt="" className="w-4 h-4 object-contain" draggable={false} />}
+                {paymentMethod === "CARD" && <img src="/icons/pos/bank.png?v=1" alt="" className="w-4 h-4 object-contain" draggable={false} />}
+                {paymentMethod === "MOBILE" && <img src="/icons/pos/wallet.png?v=1" alt="" className="w-4 h-4 object-contain" draggable={false} />}
+                {paymentMethod === "CREDIT" && <img src="/icons/pos/credit.png?v=1" alt="" className="w-4 h-4 object-contain" draggable={false} />}
+                {paymentMethod === "EMI" && <img src="/icons/pos/emi.png?v=1" alt="" className="w-4 h-4 object-contain" draggable={false} />}
+                {paymentMethod === "CASH" && "Cash"}
+                {paymentMethod === "CARD" && "Bank / Card"}
+                {paymentMethod === "MOBILE" && "Mobile Wallet"}
+                {paymentMethod === "CREDIT" && "Credit"}
+                {paymentMethod === "EMI" && "EMI"}
+              </span>
+              <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${paymentOpen ? "rotate-180" : ""}`} />
+            </button>
+            {paymentOpen && (
+              <div className="grid grid-cols-2 gap-1.5 mt-1.5">
+                {[
+                  { id: "CASH", label: "Cash", icon: "cash.png" },
+                  { id: "CARD", label: "Bank / Card", icon: "bank.png" },
+                  { id: "MOBILE", label: "Mobile Wallet", icon: "wallet.png" },
+                  { id: "CREDIT", label: "Credit", icon: "credit.png" },
+                  { id: "EMI", label: "EMI", icon: "emi.png" },
+                ].map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => {
+                      setPaymentMethod(p.id);
+                      setPaymentOpen(false);
+                    }}
+                    className={`flex items-center justify-center gap-1.5 p-2.5 rounded-lg border transition-all ${
+                      paymentMethod === p.id
+                        ? "bg-primary/10 border-primary text-primary font-bold shadow"
+                        : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+                    }`}
+                  >
+                    <img src={`/icons/pos/${p.icon}`} alt="" className="w-4 h-4 object-contain" draggable={false} />
+                    <span className="text-[10px] font-bold">{p.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Amount Paid input */}
