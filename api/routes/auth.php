@@ -1307,52 +1307,51 @@ function auth_import_json_string(string $json): void
     $pdo = Database::pdo();
     $ownerId = tenant_owner_id();
     $importBranchId = branch_id();
-    $backupOwnerId = $backup['meta']['ownerId'] ?? null;
-    $backupBranchId = $backup['meta']['branchId'] ?? null;
     $ownedTables = Tenant::OWNED_TABLES;
     $ownedLookup = [];
     foreach ($ownedTables as $t) {
         $ownedLookup[$t] = true;
     }
-
-    // Always treat import as cross-store: blank out backup IDs so existing
-    // data is never deleted and all rows get rewritten to the current user/branch.
-    $backup['meta']['ownerId'] = '';
-    $backup['meta']['branchId'] = '';
-    $backupOwnerId = '';
-    $backupBranchId = '';
+    $branchTables = ['categories', 'brands', 'customers', 'suppliers', 'products', 'sales', 'stock_movements', 'transactions', 'daily_closings'];
 
     $isCrossStore = true;
-    error_log('[JSON BACKUP IMPORT] ownerId=' . $ownerId . ' — forced cross-store MERGE mode (branchId=' . ($importBranchId ?? 'null') . ')');
 
     $pdo->exec('SET FOREIGN_KEY_CHECKS=0');
     $pdo->exec('SET NAMES utf8mb4');
 
-    // Only delete existing data when restoring to the SAME store.
-    // For cross-store imports, MERGE data (don't delete the target store's data).
-    if (!$isCrossStore) {
+    // Delete only the selected branch's data (when a branch is selected).
+    // This clears the store before importing new data without touching other stores.
+    if ($importBranchId) {
         $cleanupOrder = [
             'emi_installments', 'sale_return_items', 'sale_returns', 'sale_emis',
             'sale_items', 'purchase_items', 'customer_credit_payments', 'supplier_payments',
             'activity_logs', 'stock_movements', 'branch_stocks',
             'warranty_claims', 'repair_jobs', 'daily_closings', 'transactions', 'expenses',
             'sales', 'purchase_orders', 'products', 'suppliers', 'customers',
-            'categories', 'brands', 'bank_accounts', 'system_settings', 'branches',
+            'categories', 'brands', 'bank_accounts', 'system_settings',
         ];
         foreach ($cleanupOrder as $table) {
             try {
                 if (isset($ownedLookup[$table])) {
-                    $pdo->prepare("DELETE FROM `{$table}` WHERE owner_id = ?")->execute([$ownerId]);
+                    // Tables with branch_id: scope by branch
+                    if (in_array($table, $branchTables, true)) {
+                        $pdo->prepare("DELETE FROM `{$table}` WHERE owner_id = ? AND branch_id = ?")->execute([$ownerId, $importBranchId]);
+                    } else {
+                        // Tables without branch_id (e.g. bank_accounts, system_settings):
+                        // these aren't per-store, so we delete all for this owner
+                        // so the import can insert fresh ones
+                        $pdo->prepare("DELETE FROM `{$table}` WHERE owner_id = ?")->execute([$ownerId]);
+                    }
                 } elseif ($table === 'branch_stocks') {
-                    $pdo->prepare("DELETE bs FROM branch_stocks bs JOIN branches b ON b.id = bs.branch_id WHERE b.owner_id = ?")->execute([$ownerId]);
+                    $pdo->prepare("DELETE bs FROM branch_stocks bs JOIN branches b ON b.id = bs.branch_id WHERE b.owner_id = ? AND bs.branch_id = ?")->execute([$ownerId, $importBranchId]);
                 } elseif (in_array($table, ['sale_items', 'sale_returns', 'sale_return_items', 'sale_emis', 'emi_installments'], true)) {
-                    $pdo->prepare("DELETE FROM `{$table}` WHERE sale_id IN (SELECT id FROM sales WHERE owner_id = ?)")->execute([$ownerId]);
+                    $pdo->prepare("DELETE FROM `{$table}` WHERE sale_id IN (SELECT id FROM sales WHERE owner_id = ? AND branch_id = ?)")->execute([$ownerId, $importBranchId]);
                 } elseif ($table === 'purchase_items') {
-                    $pdo->prepare("DELETE FROM `{$table}` WHERE purchase_order_id IN (SELECT id FROM purchase_orders WHERE owner_id = ?)")->execute([$ownerId]);
+                    $pdo->prepare("DELETE FROM `{$table}` WHERE purchase_order_id IN (SELECT id FROM purchase_orders WHERE owner_id = ? AND branch_id = ?)")->execute([$ownerId, $importBranchId]);
                 } elseif ($table === 'customer_credit_payments') {
-                    $pdo->prepare("DELETE FROM `{$table}` WHERE customer_id IN (SELECT id FROM customers WHERE owner_id = ?)")->execute([$ownerId]);
+                    $pdo->prepare("DELETE FROM `{$table}` WHERE customer_id IN (SELECT id FROM customers WHERE owner_id = ? AND branch_id = ?)")->execute([$ownerId, $importBranchId]);
                 } elseif ($table === 'supplier_payments') {
-                    $pdo->prepare("DELETE FROM `{$table}` WHERE supplier_id IN (SELECT id FROM suppliers WHERE owner_id = ?)")->execute([$ownerId]);
+                    $pdo->prepare("DELETE FROM `{$table}` WHERE supplier_id IN (SELECT id FROM suppliers WHERE owner_id = ? AND branch_id = ?)")->execute([$ownerId, $importBranchId]);
                 }
             } catch (Throwable $e) {
                 // table may not exist yet
@@ -1436,6 +1435,11 @@ function auth_import_json_string(string $json): void
         if (!isset($backupData[$table]) || $table === 'users' || empty($backupData[$table])) {
             continue;
         }
+        // Skip branches table when importing into a selected branch —
+        // we use the existing branch rather than creating a new one.
+        if ($table === 'branches' && $importBranchId) {
+            continue;
+        }
         $rows = $backupData[$table];
 
         $columns = array_keys($rows[0]);
@@ -1457,11 +1461,6 @@ function auth_import_json_string(string $json): void
                     $val = $ownerId;
                 }
 
-                // Rewrite branch_id consistently across ALL tables (owned + junction)
-                if ($col === 'branch_id' && $importBranchId && $isCrossStore) {
-                    $val = $importBranchId;
-                }
-
                 // Remap primary key (id) using UUID mapping
                 if ($col === 'id' && isset($tableUuidMap[$val])) {
                     $val = $tableUuidMap[$val];
@@ -1473,6 +1472,12 @@ function auth_import_json_string(string $json): void
                     if (isset($uuidMap[$refTable][$val])) {
                         $val = $uuidMap[$refTable][$val];
                     }
+                }
+
+                // Rewrite branch_id LAST so it always points to the selected branch,
+                // overriding any FK remapping that may have changed it.
+                if ($col === 'branch_id' && $importBranchId && $isCrossStore) {
+                    $val = $importBranchId;
                 }
 
                 $values[] = $val;
