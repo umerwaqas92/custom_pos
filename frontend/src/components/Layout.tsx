@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useStore, Branch } from "../store/useStore";
@@ -430,20 +430,14 @@ export default function Layout() {
             </button>
             <span className="text-xs md:text-sm font-semibold text-muted-foreground hidden sm:inline">Store Branch:</span>
             {user && (user.role === "OWNER" || user.role === "MANAGER") ? (
-              <select
-                value={selectedBranchId || ""}
-                onChange={(e) => {
-                  setSelectedBranchId(e.target.value);
+              <BranchDropdown
+                branches={branches}
+                selectedBranchId={selectedBranchId}
+                onSelect={(id) => {
+                  setSelectedBranchId(id);
                   window.location.reload();
                 }}
-                className="bg-secondary text-foreground text-sm font-bold border border-border px-3 py-1.5 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
-              >
-                {branches.map(b => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
+              />
             ) : (
               <span className="text-sm font-bold bg-secondary px-3 py-1.5 rounded-lg border border-border">
                 {activeBranch?.name || "Loading..."}
@@ -620,6 +614,59 @@ export default function Layout() {
               </button>
             </form>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Branch Dropdown ───────────────────────────── */
+function BranchDropdown({ branches, selectedBranchId, onSelect }: {
+  branches: Branch[];
+  selectedBranchId: string | null;
+  onSelect: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const current = branches.find(b => b.id === selectedBranchId);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 bg-secondary text-foreground text-sm font-bold border border-border px-3 py-1.5 rounded-lg hover:bg-secondary/80 transition"
+      >
+        {current?.name || "Select Branch"}
+        <svg className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute z-50 top-full right-0 mt-1 bg-card border border-border rounded-xl shadow-xl min-w-[14rem] overflow-hidden">
+          {branches.map(b => (
+            <button
+              key={b.id}
+              type="button"
+              onClick={() => { onSelect(b.id); setOpen(false); }}
+              className={`w-full text-left px-3 py-2 text-sm transition ${
+                b.id === selectedBranchId
+                  ? "bg-primary/10 text-primary font-bold"
+                  : "text-foreground hover:bg-secondary"
+              }`}
+            >
+              {b.name}
+            </button>
+          ))}
         </div>
       )}
     </div>
