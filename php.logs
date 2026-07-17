@@ -11283,3 +11283,5 @@
 [16-Jul-2026 14:06:54 UTC] [2026-07-16 14:06:54] → GET /api/auth/users | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
 [16-Jul-2026 14:06:54 UTC] [2026-07-16 14:06:54] ← GET /api/auth/users → 200 (133.6ms | 2MB)
 [Thu Jul 16 19:06:54 2026] [::1]:64815 Closing
+[17-Jul-2026 12:08:03 UTC] [2026-07-17 12:08:03] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 12:08:03 UTC] [2026-07-17 12:08:03] ← GET /api/inventory/alerts → 200 (1.6ms | 2MB)
