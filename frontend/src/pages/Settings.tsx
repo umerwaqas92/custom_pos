@@ -79,7 +79,7 @@ const Modal = ({ title, onClose, onSubmit, children, submitLabel = "Save" }: {
 );
 
 export default function Settings() {
-  const { addNotification, gstEnabled, gstRate, setGstSettings, setBranches: setStoreBranches, user } = useStore();
+  const { addNotification, gstEnabled, gstRate, setGstSettings, setBranches: setStoreBranches, user, selectedBranchId } = useStore();
   const [activeTab, setActiveTab] = useState<TabId>("shops");
   const isOwner = user?.role === "OWNER" || user?.role === "SUPER_ADMIN";
   const isReadOnly = user?.role === "SUPER_ADMIN";
@@ -94,7 +94,7 @@ export default function Settings() {
   const [addOpen, setAddOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [newBranch, setNewBranch] = useState({ name: "", address: "", phone: "" });
-  const [selectedBranchId, setSelectedBranchId] = useState("");
+  const [editingBranchId, setEditingBranchId] = useState("");
   const [editBranch, setEditBranch] = useState({ name: "", address: "", phone: "" });
 
   // ─── Backup State ─────────────────────────────────────────────────────────
@@ -305,7 +305,7 @@ export default function Settings() {
   };
 
   const handleOpenEdit = (b: any) => {
-    setSelectedBranchId(b.id);
+    setEditingBranchId(b.id);
     setEditBranch({ name: b.name || "", address: b.address || "", phone: b.phone || "" });
     setEditOpen(true);
   };
@@ -318,7 +318,7 @@ export default function Settings() {
     }
     if (!editBranch.name) return addNotification("Shop name is required.", "warning");
     try {
-      await axios.put(`/api/auth/branches/${selectedBranchId}`, editBranch);
+      await axios.put(`/api/auth/branches/${editingBranchId}`, editBranch);
       addNotification("Shop details updated.", "success");
       setEditOpen(false);
       loadBranches();
@@ -558,18 +558,27 @@ export default function Settings() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {branches.map((b) => (
-            <div key={b.id} className="group bg-card border border-border rounded-2xl p-5 space-y-4 hover:border-primary/40 hover:shadow-md transition-all">
+            <div key={b.id} className={`group bg-card border rounded-2xl p-5 space-y-4 transition-all ${b.id === selectedBranchId ? "border-primary/50 ring-1 ring-primary/20 shadow-md" : "border-border hover:border-primary/40 hover:shadow-md"}`}>
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <Store className="w-4 h-4 text-primary" />
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${b.id === selectedBranchId ? "bg-primary/20" : "bg-primary/10"}`}>
+                    <Store className={`w-4 h-4 ${b.id === selectedBranchId ? "text-primary" : "text-primary"}`} />
                   </div>
                   <div>
                     <h3 className="font-extrabold text-sm text-foreground leading-tight">{b.name}</h3>
-                    <p className="text-[10px] text-muted-foreground">Branch</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {b.id === selectedBranchId ? (
+                        <span className="text-primary font-bold">Selected Branch</span>
+                      ) : (
+                        "Branch"
+                      )}
+                    </p>
                   </div>
                 </div>
-                {!isReadOnly && (
+                {b.id === selectedBranchId && (
+                  <span className="text-[10px] font-extrabold bg-primary/15 text-primary border border-primary/25 px-2 py-0.5 rounded-lg">Active</span>
+                )}
+                {!isReadOnly && b.id !== selectedBranchId && (
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button onClick={() => handleOpenEdit(b)}
                       className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-primary transition" title="Edit">
