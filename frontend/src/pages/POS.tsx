@@ -757,7 +757,7 @@ export default function POS() {
             <button
               type="button"
               onClick={() => setCustModalOpen(true)}
-              className="w-full py-2 bg-primary text-white hover:bg-primary/95 rounded-xl transition flex items-center justify-center gap-1.5 text-xs font-bold shadow-sm"
+              className="w-full py-2 bg-secondary/70 border border-border hover:bg-secondary text-foreground rounded-xl transition flex items-center justify-center gap-1.5 text-xs font-bold shadow-sm"
               title="Add New Customer"
             >
               <Plus className="w-3.5 h-3.5" /> Add New Customer
