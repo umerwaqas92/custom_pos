@@ -584,13 +584,8 @@ export default function POS() {
       <div className={`${mobileTab === "cart" ? "flex" : "hidden md:flex"} w-full md:w-96 bg-card border border-border rounded-2xl flex flex-col p-4 h-full min-h-0`}>
 
         {/* Cart Header */}
-        <div className="flex items-center justify-between border-b border-border pb-3">
-          <div className="flex items-center gap-2">
-            <span className="w-7 h-7 rounded-lg bg-primary/10 p-1 ring-1 ring-primary/15 flex items-center justify-center">
-              <img src="/icons/pos/cart.png?v=1" alt="" className="w-full h-full object-contain" draggable={false} />
-            </span>
-            <h3 className="font-bold text-sm">Shopping Cart ({cart.length})</h3>
-          </div>
+        <div className="flex items-center justify-between pb-2">
+          <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">Cart ({cart.length})</span>
           {cart.length > 0 && (
             <button onClick={clearCart} className="text-xs text-destructive hover:underline flex items-center gap-1">
               Clear All
@@ -615,7 +610,7 @@ export default function POS() {
                     <p className="text-[10px] text-muted-foreground">SKU: {item.sku} &middot; <strong className="text-foreground/80">List: Rs. {Number(item.sellingPrice).toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong></p>
                   </div>
                   <button onClick={() => removeFromCart(item.productId)} className="text-muted-foreground hover:text-destructive shrink-0">
-                    <Trash2 className="w-4 h-4" />
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
 
