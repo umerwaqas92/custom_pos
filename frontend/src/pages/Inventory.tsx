@@ -458,7 +458,14 @@ export default function Inventory() {
           </button>
           
           <button
-            onClick={() => setAdjustOpen(true)}
+            onClick={() => {
+              if (selectedIds.size > 0) {
+                const rows: Record<string, string> = {};
+                selectedIds.forEach(id => { rows[id] = ""; });
+                setAdjustmentRows(rows);
+              }
+              setAdjustOpen(true);
+            }}
             className="border border-border bg-secondary hover:bg-secondary/80 text-foreground text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition"
           >
             <img src="/icons/inventory/adjust.png?v=1" alt="" className="w-4 h-4 object-contain" draggable={false} /> Stock Adjust
@@ -1021,24 +1028,23 @@ export default function Inventory() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/50">
-                    {products
-                      .filter((p) => {
-                        if (!adjustmentSearch) return true;
-                        const q = adjustmentSearch.toLowerCase();
-                        return p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q) || (p.barcode && p.barcode.includes(q));
-                      })
-                      .length === 0 ? (
-                      <tr>
-                        <td colSpan={4} className="py-8 text-center text-muted-foreground">No products found.</td>
-                      </tr>
-                    ) : (
-                      products
-                        .filter((p) => {
-                          if (!adjustmentSearch) return true;
-                          const q = adjustmentSearch.toLowerCase();
-                          return p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q) || (p.barcode && p.barcode.includes(q));
-                        })
-                        .map((p) => {
+                    {(() => {
+                      const baseProducts = selectedIds.size > 0
+                        ? products.filter(p => selectedIds.has(p.id))
+                        : products;
+                      const filtered = adjustmentSearch
+                        ? baseProducts.filter(p =>
+                            p.name.toLowerCase().includes(adjustmentSearch.toLowerCase()) ||
+                            p.sku.toLowerCase().includes(adjustmentSearch.toLowerCase()) ||
+                            (p.barcode && p.barcode.includes(adjustmentSearch))
+                          )
+                        : baseProducts;
+                      return filtered.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="py-8 text-center text-muted-foreground">No products found.</td>
+                        </tr>
+                      ) : (
+                        filtered.map((p) => {
                           const currentQty = getAvailableQty(p, selectedBranchId);
                           return (
                             <tr key={p.id} className="hover:bg-secondary/20 transition">
@@ -1060,7 +1066,8 @@ export default function Inventory() {
                             </tr>
                           );
                         })
-                    )}
+                      );
+                    })()}
                   </tbody>
                 </table>
               </div>
