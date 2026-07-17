@@ -8,7 +8,6 @@ import {
   ShoppingCart,
   Plus,
   Minus,
-  Trash2,
   User,
   CreditCard,
   Percent,
