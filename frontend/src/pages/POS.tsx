@@ -686,31 +686,35 @@ export default function POS() {
 
           {/* Cart Pricing Aggregates */}
           <div className="space-y-2">
-            <div className="flex justify-between text-foreground text-base font-bold">
-              <span>Subtotal:</span>
-              <span>Rs. {subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+            <div className="flex justify-between text-foreground items-center">
+              <span className="text-xs font-semibold text-muted-foreground">Subtotal:</span>
+              <span className="text-base font-bold">Rs. {subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
             </div>
 
             {/* Cart overall discount */}
-            <div className="flex justify-between text-foreground items-center text-base font-bold">
-              <span className="flex items-center gap-1">
+            <div className="flex justify-between text-foreground items-center">
+              <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
                 <img src="/icons/pos/discount.png?v=1" alt="" className="w-4 h-4 object-contain" draggable={false} />
-                Cart Discount (Rs.):
+                Cart Discount (Rs.,):
               </span>
               <input
-                type="number"
-                value={cartDiscount || ""}
-                onChange={(e) => setCartDiscount(Math.max(0, Number(e.target.value)))}
+                type="text"
+                inputMode="numeric"
+                value={cartDiscount.toLocaleString()}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/[^0-9]/g, "");
+                  setCartDiscount(raw ? Math.max(0, Number(raw)) : 0);
+                }}
                 className="w-24 bg-secondary text-right border border-border px-2 py-1 rounded text-sm font-bold focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
-            <div className="flex justify-between text-foreground text-base font-bold">
-              <span>Estimated Tax:</span>
-              <span>Rs. {finalTax.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+            <div className="flex justify-between text-foreground items-center">
+              <span className="text-xs font-semibold text-muted-foreground">Estimated Tax:</span>
+              <span className="text-base font-bold">Rs. {finalTax.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
             </div>
-            <div className="flex justify-between font-black text-lg text-foreground pt-2 border-t border-border/50">
-              <span>Grand Total:</span>
-              <span>Rs. {payableAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+            <div className="flex justify-between items-center pt-2 border-t border-border/50">
+              <span className="text-xs font-bold text-muted-foreground">Grand Total:</span>
+              <span className="text-xl font-black text-primary">Rs. {payableAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
             </div>
           </div>
 
