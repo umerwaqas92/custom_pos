@@ -599,7 +599,7 @@ export default function POS() {
         </div>
 
         {/* Cart Item List */}
-        <div className="flex-1 overflow-y-auto divide-y divide-border/60 py-2 pr-1 space-y-4 min-h-0">
+        <div className="flex-1 overflow-y-auto divide-y divide-border/60 py-1 pr-1 min-h-0">
           {cart.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full py-16 text-center text-muted-foreground space-y-2">
               <img src="/icons/pos/cart.png?v=1" alt="" className="w-12 h-12 object-contain opacity-40" draggable={false} />
@@ -607,76 +607,48 @@ export default function POS() {
             </div>
           ) : (
             cart.map((item) => (
-              <div key={item.productId} className="py-2.5 space-y-2">
+              <div key={item.productId} className="py-1.5 space-y-1">
                 {/* Header row: name + SKU + trash */}
                 <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <h4 className="font-bold text-sm text-foreground truncate">{item.name}</h4>
-                    <p className="text-[10px] text-muted-foreground">SKU: {item.sku} &middot; List: Rs. {Number(item.sellingPrice).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                    <p className="text-[10px] text-muted-foreground">SKU: {item.sku} &middot; <strong className="text-foreground/80">List: Rs. {Number(item.sellingPrice).toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong></p>
                   </div>
                   <button onClick={() => removeFromCart(item.productId)} className="text-muted-foreground hover:text-destructive shrink-0">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
 
-                {/* Controls row: qty + sold-at + total */}
-                <div className="flex items-center justify-between gap-2">
+                {/* Controls row: qty + sold-at */}
+                <div className="flex items-center justify-between gap-1">
                   <div className="flex items-center border border-border rounded-lg bg-secondary">
-                    <button
-                      onClick={() => updateCartQty(item.productId, item.quantity - 1)}
-                      className="p-1.5 text-muted-foreground hover:text-foreground"
-                    >
+                    <button onClick={() => updateCartQty(item.productId, item.quantity - 1)} className="p-1 text-muted-foreground hover:text-foreground">
                       <Minus className="w-3.5 h-3.5" />
                     </button>
-                    <span className="px-3 text-sm font-bold">{item.quantity}</span>
-                    <button
-                      onClick={() => updateCartQty(item.productId, item.quantity + 1)}
-                      className="p-1.5 text-muted-foreground hover:text-foreground"
-                    >
+                    <span className="px-2.5 text-sm font-bold">{item.quantity}</span>
+                    <button onClick={() => updateCartQty(item.productId, item.quantity + 1)} className="p-1 text-muted-foreground hover:text-foreground">
                       <Plus className="w-3.5 h-3.5" />
                     </button>
                   </div>
                   <div className="flex items-center bg-secondary border border-border rounded text-sm">
-                    <span className="pl-2 text-muted-foreground font-bold">Rs.</span>
-                    <input
-                      type="number"
-                      min="0"
-                      value={item.soldPrice ?? item.sellingPrice}
-                      onChange={(e) => {
-                        const val = Number(e.target.value);
-                        updateCartItemDetails(item.productId, { soldPrice: val > 0 ? val : undefined });
-                      }}
-                      className="w-20 bg-transparent text-center py-1.5 font-bold text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary rounded [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    />
+                    <span className="pl-1.5 text-muted-foreground font-bold">Rs.</span>
+                    <input type="number" min="0" value={item.soldPrice ?? item.sellingPrice}
+                      onChange={(e) => { const val = Number(e.target.value); updateCartItemDetails(item.productId, { soldPrice: val > 0 ? val : undefined }); }}
+                      className="w-20 bg-transparent text-center py-1 font-bold text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary rounded [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
                   </div>
                 </div>
 
                 {/* S/N & IMEI toggle */}
-                <div className="flex items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setOpenSerials(prev => ({ ...prev, [item.productId]: !prev[item.productId] }))}
-                    className="text-[10px] text-primary hover:underline font-bold"
-                  >
-                    {openSerials[item.productId] ? "− Hide S/N & IMEI" : "+ S/N & IMEI"}
-                  </button>
-                </div>
+                <button type="button" onClick={() => setOpenSerials(prev => ({ ...prev, [item.productId]: !prev[item.productId] }))}
+                  className="text-[10px] text-primary hover:underline font-bold">
+                  {openSerials[item.productId] ? "− Hide S/N & IMEI" : "+ S/N & IMEI"}
+                </button>
                 {openSerials[item.productId] && (
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={item.serialNumber || ""}
-                      onChange={(e) => updateCartItemDetails(item.productId, { serialNumber: e.target.value })}
-                      placeholder="Serial No."
-                      className="flex-1 bg-secondary text-xs border border-border px-2 py-1.5 rounded focus:outline-none"
-                    />
-                    <input
-                      type="text"
-                      value={item.imei || ""}
-                      onChange={(e) => updateCartItemDetails(item.productId, { imei: e.target.value })}
-                      placeholder="IMEI"
-                      className="flex-1 bg-secondary text-xs border border-border px-2 py-1.5 rounded focus:outline-none"
-                    />
+                  <div className="flex gap-1.5">
+                    <input type="text" value={item.serialNumber || ""} onChange={(e) => updateCartItemDetails(item.productId, { serialNumber: e.target.value })}
+                      placeholder="Serial No." className="flex-1 bg-secondary text-[10px] border border-border px-1.5 py-1 rounded focus:outline-none" />
+                    <input type="text" value={item.imei || ""} onChange={(e) => updateCartItemDetails(item.productId, { imei: e.target.value })}
+                      placeholder="IMEI" className="flex-1 bg-secondary text-[10px] border border-border px-1.5 py-1 rounded focus:outline-none" />
                   </div>
                 )}
               </div>
@@ -685,12 +657,12 @@ export default function POS() {
         </div>
 
         {/* Customer & Totals Summary Panel */}
-        <div className="border-t border-border pt-4 space-y-3">
+        <div className="border-t border-border pt-2 space-y-1.5">
 
           {/* Customer Selection */}
-          <div className="space-y-1.5" ref={customerRef}>
-            <div className="relative flex items-center gap-2 bg-secondary/50 border border-border p-2 rounded-xl">
-              <img src="/icons/pos/customer.png?v=1" alt="" className="w-4 h-4 object-contain opacity-80 shrink-0" draggable={false} />
+          <div ref={customerRef} className="flex items-center gap-1">
+            <div className="relative flex-1 flex items-center gap-1.5 bg-secondary/50 border border-border p-1.5 rounded-lg">
+              <img src="/icons/pos/customer.png?v=1" alt="" className="w-3.5 h-3.5 object-contain opacity-80 shrink-0" draggable={false} />
               <input
                 type="text"
                 value={customerSearch}
@@ -701,158 +673,88 @@ export default function POS() {
                 }}
                 onFocus={() => setCustomerOpen(true)}
                 placeholder="Walk-in Customer"
-                className="flex-1 bg-transparent text-xs text-foreground focus:outline-none"
+                className="flex-1 bg-transparent text-[11px] text-foreground focus:outline-none"
               />
               {selectedCustId && !customerOpen && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedCustId("");
-                    setCustomerSearch("");
-                  }}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <X className="w-3.5 h-3.5" />
+                <button type="button" onClick={() => { setSelectedCustId(""); setCustomerSearch(""); }} className="text-muted-foreground hover:text-foreground">
+                  <X className="w-3 h-3" />
                 </button>
               )}
-            </div>
-            {customerOpen && (
-              <div className="relative">
-                <div className="absolute z-20 top-0 left-0 right-0 bg-card border border-border rounded-xl shadow-lg max-h-48 overflow-y-auto">
-                  <button
-                    type="button"
-                    className={`w-full text-left px-3 py-2 text-xs transition ${!selectedCustId && !customerSearch ? "bg-primary/10 text-primary" : "hover:bg-secondary text-foreground"}`}
-                    onClick={() => {
-                      setSelectedCustId("");
-                      setCustomerSearch("");
-                      setCustomerOpen(false);
-                    }}
-                  >
-                    Walk-in Customer
-                  </button>
-                  {customers
-                    .filter((c) => {
-                      if (!customerSearch) return true;
-                      const q = customerSearch.toLowerCase();
-                      return c.name.toLowerCase().includes(q) || c.phone.includes(q);
-                    })
-                    .map((c) => (
-                      <button
-                        key={c.id}
-                        type="button"
-                        className={`w-full text-left px-3 py-2 text-xs transition ${selectedCustId === c.id ? "bg-primary/10 text-primary" : "hover:bg-secondary text-foreground"}`}
-                        onClick={() => {
-                          setSelectedCustId(c.id);
-                          setCustomerSearch(c.name);
-                          setCustomerOpen(false);
-                        }}
-                      >
-                        <span className="font-medium">{c.name}</span>
-                        <span className="text-muted-foreground ml-1">({c.phone})</span>
-                        <span className="text-muted-foreground ml-1">- Due: Rs. {Number(c.creditBalance).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                      </button>
-                    ))}
-                  {customers.filter((c) => {
-                    if (!customerSearch) return true;
-                    const q = customerSearch.toLowerCase();
-                    return c.name.toLowerCase().includes(q) || c.phone.includes(q);
-                  }).length === 0 && (
-                    <div className="px-3 py-2 text-xs text-muted-foreground">No customers found.</div>
+              {customerOpen && (
+                <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-card border border-border rounded-xl shadow-lg max-h-40 overflow-y-auto">
+                  <button type="button" className={`w-full text-left px-2.5 py-1.5 text-[11px] transition ${!selectedCustId && !customerSearch ? "bg-primary/10 text-primary" : "hover:bg-secondary text-foreground"}`}
+                    onClick={() => { setSelectedCustId(""); setCustomerSearch(""); setCustomerOpen(false); }}>Walk-in Customer</button>
+                  {customers.filter(c => !customerSearch || c.name.toLowerCase().includes(customerSearch.toLowerCase()) || c.phone.includes(customerSearch)).map(c => (
+                    <button key={c.id} type="button"
+                      className={`w-full text-left px-2.5 py-1.5 text-[11px] transition ${selectedCustId === c.id ? "bg-primary/10 text-primary" : "hover:bg-secondary text-foreground"}`}
+                      onClick={() => { setSelectedCustId(c.id); setCustomerSearch(c.name); setCustomerOpen(false); }}>
+                      <span className="font-medium">{c.name}</span>
+                      <span className="text-muted-foreground ml-1">({c.phone})</span>
+                    </button>
+                  ))}
+                  {customers.filter(c => !customerSearch || c.name.toLowerCase().includes(customerSearch.toLowerCase()) || c.phone.includes(customerSearch)).length === 0 && (
+                    <div className="px-2.5 py-1.5 text-[11px] text-muted-foreground">No customers found.</div>
                   )}
                 </div>
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={() => setCustModalOpen(true)}
-              className="w-full py-2 bg-secondary/70 border border-border hover:bg-secondary text-foreground rounded-xl transition flex items-center justify-center gap-1.5 text-xs font-bold shadow-sm"
-              title="Add New Customer"
-            >
-              <Plus className="w-3.5 h-3.5" /> Add New Customer
+              )}
+            </div>
+            <button type="button" onClick={() => setCustModalOpen(true)} className="p-1.5 bg-secondary/70 border border-border hover:bg-secondary text-foreground rounded-lg transition shrink-0" title="Add New Customer">
+              <Plus className="w-3.5 h-3.5" />
             </button>
           </div>
 
           {/* Cart Pricing Aggregates */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-foreground items-center">
-              <span className="text-xs font-semibold text-muted-foreground">Subtotal:</span>
-              <span className="text-base font-bold">Rs. {subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+          <div className="space-y-1">
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] font-semibold text-muted-foreground">Subtotal:</span>
+              <span className="text-sm font-bold">Rs. {subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
             </div>
-
-            {/* Cart overall discount */}
-            <div className="flex justify-between text-foreground items-center">
-              <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
-                <img src="/icons/pos/discount.png?v=1" alt="" className="w-4 h-4 object-contain" draggable={false} />
-                Cart Discount (Rs.,):
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] font-semibold text-muted-foreground flex items-center gap-1">
+                <img src="/icons/pos/discount.png?v=1" alt="" className="w-3 h-3 object-contain" draggable={false} />
+                Discount (Rs.,):
               </span>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={cartDiscount.toLocaleString()}
-                onChange={(e) => {
-                  const raw = e.target.value.replace(/[^0-9]/g, "");
-                  setCartDiscount(raw ? Math.max(0, Number(raw)) : 0);
-                }}
-                className="w-24 bg-secondary text-right border border-border px-2 py-1 rounded text-sm font-bold focus:outline-none focus:ring-1 focus:ring-primary"
-              />
+              <input type="text" inputMode="numeric" value={cartDiscount.toLocaleString()}
+                onChange={(e) => { const raw = e.target.value.replace(/[^0-9]/g, ""); setCartDiscount(raw ? Math.max(0, Number(raw)) : 0); }}
+                className="w-20 bg-secondary text-right border border-border px-1.5 py-0.5 rounded text-xs font-bold focus:outline-none focus:ring-1 focus:ring-primary" />
             </div>
             {gstEnabled && (
-              <div className="flex justify-between text-foreground items-center">
-                <span className="text-xs font-semibold text-muted-foreground">Estimated Tax:</span>
-                <span className="text-base font-bold">Rs. {finalTax.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              <div className="flex justify-between items-center">
+                <span className="text-[10px] font-semibold text-muted-foreground">Estimated Tax:</span>
+                <span className="text-sm font-bold">Rs. {finalTax.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
               </div>
             )}
-            <div className="flex justify-between items-center pt-2 border-t border-border/50">
-              <span className="text-xs font-bold text-muted-foreground">Grand Total:</span>
-              <span className="text-xl font-black text-primary">Rs. {payableAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+            <div className="flex justify-between items-center pt-1.5 border-t border-border/50">
+              <span className="text-[10px] font-bold text-muted-foreground">Grand Total:</span>
+              <span className="text-base font-black text-primary">Rs. {payableAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
             </div>
           </div>
 
           {/* Payment Method — collapsible */}
-          <div ref={paymentRef} className="space-y-1.5">
-            <label className="text-[10px] font-bold text-muted-foreground uppercase">Payment Method</label>
-            <button
-              type="button"
-              onClick={() => setPaymentOpen(!paymentOpen)}
-              className="w-full flex items-center justify-between bg-secondary/50 border border-border p-2.5 rounded-xl text-xs font-bold text-foreground hover:bg-secondary/70 transition"
-            >
-              <span className="flex items-center gap-2">
-                {paymentMethod === "CASH" && <img src="/icons/pos/cash.png?v=1" alt="" className="w-4 h-4 object-contain" draggable={false} />}
-                {paymentMethod === "CARD" && <img src="/icons/pos/bank.png?v=1" alt="" className="w-4 h-4 object-contain" draggable={false} />}
-                {paymentMethod === "MOBILE" && <img src="/icons/pos/wallet.png?v=1" alt="" className="w-4 h-4 object-contain" draggable={false} />}
-                {paymentMethod === "CREDIT" && <img src="/icons/pos/credit.png?v=1" alt="" className="w-4 h-4 object-contain" draggable={false} />}
-                {paymentMethod === "EMI" && <img src="/icons/pos/emi.png?v=1" alt="" className="w-4 h-4 object-contain" draggable={false} />}
-                {paymentMethod === "CASH" && "Cash"}
-                {paymentMethod === "CARD" && "Bank / Card"}
-                {paymentMethod === "MOBILE" && "Mobile Wallet"}
-                {paymentMethod === "CREDIT" && "Credit"}
-                {paymentMethod === "EMI" && "EMI"}
+          <div ref={paymentRef} className="space-y-1">
+            <button type="button" onClick={() => setPaymentOpen(!paymentOpen)}
+              className="w-full flex items-center justify-between bg-secondary/50 border border-border p-1.5 rounded-lg text-[11px] font-bold text-foreground hover:bg-secondary/70 transition">
+              <span className="flex items-center gap-1.5">
+                {paymentMethod === "CASH" && <img src="/icons/pos/cash.png?v=1" alt="" className="w-3.5 h-3.5 object-contain" draggable={false} />}
+                {paymentMethod === "CARD" && <img src="/icons/pos/bank.png?v=1" alt="" className="w-3.5 h-3.5 object-contain" draggable={false} />}
+                {paymentMethod === "MOBILE" && <img src="/icons/pos/wallet.png?v=1" alt="" className="w-3.5 h-3.5 object-contain" draggable={false} />}
+                {paymentMethod === "CREDIT" && <img src="/icons/pos/credit.png?v=1" alt="" className="w-3.5 h-3.5 object-contain" draggable={false} />}
+                {paymentMethod === "EMI" && <img src="/icons/pos/emi.png?v=1" alt="" className="w-3.5 h-3.5 object-contain" draggable={false} />}
+                {paymentMethod === "CASH" && "Cash"}{paymentMethod === "CARD" && "Bank / Card"}{paymentMethod === "MOBILE" && "Mobile Wallet"}{paymentMethod === "CREDIT" && "Credit"}{paymentMethod === "EMI" && "EMI"}
               </span>
-              <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${paymentOpen ? "rotate-180" : ""}`} />
+              <ChevronDown className={`w-3 h-3 text-muted-foreground transition-transform ${paymentOpen ? "rotate-180" : ""}`} />
             </button>
             {paymentOpen && (
-              <div className="grid grid-cols-2 gap-1.5 mt-1.5">
+              <div className="grid grid-cols-2 gap-1">
                 {[
-                  { id: "CASH", label: "Cash", icon: "cash.png" },
-                  { id: "CARD", label: "Bank / Card", icon: "bank.png" },
-                  { id: "MOBILE", label: "Mobile Wallet", icon: "wallet.png" },
-                  { id: "CREDIT", label: "Credit", icon: "credit.png" },
+                  { id: "CASH", label: "Cash", icon: "cash.png" }, { id: "CARD", label: "Bank / Card", icon: "bank.png" },
+                  { id: "MOBILE", label: "Mobile Wallet", icon: "wallet.png" }, { id: "CREDIT", label: "Credit", icon: "credit.png" },
                   { id: "EMI", label: "EMI", icon: "emi.png" },
-                ].map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => {
-                      setPaymentMethod(p.id);
-                      setPaymentOpen(false);
-                    }}
-                    className={`flex items-center justify-center gap-1.5 p-2.5 rounded-lg border transition-all ${
-                      paymentMethod === p.id
-                        ? "bg-primary/10 border-primary text-primary font-bold shadow"
-                        : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                    }`}
-                  >
-                    <img src={`/icons/pos/${p.icon}`} alt="" className="w-4 h-4 object-contain" draggable={false} />
+                ].map(p => (
+                  <button key={p.id} type="button" onClick={() => { setPaymentMethod(p.id); setPaymentOpen(false); }}
+                    className={`flex items-center justify-center gap-1 p-1.5 rounded-lg border transition-all ${
+                      paymentMethod === p.id ? "bg-primary/10 border-primary text-primary font-bold shadow" : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"}`}>
+                    <img src={`/icons/pos/${p.icon}`} alt="" className="w-3.5 h-3.5 object-contain" draggable={false} />
                     <span className="text-[10px] font-bold">{p.label}</span>
                   </button>
                 ))}
@@ -861,30 +763,20 @@ export default function POS() {
           </div>
 
           {/* Amount Paid input */}
-          <div className="space-y-1.5">
-            <div className="flex justify-between items-center text-sm font-extrabold text-foreground uppercase">
+          <div className="space-y-1">
+            <div className="flex justify-between items-center text-[10px] font-bold text-foreground">
               <span>Amount Paid (Rs.)</span>
               {Number(amountPaid) > payableAmount && (
-                <span className="text-emerald-400 font-extrabold normal-case text-sm">
-                  Change: Rs. {(Number(amountPaid) - payableAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </span>
+                <span className="text-emerald-400 font-bold normal-case">Change: Rs. {(Number(amountPaid) - payableAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
               )}
             </div>
-            <input
-              type="number"
-              value={amountPaid}
-              onChange={(e) => setAmountPaid(e.target.value)}
-              step="0.01"
-              className="w-full bg-secondary border border-border px-3 py-2.5 rounded-lg text-lg font-bold focus:outline-none focus:ring-2 focus:ring-primary text-foreground"
-            />
+            <input type="number" value={amountPaid} onChange={(e) => setAmountPaid(e.target.value)} step="0.01"
+              className="w-full bg-secondary border border-border px-2.5 py-1.5 rounded-lg text-sm font-bold focus:outline-none focus:ring-1 focus:ring-primary text-foreground" />
           </div>
 
-          <button
-            onClick={handleInstantCheckout}
-            disabled={cart.length === 0}
-            className="w-full bg-primary hover:bg-primary/95 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition disabled:opacity-50 text-xs shadow-md shadow-primary/10"
-          >
-            <img src="/icons/pos/checkout.png?v=1" alt="" className="w-4 h-4 object-contain brightness-0 invert" draggable={false} />
+          <button onClick={handleInstantCheckout} disabled={cart.length === 0}
+            className="w-full bg-primary hover:bg-primary/95 text-white font-bold py-2 rounded-lg flex items-center justify-center gap-1.5 transition disabled:opacity-50 text-[11px] shadow-md">
+            <img src="/icons/pos/checkout.png?v=1" alt="" className="w-3.5 h-3.5 object-contain brightness-0 invert" draggable={false} />
             Complete Sale & Invoice
           </button>
         </div>
