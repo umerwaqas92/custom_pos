@@ -16462,3 +16462,443 @@
 [17-Jul-2026 14:19:27 UTC] [2026-07-17 14:19:27] → GET /api/auth/users | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
 [17-Jul-2026 14:19:27 UTC] [2026-07-17 14:19:27] ← GET /api/auth/users → 200 (5ms | 2MB)
 [Fri Jul 17 19:19:27 2026] [::1]:49685 Closing
+[Fri Jul 17 19:20:06 2026] [::1]:49709 Accepted
+[Fri Jul 17 19:20:06 2026] [::1]:49710 Accepted
+[17-Jul-2026 14:20:06 UTC] [2026-07-17 14:20:06] → GET /api/auth/me | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:06 UTC] [2026-07-17 14:20:06] ← GET /api/auth/me → 200 (9.1ms | 2MB)
+[Fri Jul 17 19:20:06 2026] [::1]:49709 Closing
+[17-Jul-2026 14:20:06 UTC] [2026-07-17 14:20:06] → GET /api/settings | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:06 UTC] [2026-07-17 14:20:06] ← GET /api/settings → 200 (2.1ms | 2MB)
+[Fri Jul 17 19:20:06 2026] [::1]:49710 Closing
+[Fri Jul 17 19:20:06 2026] [::1]:49712 Accepted
+[17-Jul-2026 14:20:06 UTC] [2026-07-17 14:20:06] → GET /api/auth/me | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:06 UTC] [2026-07-17 14:20:06] ← GET /api/auth/me → 200 (2.4ms | 2MB)
+[Fri Jul 17 19:20:06 2026] [::1]:49712 Closing
+[Fri Jul 17 19:20:06 2026] [::1]:49714 Accepted
+[17-Jul-2026 14:20:06 UTC] [2026-07-17 14:20:06] → GET /api/settings | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:06 UTC] [2026-07-17 14:20:06] ← GET /api/settings → 200 (4.7ms | 2MB)
+[Fri Jul 17 19:20:06 2026] [::1]:49714 Closing
+[Fri Jul 17 19:20:06 2026] [::1]:49717 Accepted
+[17-Jul-2026 14:20:06 UTC] [2026-07-17 14:20:06] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:06 UTC] [2026-07-17 14:20:06] ← GET /api/auth/branches → 200 (1.7ms | 2MB)
+[Fri Jul 17 19:20:06 2026] [::1]:49717 Closing
+[Fri Jul 17 19:20:06 2026] [::1]:49719 Accepted
+[17-Jul-2026 14:20:06 UTC] [2026-07-17 14:20:06] → GET /api/auth/backup/list | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:06 UTC] [2026-07-17 14:20:06] ← GET /api/auth/backup/list → 200 (1.4ms | 2MB)
+[Fri Jul 17 19:20:06 2026] [::1]:49719 Closing
+[Fri Jul 17 19:20:06 2026] [::1]:49720 Accepted
+[17-Jul-2026 14:20:06 UTC] [2026-07-17 14:20:06] → GET /api/auth/users | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:06 UTC] [2026-07-17 14:20:06] ← GET /api/auth/users → 200 (2.7ms | 2MB)
+[Fri Jul 17 19:20:06 2026] [::1]:49720 Closing
+[Fri Jul 17 19:20:06 2026] [::1]:49722 Accepted
+[Fri Jul 17 19:20:06 2026] [::1]:49723 Accepted
+[17-Jul-2026 14:20:06 UTC] [2026-07-17 14:20:06] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:06 UTC] [2026-07-17 14:20:06] ← GET /api/inventory/alerts → 200 (3.1ms | 2MB)
+[Fri Jul 17 19:20:06 2026] [::1]:49722 Closing
+[Fri Jul 17 19:20:06 2026] [::1]:49725 Accepted
+[17-Jul-2026 14:20:06 UTC] [2026-07-17 14:20:06] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:06 UTC] [2026-07-17 14:20:06] ← GET /api/auth/branches → 200 (2.6ms | 2MB)
+[Fri Jul 17 19:20:06 2026] [::1]:49723 Closing
+[Fri Jul 17 19:20:06 2026] [::1]:49726 Accepted
+[17-Jul-2026 14:20:06 UTC] [2026-07-17 14:20:06] → GET /api/auth/backup/list | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:06 UTC] [2026-07-17 14:20:06] ← GET /api/auth/backup/list → 200 (1.3ms | 2MB)
+[Fri Jul 17 19:20:06 2026] [::1]:49725 Closing
+[Fri Jul 17 19:20:06 2026] [::1]:49728 Accepted
+[17-Jul-2026 14:20:06 UTC] [2026-07-17 14:20:06] → GET /api/auth/users | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:06 UTC] [2026-07-17 14:20:06] ← GET /api/auth/users → 200 (2.3ms | 2MB)
+[Fri Jul 17 19:20:06 2026] [::1]:49726 Closing
+[Fri Jul 17 19:20:06 2026] [::1]:49729 Accepted
+[17-Jul-2026 14:20:06 UTC] [2026-07-17 14:20:06] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:06 UTC] [2026-07-17 14:20:06] ← GET /api/inventory/alerts → 200 (5ms | 2MB)
+[Fri Jul 17 19:20:06 2026] [::1]:49728 Closing
+[17-Jul-2026 14:20:06 UTC] [2026-07-17 14:20:06] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:06 UTC] [2026-07-17 14:20:06] ← GET /api/auth/branches → 200 (4.2ms | 2MB)
+[Fri Jul 17 19:20:06 2026] [::1]:49729 Closing
+[Fri Jul 17 19:20:06 2026] [::1]:49733 Accepted
+[17-Jul-2026 14:20:06 UTC] [2026-07-17 14:20:06] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:06 UTC] [2026-07-17 14:20:06] ← GET /api/auth/branches → 200 (2.5ms | 2MB)
+[Fri Jul 17 19:20:06 2026] [::1]:49733 Closing
+[Fri Jul 17 19:20:08 2026] [::1]:49736 Accepted
+[17-Jul-2026 14:20:08 UTC] [2026-07-17 14:20:08] → GET /api/auth/me | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:08 UTC] [2026-07-17 14:20:08] ← GET /api/auth/me → 200 (16.2ms | 2MB)
+[Fri Jul 17 19:20:08 2026] [::1]:49736 Closing
+[Fri Jul 17 19:20:08 2026] [::1]:49738 Accepted
+[17-Jul-2026 14:20:08 UTC] [2026-07-17 14:20:08] → GET /api/settings | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:08 UTC] [2026-07-17 14:20:08] ← GET /api/settings → 200 (9.7ms | 2MB)
+[Fri Jul 17 19:20:08 2026] [::1]:49738 Closing
+[Fri Jul 17 19:20:08 2026] [::1]:49739 Accepted
+[17-Jul-2026 14:20:08 UTC] [2026-07-17 14:20:08] → GET /api/auth/me | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:08 UTC] [2026-07-17 14:20:08] ← GET /api/auth/me → 200 (4.2ms | 2MB)
+[Fri Jul 17 19:20:08 2026] [::1]:49739 Closing
+[Fri Jul 17 19:20:08 2026] [::1]:49741 Accepted
+[17-Jul-2026 14:20:08 UTC] [2026-07-17 14:20:08] → GET /api/settings | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:08 UTC] [2026-07-17 14:20:08] ← GET /api/settings → 200 (9ms | 2MB)
+[Fri Jul 17 19:20:08 2026] [::1]:49741 Closing
+[Fri Jul 17 19:20:08 2026] [::1]:49744 Accepted
+[17-Jul-2026 14:20:08 UTC] [2026-07-17 14:20:08] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:08 UTC] [2026-07-17 14:20:08] ← GET /api/auth/branches → 200 (3.5ms | 2MB)
+[Fri Jul 17 19:20:08 2026] [::1]:49744 Closing
+[Fri Jul 17 19:20:08 2026] [::1]:49746 Accepted
+[17-Jul-2026 14:20:08 UTC] [2026-07-17 14:20:08] → GET /api/auth/backup/list | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:08 UTC] [2026-07-17 14:20:08] ← GET /api/auth/backup/list → 200 (1.6ms | 2MB)
+[Fri Jul 17 19:20:08 2026] [::1]:49746 Closing
+[Fri Jul 17 19:20:08 2026] [::1]:49747 Accepted
+[Fri Jul 17 19:20:08 2026] [::1]:49748 Accepted
+[17-Jul-2026 14:20:08 UTC] [2026-07-17 14:20:08] → GET /api/auth/users | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:08 UTC] [2026-07-17 14:20:08] ← GET /api/auth/users → 200 (13.7ms | 2MB)
+[Fri Jul 17 19:20:08 2026] [::1]:49747 Closing
+[Fri Jul 17 19:20:08 2026] [::1]:49749 Accepted
+[17-Jul-2026 14:20:08 UTC] [2026-07-17 14:20:08] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:08 UTC] [2026-07-17 14:20:08] ← GET /api/inventory/alerts → 200 (8.9ms | 2MB)
+[Fri Jul 17 19:20:08 2026] [::1]:49748 Closing
+[Fri Jul 17 19:20:08 2026] [::1]:49751 Accepted
+[17-Jul-2026 14:20:08 UTC] [2026-07-17 14:20:08] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:08 UTC] [2026-07-17 14:20:08] ← GET /api/auth/branches → 200 (2.5ms | 2MB)
+[Fri Jul 17 19:20:08 2026] [::1]:49749 Closing
+[Fri Jul 17 19:20:08 2026] [::1]:49753 Accepted
+[17-Jul-2026 14:20:08 UTC] [2026-07-17 14:20:08] → GET /api/auth/backup/list | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:08 UTC] [2026-07-17 14:20:08] ← GET /api/auth/backup/list → 200 (1.1ms | 2MB)
+[Fri Jul 17 19:20:08 2026] [::1]:49751 Closing
+[Fri Jul 17 19:20:08 2026] [::1]:49754 Accepted
+[17-Jul-2026 14:20:08 UTC] [2026-07-17 14:20:08] → GET /api/auth/users | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:08 UTC] [2026-07-17 14:20:08] ← GET /api/auth/users → 200 (2.9ms | 2MB)
+[Fri Jul 17 19:20:08 2026] [::1]:49753 Closing
+[Fri Jul 17 19:20:08 2026] [::1]:49757 Accepted
+[17-Jul-2026 14:20:08 UTC] [2026-07-17 14:20:08] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:08 UTC] [2026-07-17 14:20:08] ← GET /api/inventory/alerts → 200 (2.3ms | 2MB)
+[Fri Jul 17 19:20:08 2026] [::1]:49754 Closing
+[17-Jul-2026 14:20:08 UTC] [2026-07-17 14:20:08] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:08 UTC] [2026-07-17 14:20:08] ← GET /api/auth/branches → 200 (4.2ms | 2MB)
+[Fri Jul 17 19:20:08 2026] [::1]:49757 Closing
+[Fri Jul 17 19:20:08 2026] [::1]:49761 Accepted
+[17-Jul-2026 14:20:08 UTC] [2026-07-17 14:20:08] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:08 UTC] [2026-07-17 14:20:08] ← GET /api/auth/branches → 200 (10.8ms | 2MB)
+[Fri Jul 17 19:20:08 2026] [::1]:49761 Closing
+[Fri Jul 17 19:20:10 2026] [::1]:49764 Accepted
+[17-Jul-2026 14:20:10 UTC] [2026-07-17 14:20:10] → GET /api/auth/me | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:10 UTC] [2026-07-17 14:20:10] ← GET /api/auth/me → 200 (18.6ms | 2MB)
+[Fri Jul 17 19:20:10 2026] [::1]:49764 Closing
+[Fri Jul 17 19:20:10 2026] [::1]:49765 Accepted
+[17-Jul-2026 14:20:10 UTC] [2026-07-17 14:20:10] → GET /api/settings | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:10 UTC] [2026-07-17 14:20:10] ← GET /api/settings → 200 (2.3ms | 2MB)
+[Fri Jul 17 19:20:10 2026] [::1]:49765 Closing
+[Fri Jul 17 19:20:10 2026] [::1]:49767 Accepted
+[17-Jul-2026 14:20:10 UTC] [2026-07-17 14:20:10] → GET /api/auth/me | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:10 UTC] [2026-07-17 14:20:10] ← GET /api/auth/me → 200 (2.3ms | 2MB)
+[Fri Jul 17 19:20:10 2026] [::1]:49767 Closing
+[Fri Jul 17 19:20:10 2026] [::1]:49769 Accepted
+[17-Jul-2026 14:20:10 UTC] [2026-07-17 14:20:10] → GET /api/settings | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:10 UTC] [2026-07-17 14:20:10] ← GET /api/settings → 200 (2.5ms | 2MB)
+[Fri Jul 17 19:20:10 2026] [::1]:49769 Closing
+[Fri Jul 17 19:20:10 2026] [::1]:49772 Accepted
+[Fri Jul 17 19:20:10 2026] [::1]:49773 Accepted
+[17-Jul-2026 14:20:10 UTC] [2026-07-17 14:20:10] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:10 UTC] [2026-07-17 14:20:10] ← GET /api/auth/branches → 200 (7ms | 2MB)
+[Fri Jul 17 19:20:10 2026] [::1]:49772 Closing
+[Fri Jul 17 19:20:10 2026] [::1]:49774 Accepted
+[17-Jul-2026 14:20:10 UTC] [2026-07-17 14:20:10] → GET /api/auth/backup/list | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:10 UTC] [2026-07-17 14:20:10] ← GET /api/auth/backup/list → 200 (5.9ms | 2MB)
+[Fri Jul 17 19:20:10 2026] [::1]:49773 Closing
+[Fri Jul 17 19:20:10 2026] [::1]:49775 Accepted
+[17-Jul-2026 14:20:10 UTC] [2026-07-17 14:20:10] → GET /api/auth/users | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:10 UTC] [2026-07-17 14:20:10] ← GET /api/auth/users → 200 (14.3ms | 2MB)
+[Fri Jul 17 19:20:10 2026] [::1]:49774 Closing
+[Fri Jul 17 19:20:10 2026] [::1]:49777 Accepted
+[17-Jul-2026 14:20:10 UTC] [2026-07-17 14:20:10] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:10 UTC] [2026-07-17 14:20:10] ← GET /api/inventory/alerts → 200 (3.3ms | 2MB)
+[Fri Jul 17 19:20:10 2026] [::1]:49775 Closing
+[Fri Jul 17 19:20:10 2026] [::1]:49778 Accepted
+[17-Jul-2026 14:20:10 UTC] [2026-07-17 14:20:10] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:10 UTC] [2026-07-17 14:20:10] ← GET /api/auth/branches → 200 (2.8ms | 2MB)
+[Fri Jul 17 19:20:10 2026] [::1]:49777 Closing
+[Fri Jul 17 19:20:10 2026] [::1]:49780 Accepted
+[17-Jul-2026 14:20:10 UTC] [2026-07-17 14:20:10] → GET /api/auth/backup/list | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:10 UTC] [2026-07-17 14:20:10] ← GET /api/auth/backup/list → 200 (1.7ms | 2MB)
+[Fri Jul 17 19:20:10 2026] [::1]:49778 Closing
+[Fri Jul 17 19:20:10 2026] [::1]:49782 Accepted
+[17-Jul-2026 14:20:10 UTC] [2026-07-17 14:20:10] → GET /api/auth/users | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:10 UTC] [2026-07-17 14:20:10] ← GET /api/auth/users → 200 (3.1ms | 2MB)
+[Fri Jul 17 19:20:10 2026] [::1]:49780 Closing
+[Fri Jul 17 19:20:10 2026] [::1]:49784 Accepted
+[17-Jul-2026 14:20:10 UTC] [2026-07-17 14:20:10] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:10 UTC] [2026-07-17 14:20:10] ← GET /api/inventory/alerts → 200 (2.6ms | 2MB)
+[Fri Jul 17 19:20:10 2026] [::1]:49782 Closing
+[17-Jul-2026 14:20:10 UTC] [2026-07-17 14:20:10] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:10 UTC] [2026-07-17 14:20:10] ← GET /api/auth/branches → 200 (2.4ms | 2MB)
+[Fri Jul 17 19:20:10 2026] [::1]:49784 Closing
+[Fri Jul 17 19:20:10 2026] [::1]:49788 Accepted
+[17-Jul-2026 14:20:10 UTC] [2026-07-17 14:20:10] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:10 UTC] [2026-07-17 14:20:10] ← GET /api/auth/branches → 200 (5.5ms | 2MB)
+[Fri Jul 17 19:20:10 2026] [::1]:49788 Closing
+[Fri Jul 17 19:20:16 2026] [::1]:49791 Accepted
+[17-Jul-2026 14:20:16 UTC] [2026-07-17 14:20:16] → OPTIONS /api/auth/data-counts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:16 UTC] [2026-07-17 14:20:16] ← OPTIONS /api/auth/data-counts → 204 (0.1ms | 2MB)
+[Fri Jul 17 19:20:16 2026] [::1]:49791 Closing
+[Fri Jul 17 19:20:16 2026] [::1]:49792 Accepted
+[17-Jul-2026 14:20:16 UTC] [2026-07-17 14:20:16] → GET /api/auth/data-counts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:16 UTC] [2026-07-17 14:20:16] ← GET /api/auth/data-counts → 200 (6.2ms | 2MB)
+[Fri Jul 17 19:20:16 2026] [::1]:49792 Closing
+[Fri Jul 17 19:20:18 2026] [::1]:49801 Accepted
+[17-Jul-2026 14:20:18 UTC] [2026-07-17 14:20:18] → GET /api/auth/me | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:18 UTC] [2026-07-17 14:20:18] ← GET /api/auth/me → 200 (9.6ms | 2MB)
+[Fri Jul 17 19:20:18 2026] [::1]:49801 Closing
+[Fri Jul 17 19:20:18 2026] [::1]:49803 Accepted
+[17-Jul-2026 14:20:18 UTC] [2026-07-17 14:20:18] → GET /api/settings | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:18 UTC] [2026-07-17 14:20:18] ← GET /api/settings → 200 (2.3ms | 2MB)
+[Fri Jul 17 19:20:18 2026] [::1]:49803 Closing
+[Fri Jul 17 19:20:18 2026] [::1]:49804 Accepted
+[17-Jul-2026 14:20:18 UTC] [2026-07-17 14:20:18] → GET /api/auth/me | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:18 UTC] [2026-07-17 14:20:18] ← GET /api/auth/me → 200 (3.3ms | 2MB)
+[Fri Jul 17 19:20:18 2026] [::1]:49804 Closing
+[Fri Jul 17 19:20:18 2026] [::1]:49806 Accepted
+[17-Jul-2026 14:20:18 UTC] [2026-07-17 14:20:18] → GET /api/settings | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:18 UTC] [2026-07-17 14:20:18] ← GET /api/settings → 200 (4.8ms | 2MB)
+[Fri Jul 17 19:20:18 2026] [::1]:49806 Closing
+[Fri Jul 17 19:20:18 2026] [::1]:49809 Accepted
+[17-Jul-2026 14:20:18 UTC] [2026-07-17 14:20:18] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:18 UTC] [2026-07-17 14:20:18] ← GET /api/auth/branches → 200 (3.2ms | 2MB)
+[Fri Jul 17 19:20:18 2026] [::1]:49809 Closing
+[Fri Jul 17 19:20:18 2026] [::1]:49811 Accepted
+[Fri Jul 17 19:20:18 2026] [::1]:49812 Accepted
+[17-Jul-2026 14:20:18 UTC] [2026-07-17 14:20:18] → GET /api/auth/backup/list | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:18 UTC] [2026-07-17 14:20:18] ← GET /api/auth/backup/list → 200 (2ms | 2MB)
+[Fri Jul 17 19:20:18 2026] [::1]:49811 Closing
+[Fri Jul 17 19:20:18 2026] [::1]:49813 Accepted
+[17-Jul-2026 14:20:18 UTC] [2026-07-17 14:20:18] → GET /api/auth/users | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:18 UTC] [2026-07-17 14:20:18] ← GET /api/auth/users → 200 (4.9ms | 2MB)
+[Fri Jul 17 19:20:18 2026] [::1]:49812 Closing
+[Fri Jul 17 19:20:18 2026] [::1]:49814 Accepted
+[17-Jul-2026 14:20:18 UTC] [2026-07-17 14:20:18] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:18 UTC] [2026-07-17 14:20:18] ← GET /api/inventory/alerts → 200 (4.6ms | 2MB)
+[Fri Jul 17 19:20:18 2026] [::1]:49813 Closing
+[Fri Jul 17 19:20:18 2026] [::1]:49815 Accepted
+[17-Jul-2026 14:20:18 UTC] [2026-07-17 14:20:18] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:18 UTC] [2026-07-17 14:20:18] ← GET /api/auth/branches → 200 (5.5ms | 2MB)
+[Fri Jul 17 19:20:18 2026] [::1]:49814 Closing
+[Fri Jul 17 19:20:18 2026] [::1]:49819 Accepted
+[17-Jul-2026 14:20:18 UTC] [2026-07-17 14:20:18] → GET /api/auth/backup/list | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:18 UTC] [2026-07-17 14:20:18] ← GET /api/auth/backup/list → 200 (1.9ms | 2MB)
+[Fri Jul 17 19:20:18 2026] [::1]:49815 Closing
+[17-Jul-2026 14:20:18 UTC] [2026-07-17 14:20:18] → GET /api/auth/users | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:18 UTC] [2026-07-17 14:20:18] ← GET /api/auth/users → 200 (5.1ms | 2MB)
+[Fri Jul 17 19:20:18 2026] [::1]:49819 Closing
+[Fri Jul 17 19:20:18 2026] [::1]:49821 Accepted
+[Fri Jul 17 19:20:18 2026] [::1]:49822 Accepted
+[17-Jul-2026 14:20:18 UTC] [2026-07-17 14:20:18] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:18 UTC] [2026-07-17 14:20:18] ← GET /api/inventory/alerts → 200 (4.8ms | 2MB)
+[Fri Jul 17 19:20:18 2026] [::1]:49821 Closing
+[17-Jul-2026 14:20:18 UTC] [2026-07-17 14:20:18] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:18 UTC] [2026-07-17 14:20:18] ← GET /api/auth/branches → 200 (2.8ms | 2MB)
+[Fri Jul 17 19:20:18 2026] [::1]:49822 Closing
+[Fri Jul 17 19:20:18 2026] [::1]:49825 Accepted
+[17-Jul-2026 14:20:18 UTC] [2026-07-17 14:20:18] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:18 UTC] [2026-07-17 14:20:18] ← GET /api/auth/branches → 200 (2.3ms | 2MB)
+[Fri Jul 17 19:20:18 2026] [::1]:49825 Closing
+[Fri Jul 17 19:20:35 2026] [::1]:49831 Accepted
+[17-Jul-2026 14:20:35 UTC] [2026-07-17 14:20:35] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:35 UTC] [2026-07-17 14:20:35] ← GET /api/auth/branches → 200 (1.5ms | 2MB)
+[Fri Jul 17 19:20:35 2026] [::1]:49831 Closing
+[Fri Jul 17 19:20:35 2026] [::1]:49833 Accepted
+[Fri Jul 17 19:20:35 2026] [::1]:49834 Accepted
+[17-Jul-2026 14:20:35 UTC] [2026-07-17 14:20:35] → GET /api/auth/backup/list | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:35 UTC] [2026-07-17 14:20:35] ← GET /api/auth/backup/list → 200 (0.8ms | 2MB)
+[Fri Jul 17 19:20:35 2026] [::1]:49833 Closing
+[17-Jul-2026 14:20:35 UTC] [2026-07-17 14:20:35] → GET /api/auth/users | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:35 UTC] [2026-07-17 14:20:35] ← GET /api/auth/users → 200 (1.9ms | 2MB)
+[Fri Jul 17 19:20:35 2026] [::1]:49834 Closing
+[Fri Jul 17 19:20:40 2026] [::1]:49836 Accepted
+[17-Jul-2026 14:20:40 UTC] [2026-07-17 14:20:40] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:40 UTC] [2026-07-17 14:20:40] ← GET /api/auth/branches → 200 (2.2ms | 2MB)
+[Fri Jul 17 19:20:40 2026] [::1]:49836 Closing
+[Fri Jul 17 19:20:40 2026] [::1]:49838 Accepted
+[17-Jul-2026 14:20:40 UTC] [2026-07-17 14:20:40] → GET /api/auth/backup/list | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:40 UTC] [2026-07-17 14:20:40] ← GET /api/auth/backup/list → 200 (1.4ms | 2MB)
+[Fri Jul 17 19:20:40 2026] [::1]:49838 Closing
+[Fri Jul 17 19:20:40 2026] [::1]:49839 Accepted
+[17-Jul-2026 14:20:40 UTC] [2026-07-17 14:20:40] → GET /api/auth/users | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:40 UTC] [2026-07-17 14:20:40] ← GET /api/auth/users → 200 (6.5ms | 2MB)
+[Fri Jul 17 19:20:40 2026] [::1]:49839 Closing
+[Fri Jul 17 19:20:48 2026] [::1]:49841 Accepted
+[17-Jul-2026 14:20:48 UTC] [2026-07-17 14:20:48] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:48 UTC] [2026-07-17 14:20:48] ← GET /api/auth/branches → 200 (2.2ms | 2MB)
+[Fri Jul 17 19:20:48 2026] [::1]:49841 Closing
+[Fri Jul 17 19:20:48 2026] [::1]:49842 Accepted
+[Fri Jul 17 19:20:48 2026] [::1]:49843 Accepted
+[17-Jul-2026 14:20:48 UTC] [2026-07-17 14:20:48] → GET /api/auth/backup/list | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:48 UTC] [2026-07-17 14:20:48] ← GET /api/auth/backup/list → 200 (1.6ms | 2MB)
+[Fri Jul 17 19:20:48 2026] [::1]:49842 Closing
+[Fri Jul 17 19:20:48 2026] [::1]:49845 Accepted
+[17-Jul-2026 14:20:48 UTC] [2026-07-17 14:20:48] → GET /api/auth/users | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:48 UTC] [2026-07-17 14:20:48] ← GET /api/auth/users → 200 (3.1ms | 2MB)
+[Fri Jul 17 19:20:48 2026] [::1]:49843 Closing
+[Fri Jul 17 19:20:48 2026] [::1]:49846 Accepted
+[17-Jul-2026 14:20:48 UTC] [2026-07-17 14:20:48] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:48 UTC] [2026-07-17 14:20:48] ← GET /api/auth/branches → 200 (3.2ms | 2MB)
+[Fri Jul 17 19:20:48 2026] [::1]:49845 Closing
+[Fri Jul 17 19:20:48 2026] [::1]:49848 Accepted
+[17-Jul-2026 14:20:48 UTC] [2026-07-17 14:20:48] → GET /api/auth/backup/list | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:48 UTC] [2026-07-17 14:20:48] ← GET /api/auth/backup/list → 200 (1.6ms | 2MB)
+[Fri Jul 17 19:20:48 2026] [::1]:49846 Closing
+[17-Jul-2026 14:20:48 UTC] [2026-07-17 14:20:48] → GET /api/auth/users | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:48 UTC] [2026-07-17 14:20:48] ← GET /api/auth/users → 200 (2.9ms | 2MB)
+[Fri Jul 17 19:20:48 2026] [::1]:49848 Closing
+[Fri Jul 17 19:20:56 2026] [::1]:49854 Accepted
+[Fri Jul 17 19:20:56 2026] [::1]:49855 Accepted
+[Fri Jul 17 19:20:56 2026] [::1]:49856 Accepted
+[17-Jul-2026 14:20:56 UTC] [2026-07-17 14:20:56] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:56 UTC] [2026-07-17 14:20:56] ← GET /api/auth/branches → 200 (1.5ms | 2MB)
+[Fri Jul 17 19:20:56 2026] [::1]:49854 Closing
+[17-Jul-2026 14:20:56 UTC] [2026-07-17 14:20:56] → GET /api/auth/backup/list | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:56 UTC] [2026-07-17 14:20:56] ← GET /api/auth/backup/list → 200 (19.1ms | 2MB)
+[Fri Jul 17 19:20:56 2026] [::1]:49855 Closing
+[17-Jul-2026 14:20:56 UTC] [2026-07-17 14:20:56] → GET /api/auth/users | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:20:56 UTC] [2026-07-17 14:20:56] ← GET /api/auth/users → 200 (3.9ms | 2MB)
+[Fri Jul 17 19:20:56 2026] [::1]:49856 Closing
+[Fri Jul 17 19:21:00 2026] [::1]:49864 Accepted
+[Fri Jul 17 19:21:00 2026] [::1]:49865 Accepted
+[17-Jul-2026 14:21:00 UTC] [2026-07-17 14:21:00] → GET /api/auth/me | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:21:00 UTC] [2026-07-17 14:21:00] ← GET /api/auth/me → 200 (11ms | 2MB)
+[Fri Jul 17 19:21:00 2026] [::1]:49864 Closing
+[17-Jul-2026 14:21:00 UTC] [2026-07-17 14:21:00] → GET /api/settings | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:21:00 UTC] [2026-07-17 14:21:00] ← GET /api/settings → 200 (3.5ms | 2MB)
+[Fri Jul 17 19:21:00 2026] [::1]:49865 Closing
+[Fri Jul 17 19:21:00 2026] [::1]:49867 Accepted
+[17-Jul-2026 14:21:00 UTC] [2026-07-17 14:21:00] → GET /api/auth/me | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:21:00 UTC] [2026-07-17 14:21:00] ← GET /api/auth/me → 200 (8.2ms | 2MB)
+[Fri Jul 17 19:21:00 2026] [::1]:49867 Closing
+[Fri Jul 17 19:21:00 2026] [::1]:49869 Accepted
+[17-Jul-2026 14:21:00 UTC] [2026-07-17 14:21:00] → GET /api/settings | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:21:00 UTC] [2026-07-17 14:21:00] ← GET /api/settings → 200 (3.5ms | 2MB)
+[Fri Jul 17 19:21:00 2026] [::1]:49869 Closing
+[Fri Jul 17 19:21:01 2026] [::1]:49872 Accepted
+[17-Jul-2026 14:21:01 UTC] [2026-07-17 14:21:01] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:21:01 UTC] [2026-07-17 14:21:01] ← GET /api/auth/branches → 200 (49.5ms | 2MB)
+[Fri Jul 17 19:21:01 2026] [::1]:49872 Closing
+[Fri Jul 17 19:21:01 2026] [::1]:49874 Accepted
+[Fri Jul 17 19:21:01 2026] [::1]:49875 Accepted
+[17-Jul-2026 14:21:01 UTC] [2026-07-17 14:21:01] → GET /api/auth/backup/list | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:21:01 UTC] [2026-07-17 14:21:01] ← GET /api/auth/backup/list → 200 (2ms | 2MB)
+[Fri Jul 17 19:21:01 2026] [::1]:49874 Closing
+[Fri Jul 17 19:21:01 2026] [::1]:49876 Accepted
+[17-Jul-2026 14:21:01 UTC] [2026-07-17 14:21:01] → GET /api/auth/users | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:21:01 UTC] [2026-07-17 14:21:01] ← GET /api/auth/users → 200 (41.5ms | 2MB)
+[Fri Jul 17 19:21:01 2026] [::1]:49875 Closing
+[Fri Jul 17 19:21:01 2026] [::1]:49877 Accepted
+[17-Jul-2026 14:21:01 UTC] [2026-07-17 14:21:01] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:21:01 UTC] [2026-07-17 14:21:01] ← GET /api/inventory/alerts → 200 (10.3ms | 2MB)
+[Fri Jul 17 19:21:01 2026] [::1]:49876 Closing
+[Fri Jul 17 19:21:01 2026] [::1]:49878 Accepted
+[17-Jul-2026 14:21:01 UTC] [2026-07-17 14:21:01] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:21:01 UTC] [2026-07-17 14:21:01] ← GET /api/auth/branches → 200 (11ms | 2MB)
+[Fri Jul 17 19:21:01 2026] [::1]:49877 Closing
+[Fri Jul 17 19:21:01 2026] [::1]:49880 Accepted
+[17-Jul-2026 14:21:01 UTC] [2026-07-17 14:21:01] → GET /api/auth/backup/list | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:21:01 UTC] [2026-07-17 14:21:01] ← GET /api/auth/backup/list → 200 (1.6ms | 2MB)
+[Fri Jul 17 19:21:01 2026] [::1]:49878 Closing
+[Fri Jul 17 19:21:01 2026] [::1]:49882 Accepted
+[17-Jul-2026 14:21:01 UTC] [2026-07-17 14:21:01] → GET /api/auth/users | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:21:01 UTC] [2026-07-17 14:21:01] ← GET /api/auth/users → 200 (17.9ms | 2MB)
+[Fri Jul 17 19:21:01 2026] [::1]:49880 Closing
+[Fri Jul 17 19:21:01 2026] [::1]:49884 Accepted
+[17-Jul-2026 14:21:01 UTC] [2026-07-17 14:21:01] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:21:01 UTC] [2026-07-17 14:21:01] ← GET /api/inventory/alerts → 200 (3.1ms | 2MB)
+[Fri Jul 17 19:21:01 2026] [::1]:49882 Closing
+[17-Jul-2026 14:21:01 UTC] [2026-07-17 14:21:01] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:21:01 UTC] [2026-07-17 14:21:01] ← GET /api/auth/branches → 200 (12.2ms | 2MB)
+[Fri Jul 17 19:21:01 2026] [::1]:49884 Closing
+[Fri Jul 17 19:21:01 2026] [::1]:49890 Accepted
+[17-Jul-2026 14:21:01 UTC] [2026-07-17 14:21:01] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:21:01 UTC] [2026-07-17 14:21:01] ← GET /api/auth/branches → 200 (2ms | 2MB)
+[Fri Jul 17 19:21:01 2026] [::1]:49890 Closing
+[Fri Jul 17 19:21:54 2026] [::1]:49930 Accepted
+[17-Jul-2026 14:21:54 UTC] [2026-07-17 14:21:54] → GET /api/auth/me | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:21:54 UTC] [2026-07-17 14:21:54] ← GET /api/auth/me → 200 (3.3ms | 2MB)
+[Fri Jul 17 19:21:54 2026] [::1]:49930 Closing
+[Fri Jul 17 19:21:54 2026] [::1]:49931 Accepted
+[17-Jul-2026 14:21:54 UTC] [2026-07-17 14:21:54] → GET /api/settings | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:21:54 UTC] [2026-07-17 14:21:54] ← GET /api/settings → 200 (3.1ms | 2MB)
+[Fri Jul 17 19:21:54 2026] [::1]:49931 Closing
+[Fri Jul 17 19:21:54 2026] [::1]:49933 Accepted
+[17-Jul-2026 14:21:54 UTC] [2026-07-17 14:21:54] → GET /api/auth/me | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:21:54 UTC] [2026-07-17 14:21:54] ← GET /api/auth/me → 200 (1.9ms | 2MB)
+[Fri Jul 17 19:21:54 2026] [::1]:49933 Closing
+[Fri Jul 17 19:21:54 2026] [::1]:49935 Accepted
+[17-Jul-2026 14:21:54 UTC] [2026-07-17 14:21:54] → GET /api/settings | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:21:54 UTC] [2026-07-17 14:21:54] ← GET /api/settings → 200 (1.8ms | 2MB)
+[Fri Jul 17 19:21:54 2026] [::1]:49935 Closing
+[Fri Jul 17 19:21:54 2026] [::1]:49938 Accepted
+[17-Jul-2026 14:21:54 UTC] [2026-07-17 14:21:54] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:21:54 UTC] [2026-07-17 14:21:54] ← GET /api/auth/branches → 200 (3.9ms | 2MB)
+[Fri Jul 17 19:21:54 2026] [::1]:49938 Closing
+[Fri Jul 17 19:21:54 2026] [::1]:49940 Accepted
+[Fri Jul 17 19:21:54 2026] [::1]:49941 Accepted
+[Fri Jul 17 19:21:54 2026] [::1]:49942 Accepted
+[17-Jul-2026 14:21:54 UTC] [2026-07-17 14:21:54] → GET /api/auth/backup/list | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:21:54 UTC] [2026-07-17 14:21:54] ← GET /api/auth/backup/list → 200 (2ms | 2MB)
+[Fri Jul 17 19:21:54 2026] [::1]:49940 Closing
+[Fri Jul 17 19:21:54 2026] [::1]:49943 Accepted
+[17-Jul-2026 14:21:54 UTC] [2026-07-17 14:21:54] → GET /api/auth/users | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:21:54 UTC] [2026-07-17 14:21:54] ← GET /api/auth/users → 200 (1.9ms | 2MB)
+[Fri Jul 17 19:21:54 2026] [::1]:49941 Closing
+[17-Jul-2026 14:21:54 UTC] [2026-07-17 14:21:54] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:21:54 UTC] [2026-07-17 14:21:54] ← GET /api/inventory/alerts → 200 (2.6ms | 2MB)
+[Fri Jul 17 19:21:54 2026] [::1]:49942 Closing
+[Fri Jul 17 19:21:54 2026] [::1]:49944 Accepted
+[17-Jul-2026 14:21:54 UTC] [2026-07-17 14:21:54] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:21:54 UTC] [2026-07-17 14:21:54] ← GET /api/auth/branches → 200 (1.9ms | 2MB)
+[Fri Jul 17 19:21:54 2026] [::1]:49943 Closing
+[Fri Jul 17 19:21:54 2026] [::1]:49947 Accepted
+[17-Jul-2026 14:21:54 UTC] [2026-07-17 14:21:54] → GET /api/auth/backup/list | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:21:54 UTC] [2026-07-17 14:21:54] ← GET /api/auth/backup/list → 200 (1.4ms | 2MB)
+[Fri Jul 17 19:21:54 2026] [::1]:49944 Closing
+[Fri Jul 17 19:21:54 2026] [::1]:49948 Accepted
+[17-Jul-2026 14:21:54 UTC] [2026-07-17 14:21:54] → GET /api/auth/users | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:21:54 UTC] [2026-07-17 14:21:54] ← GET /api/auth/users → 200 (3ms | 2MB)
+[Fri Jul 17 19:21:54 2026] [::1]:49947 Closing
+[Fri Jul 17 19:21:54 2026] [::1]:49950 Accepted
+[17-Jul-2026 14:21:54 UTC] [2026-07-17 14:21:54] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:21:54 UTC] [2026-07-17 14:21:54] ← GET /api/inventory/alerts → 200 (2.7ms | 2MB)
+[Fri Jul 17 19:21:54 2026] [::1]:49948 Closing
+[17-Jul-2026 14:21:54 UTC] [2026-07-17 14:21:54] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:21:54 UTC] [2026-07-17 14:21:54] ← GET /api/auth/branches → 200 (2.5ms | 2MB)
+[Fri Jul 17 19:21:54 2026] [::1]:49950 Closing
+[Fri Jul 17 19:21:54 2026] [::1]:49954 Accepted
+[17-Jul-2026 14:21:54 UTC] [2026-07-17 14:21:54] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:21:54 UTC] [2026-07-17 14:21:54] ← GET /api/auth/branches → 200 (3.5ms | 2MB)
+[Fri Jul 17 19:21:54 2026] [::1]:49954 Closing
+[Fri Jul 17 19:22:02 2026] [::1]:49956 Accepted
+[Fri Jul 17 19:22:02 2026] [::1]:49957 Accepted
+[Fri Jul 17 19:22:02 2026] [::1]:49958 Accepted
+[17-Jul-2026 14:22:02 UTC] [2026-07-17 14:22:02] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:22:02 UTC] [2026-07-17 14:22:02] ← GET /api/auth/branches → 200 (1.6ms | 2MB)
+[Fri Jul 17 19:22:02 2026] [::1]:49956 Closing
+[17-Jul-2026 14:22:02 UTC] [2026-07-17 14:22:02] → GET /api/auth/backup/list | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:22:02 UTC] [2026-07-17 14:22:02] ← GET /api/auth/backup/list → 200 (0.9ms | 2MB)
+[Fri Jul 17 19:22:02 2026] [::1]:49957 Closing
+[17-Jul-2026 14:22:02 UTC] [2026-07-17 14:22:02] → GET /api/auth/users | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:22:02 UTC] [2026-07-17 14:22:02] ← GET /api/auth/users → 200 (2ms | 2MB)
+[Fri Jul 17 19:22:02 2026] [::1]:49958 Closing
+[Fri Jul 17 19:22:18 2026] [::1]:49964 Accepted
+[17-Jul-2026 14:22:18 UTC] [2026-07-17 14:22:18] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:22:18 UTC] [2026-07-17 14:22:18] ← GET /api/auth/branches → 200 (2.7ms | 2MB)
+[Fri Jul 17 19:22:18 2026] [::1]:49964 Closing
+[Fri Jul 17 19:22:18 2026] [::1]:49965 Accepted
+[Fri Jul 17 19:22:18 2026] [::1]:49968 Accepted
+[17-Jul-2026 14:22:18 UTC] [2026-07-17 14:22:18] → GET /api/auth/backup/list | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:22:18 UTC] [2026-07-17 14:22:18] ← GET /api/auth/backup/list → 200 (1.6ms | 2MB)
+[Fri Jul 17 19:22:18 2026] [::1]:49965 Closing
+[17-Jul-2026 14:22:18 UTC] [2026-07-17 14:22:18] → GET /api/auth/users | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:22:18 UTC] [2026-07-17 14:22:18] ← GET /api/auth/users → 200 (3ms | 2MB)
+[Fri Jul 17 19:22:18 2026] [::1]:49968 Closing
+[Fri Jul 17 19:22:27 2026] [::1]:49971 Accepted
+[Fri Jul 17 19:22:27 2026] [::1]:49972 Accepted
+[17-Jul-2026 14:22:27 UTC] [2026-07-17 14:22:27] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:22:27 UTC] [2026-07-17 14:22:27] ← GET /api/auth/branches → 200 (2.2ms | 2MB)
+[Fri Jul 17 19:22:27 2026] [::1]:49971 Closing
+[Fri Jul 17 19:22:27 2026] [::1]:49973 Accepted
+[17-Jul-2026 14:22:27 UTC] [2026-07-17 14:22:27] → GET /api/auth/backup/list | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:22:27 UTC] [2026-07-17 14:22:27] ← GET /api/auth/backup/list → 200 (3.6ms | 2MB)
+[Fri Jul 17 19:22:27 2026] [::1]:49972 Closing
+[17-Jul-2026 14:22:27 UTC] [2026-07-17 14:22:27] → GET /api/auth/users | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[17-Jul-2026 14:22:27 UTC] [2026-07-17 14:22:27] ← GET /api/auth/users → 200 (4ms | 2MB)
+[Fri Jul 17 19:22:27 2026] [::1]:49973 Closing

@@ -13,12 +13,8 @@ import {
   Info,
   Download,
   Building2,
-  ToggleLeft,
   ToggleRight,
   RotateCcw,
-  Upload,
-  CheckCircle2,
-  Clock,
   HardDrive,
   ChevronRight,
   AlertTriangle,
@@ -28,13 +24,12 @@ import {
   Shield,
 } from "lucide-react";
 
-type TabId = "shops" | "staff" | "tax" | "backup" | "danger";
+type TabId = "shops" | "staff" | "tax" | "danger";
 
 const TABS: { id: TabId; label: string; iconSrc: string; accent: string }[] = [
   { id: "shops",  label: "Shop Branches", iconSrc: "/icons/settings/shops.png", accent: "text-primary" },
   { id: "staff",  label: "Staff",         iconSrc: "/icons/settings/gear.png", accent: "text-indigo-500" },
   { id: "tax",    label: "GST / Tax",     iconSrc: "/icons/settings/tax.png", accent: "text-emerald-500" },
-  { id: "backup", label: "Backup & Restore", iconSrc: "/icons/settings/backup.png", accent: "text-blue-500" },
   { id: "danger", label: "Danger Zone",   iconSrc: "/icons/settings/danger.png", accent: "text-red-400" },
 ];
 
@@ -104,6 +99,7 @@ export default function Settings() {
   const [creatingBackup, setCreatingBackup] = useState(false);
   const [restoringName, setRestoringName] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [backupOpenBranch, setBackupOpenBranch] = useState<string | null>(null);
 
   const parseApiError = async (err: any, fallback: string) => {
     const data = err?.response?.data;
@@ -601,6 +597,80 @@ export default function Settings() {
                   <span>{b.phone || <span className="italic opacity-50">No phone set</span>}</span>
                 </div>
               </div>
+
+              {/* Backup section */}
+              <div className="border-t border-border/50 pt-2">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setBackupOpenBranch(backupOpenBranch === b.id ? null : b.id); }}
+                  className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground hover:text-primary transition py-1"
+                >
+                  <HardDrive className="w-3 h-3" />
+                  Backup & Restore
+                  <ChevronRight className={`w-3 h-3 transition-transform ${backupOpenBranch === b.id ? "rotate-90" : ""}`} />
+                </button>
+                {backupOpenBranch === b.id && (
+                  <div className="space-y-2 pt-2 pb-1" onClick={(e) => e.stopPropagation()}>
+                    {/* Export + Server Save */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleExportBackup}
+                        disabled={exporting}
+                        className="flex-1 bg-blue-600/10 border border-blue-500/20 hover:bg-blue-600/20 text-blue-500 text-[10px] font-bold px-2 py-1.5 rounded-lg flex items-center justify-center gap-1 transition disabled:opacity-50"
+                      >
+                        <Download className="w-3 h-3" />
+                        {exporting ? "…" : "Export"}
+                      </button>
+                      {!isReadOnly && (
+                        <button
+                          onClick={handleCreateServerBackup}
+                          disabled={creatingBackup}
+                          className="flex-1 bg-secondary border border-border hover:bg-secondary/80 text-foreground text-[10px] font-bold px-2 py-1.5 rounded-lg flex items-center justify-center gap-1 transition disabled:opacity-50"
+                        >
+                          <HardDrive className="w-3 h-3" />
+                          {creatingBackup ? "…" : "Save"}
+                        </button>
+                      )}
+                    </div>
+                    {/* Upload & Restore */}
+                    {!isReadOnly && (
+                      <form onSubmit={handleImportBackup} className="flex gap-2">
+                        <label className="flex-1 cursor-pointer">
+                          <span className="block text-center bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 text-amber-500 text-[10px] font-bold px-2 py-1.5 rounded-lg transition truncate">
+                            {selectedFile ? selectedFile.name : "Restore File"}
+                          </span>
+                          <input type="file" accept=".json,.zip,.sql" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} className="hidden" />
+                        </label>
+                        <button type="submit" disabled={importing || !selectedFile}
+                          className="text-[10px] font-bold px-2 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-500 transition disabled:opacity-40">
+                          {importing ? "…" : "Upload"}
+                        </button>
+                      </form>
+                    )}
+                    {/* Server backups list */}
+                    {backups.length > 0 && (
+                      <div className="space-y-1 pt-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9px] text-muted-foreground font-semibold">Server backups</span>
+                          <button onClick={loadBackups} className="text-[9px] text-primary hover:underline"><RefreshCw className="w-2.5 h-2.5 inline" /></button>
+                        </div>
+                        {backups.slice(0, 3).map((bk) => (
+                          <div key={bk.filename} className="flex items-center justify-between gap-1">
+                            <span className="text-[9px] font-mono text-foreground truncate">{bk.filename}</span>
+                            <div className="flex gap-1.5 flex-shrink-0">
+                              <button onClick={() => handleDownloadBackup(bk.filename)} className="text-[9px] font-bold text-primary hover:underline">DL</button>
+                              <button onClick={() => handleRestoreBackup(bk.filename)} disabled={restoringName === bk.filename} className="text-[9px] font-bold text-amber-400 hover:underline disabled:opacity-50">Restore</button>
+                              <button onClick={() => handleDeleteBackup(bk.filename)} className="text-[9px] font-bold text-red-400 hover:underline">Del</button>
+                            </div>
+                          </div>
+                        ))}
+                        {backups.length > 3 && (
+                          <p className="text-[9px] text-muted-foreground">+{backups.length - 3} more</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           ))}
 
@@ -717,165 +787,6 @@ export default function Settings() {
           {savingGst ? "Saving…" : "Save Tax Settings"}
         </button>
       )}
-    </div>
-  );
-
-  const renderBackup = () => (
-    <div className="space-y-6">
-      {/* Export + Import grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {/* Export */}
-        <div className="bg-card border border-border rounded-2xl p-6 space-y-4 relative overflow-hidden">
-          <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-blue-500 to-indigo-500" />
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-blue-500/10 flex items-center justify-center flex-shrink-0">
-              <Download className="w-4 h-4 text-blue-500" />
-            </div>
-            <div>
-              <h3 className="font-extrabold text-sm text-foreground">Export Backup</h3>
-              <p className="text-[10px] text-muted-foreground">Download full system archive</p>
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            Downloads a JSON file containing all store data (products, sales, customers, inventory, etc.).
-          </p>
-          <div className="flex flex-col gap-2">
-            <button
-              onClick={handleExportBackup}
-              disabled={exporting}
-              className="w-full bg-blue-600 hover:bg-blue-600/90 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition disabled:opacity-50"
-            >
-              <Download className="w-3.5 h-3.5" />
-              {exporting ? "Preparing…" : "Download Backup JSON"}
-            </button>
-            {!isReadOnly && (
-              <button
-                onClick={handleCreateServerBackup}
-                disabled={creatingBackup}
-                className="w-full bg-secondary border border-border hover:bg-secondary/80 text-foreground text-xs font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition disabled:opacity-50"
-              >
-                <HardDrive className="w-3.5 h-3.5" />
-                {creatingBackup ? "Saving…" : "Save Backup on Server"}
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Import */}
-        {!isReadOnly && (
-          <div className="bg-card border border-border rounded-2xl p-6 space-y-4 relative overflow-hidden">
-            <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-amber-500 to-orange-500" />
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-                <Upload className="w-4 h-4 text-amber-500" />
-              </div>
-              <div>
-                <h3 className="font-extrabold text-sm text-foreground">Restore Backup</h3>
-                <p className="text-[10px] text-muted-foreground">Upload & restore from file</p>
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Select a previously exported <code className="font-mono bg-secondary px-1 rounded">.json</code> file (or .zip/.sql). This <strong>overwrites</strong> all current data.
-            </p>
-            <form onSubmit={handleImportBackup} className="space-y-3">
-              <div className="border-2 border-dashed border-border hover:border-amber-500/40 rounded-xl p-3 text-center transition-colors cursor-pointer">
-                <input
-                  type="file"
-                  accept=".json,.zip,.sql"
-                  onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                  className="hidden"
-                  id="backup-file-input"
-                />
-                <label htmlFor="backup-file-input" className="cursor-pointer block">
-                  {selectedFile ? (
-                    <span className="text-xs font-bold text-amber-500">{selectedFile.name}</span>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">Click to select backup file</span>
-                  )}
-                </label>
-              </div>
-              <button type="submit" disabled={importing || !selectedFile}
-                className="w-full bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-500 text-xs font-bold px-4 py-2.5 rounded-xl transition disabled:opacity-40">
-                {importing ? "Restoring…" : "Upload & Restore"}
-              </button>
-            </form>
-          </div>
-        )}
-      </div>
-
-      {/* Server backups list (auto + manual) */}
-      <div className="bg-card border border-border rounded-2xl overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-          <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-primary" />
-            <h3 className="font-extrabold text-sm text-foreground">Server Backups</h3>
-            <span className="text-[10px] bg-secondary border border-border px-2 py-0.5 rounded-lg text-muted-foreground font-semibold">
-              Auto every 7 days
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-[10px] text-muted-foreground">Keeps last 5 auto</span>
-            <button
-              onClick={loadBackups}
-              className="text-[10px] font-bold text-primary hover:underline flex items-center gap-1"
-            >
-              <RefreshCw className="w-3 h-3" /> Refresh
-            </button>
-          </div>
-        </div>
-
-        {backups.length === 0 ? (
-          <div className="p-10 text-center space-y-2">
-            <HardDrive className="w-8 h-8 text-muted-foreground/30 mx-auto" />
-            <p className="text-xs text-muted-foreground">No server backups yet.</p>
-            <p className="text-[10px] text-muted-foreground opacity-60">
-              Use “Save Backup on Server” or wait for the weekly auto backup.
-            </p>
-          </div>
-        ) : (
-          <div className="divide-y divide-border/50">
-            {backups.map((bk) => (
-              <div
-                key={bk.filename}
-                className="flex items-center justify-between px-5 py-3.5 hover:bg-secondary/30 transition"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <HardDrive className="w-4 h-4 text-primary/60 flex-shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-xs font-mono font-bold text-foreground truncate">{bk.filename}</p>
-                    <p className="text-[10px] text-muted-foreground">
-                      {new Date(bk.createdAt).toLocaleString()} ·{" "}
-                      {((bk.size || 0) / (1024 * 1024)).toFixed(2)} MB
-                      {String(bk.filename).startsWith("auto-") ? " · auto" : " · manual"}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 text-[11px] font-bold flex-shrink-0 ml-4">
-                  <button
-                    onClick={() => handleDownloadBackup(bk.filename)}
-                    className="text-primary hover:underline transition"
-                  >
-                    Download
-                  </button>
-                  <button
-                    onClick={() => handleRestoreBackup(bk.filename)}
-                    disabled={restoringName === bk.filename}
-                    className="text-amber-400 hover:underline transition disabled:opacity-50"
-                  >
-                    {restoringName === bk.filename ? "Restoring…" : "Restore"}
-                  </button>
-                  <button
-                    onClick={() => handleDeleteBackup(bk.filename)}
-                    className="text-red-400 hover:underline transition"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
     </div>
   );
 
@@ -1154,7 +1065,6 @@ export default function Settings() {
       {activeTab === "shops"  && renderShops()}
       {activeTab === "staff"  && renderStaff()}
       {activeTab === "tax"    && renderTax()}
-      {activeTab === "backup" && renderBackup()}
       {activeTab === "danger" && renderDanger()}
 
       {/* Add Staff Modal */}
