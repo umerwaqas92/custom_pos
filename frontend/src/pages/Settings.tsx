@@ -84,10 +84,6 @@ export default function Settings() {
   const isOwner = user?.role === "OWNER" || user?.role === "SUPER_ADMIN";
   const isReadOnly = user?.role === "SUPER_ADMIN";
 
-  // ─── Store Name State ─────────────────────────────────────────────────────
-  const [shopName, setShopName] = useState("");
-  const [savingShopName, setSavingShopName] = useState(false);
-
   // ─── GST State ────────────────────────────────────────────────────────────
   const [gstEnabledLocal, setGstEnabledLocal] = useState(gstEnabled);
   const [gstRateLocal, setGstRateLocal] = useState(gstRate > 0 ? gstRate.toString() : "");
@@ -171,18 +167,8 @@ export default function Settings() {
   useEffect(() => {
     loadBranches();
     loadBackups();
-    loadSettings();
     if (isOwner) loadStaff();
   }, [isOwner]);
-
-  const loadSettings = async () => {
-    try {
-      const res = await axios.get("/api/settings");
-      if (res.data?.shopName) setShopName(res.data.shopName);
-    } catch {
-      // ignore
-    }
-  };
 
   const loadBranches = async () => {
     try {
@@ -205,24 +191,6 @@ export default function Settings() {
       setStaff([]);
     } finally {
       setStaffLoading(false);
-    }
-  };
-
-  const handleSaveShopName = async () => {
-    if (isReadOnly) {
-      addNotification("Action failed: Super Admin has read-only access.", "warning");
-      return;
-    }
-    if (!shopName.trim()) return addNotification("Store name cannot be empty.", "warning");
-    setSavingShopName(true);
-    try {
-      const res = await axios.put("/api/settings", { shopName: shopName.trim() });
-      if (res.data?.shopName) setShopName(res.data.shopName);
-      addNotification("Store name updated.", "success");
-    } catch (err: any) {
-      addNotification(err.response?.data?.error || "Failed to save store name.", "warning");
-    } finally {
-      setSavingShopName(false);
     }
   };
 
@@ -569,33 +537,6 @@ export default function Settings() {
   // ─── Tab content renderers ────────────────────────────────────────────────
   const renderShops = () => (
     <div className="space-y-5">
-      {/* Store Name */}
-      <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
-        <div className="flex items-center gap-2">
-          <Store className="w-4 h-4 text-primary" />
-          <h3 className="font-extrabold text-sm text-foreground">Store Name</h3>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          This name is used in backup filenames and receipts.
-        </p>
-        <div className="flex items-center gap-3">
-          <input
-            type="text"
-            value={shopName}
-            onChange={(e) => setShopName(e.target.value)}
-            placeholder="e.g. My Store"
-            className="flex-1 bg-secondary border border-border px-3 py-2.5 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 transition"
-          />
-          <button
-            onClick={handleSaveShopName}
-            disabled={savingShopName || isReadOnly}
-            className="bg-primary text-white text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-primary/90 transition disabled:opacity-50"
-          >
-            {savingShopName ? "Saving…" : "Save"}
-          </button>
-        </div>
-      </div>
-
       {/* info banner */}
       <div className="flex gap-3 bg-primary/5 border border-primary/20 rounded-2xl p-4 text-xs text-muted-foreground">
         <Info className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
