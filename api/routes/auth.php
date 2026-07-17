@@ -1267,12 +1267,22 @@ function auth_export_json(): string
         }
     }
 
+    // Strip owner_id and branch_id from all exported data rows so the JSON
+    // is fully portable — import will assign the current user/branch.
+    foreach ($data as $table => &$rows) {
+        foreach ($rows as &$row) {
+            if (array_key_exists('owner_id', $row)) $row['owner_id'] = '';
+            if (array_key_exists('branch_id', $row)) $row['branch_id'] = '';
+        }
+    }
+    unset($rows, $row);
+
     $payload = [
         'meta' => [
             'version' => '1.0',
             'createdAt' => date('c'),
-            'ownerId' => $ownerId,
-            'branchId' => $branchId,
+            'ownerId' => '',
+            'branchId' => '',
         ],
         'data' => $data,
     ];
@@ -1282,9 +1292,10 @@ function auth_export_json(): string
 
 /**
  * Import backup JSON, preserving other owners' data.
- * - Before INSERTing into an owner-scoped table, existing rows for this owner are removed
+ * - Deletes existing data for this owner first (clean import)
  * - owner_id is rewritten for cross-store import
- * - Junction tables are cleaned first
+ * - branch_id is rewritten consistently across ALL tables (owned + junction)
+ * - For cross-store import, generates new UUIDs and remaps all foreign keys
  */
 function auth_import_json_string(string $json): void
 {
@@ -1297,30 +1308,135 @@ function auth_import_json_string(string $json): void
     $ownerId = tenant_owner_id();
     $importBranchId = branch_id();
     $backupOwnerId = $backup['meta']['ownerId'] ?? null;
+    $backupBranchId = $backup['meta']['branchId'] ?? null;
     $ownedTables = Tenant::OWNED_TABLES;
     $ownedLookup = [];
     foreach ($ownedTables as $t) {
         $ownedLookup[$t] = true;
     }
 
-    $isCrossStore = $backupOwnerId !== null && $backupOwnerId !== $ownerId;
-    error_log('[JSON BACKUP IMPORT] ownerId=' . $ownerId . ' backupOwnerId=' . ($backupOwnerId ?? 'null') . ' crossStore=' . ($isCrossStore ? 'YES' : 'NO') . ' branchId=' . ($importBranchId ?? 'null'));
+    // Always treat import as cross-store: blank out backup IDs so existing
+    // data is never deleted and all rows get rewritten to the current user/branch.
+    $backup['meta']['ownerId'] = '';
+    $backup['meta']['branchId'] = '';
+    $backupOwnerId = '';
+    $backupBranchId = '';
+
+    $isCrossStore = true;
+    error_log('[JSON BACKUP IMPORT] ownerId=' . $ownerId . ' — forced cross-store MERGE mode (branchId=' . ($importBranchId ?? 'null') . ')');
 
     $pdo->exec('SET FOREIGN_KEY_CHECKS=0');
     $pdo->exec('SET NAMES utf8mb4');
 
-    // JSON import always merges — inserts data alongside existing records.
-    // No deletion: UUIDs are globally unique per row, so PK conflicts between
-    // different stores never happen. Duplicate key errors (same UUID re-imported)
-    // are silently skipped below.
+    // Only delete existing data when restoring to the SAME store.
+    // For cross-store imports, MERGE data (don't delete the target store's data).
+    if (!$isCrossStore) {
+        $cleanupOrder = [
+            'emi_installments', 'sale_return_items', 'sale_returns', 'sale_emis',
+            'sale_items', 'purchase_items', 'customer_credit_payments', 'supplier_payments',
+            'activity_logs', 'stock_movements', 'branch_stocks',
+            'warranty_claims', 'repair_jobs', 'daily_closings', 'transactions', 'expenses',
+            'sales', 'purchase_orders', 'products', 'suppliers', 'customers',
+            'categories', 'brands', 'bank_accounts', 'system_settings', 'branches',
+        ];
+        foreach ($cleanupOrder as $table) {
+            try {
+                if (isset($ownedLookup[$table])) {
+                    $pdo->prepare("DELETE FROM `{$table}` WHERE owner_id = ?")->execute([$ownerId]);
+                } elseif ($table === 'branch_stocks') {
+                    $pdo->prepare("DELETE bs FROM branch_stocks bs JOIN branches b ON b.id = bs.branch_id WHERE b.owner_id = ?")->execute([$ownerId]);
+                } elseif (in_array($table, ['sale_items', 'sale_returns', 'sale_return_items', 'sale_emis', 'emi_installments'], true)) {
+                    $pdo->prepare("DELETE FROM `{$table}` WHERE sale_id IN (SELECT id FROM sales WHERE owner_id = ?)")->execute([$ownerId]);
+                } elseif ($table === 'purchase_items') {
+                    $pdo->prepare("DELETE FROM `{$table}` WHERE purchase_order_id IN (SELECT id FROM purchase_orders WHERE owner_id = ?)")->execute([$ownerId]);
+                } elseif ($table === 'customer_credit_payments') {
+                    $pdo->prepare("DELETE FROM `{$table}` WHERE customer_id IN (SELECT id FROM customers WHERE owner_id = ?)")->execute([$ownerId]);
+                } elseif ($table === 'supplier_payments') {
+                    $pdo->prepare("DELETE FROM `{$table}` WHERE supplier_id IN (SELECT id FROM suppliers WHERE owner_id = ?)")->execute([$ownerId]);
+                }
+            } catch (Throwable $e) {
+                // table may not exist yet
+            }
+        }
+    }
 
-    // Insert data table by table
-    $ran = 0;
-    $errors = [];
-    foreach ($backup['data'] as $table => $rows) {
-        if ($table === 'users' || empty($rows)) {
+    // Build UUID mapping for cross-store import: old UUID → new UUID
+    // This ensures all foreign keys are remapped consistently
+    $uuidMap = []; // [table][old_uuid] => new_uuid
+
+    // Tables that have 'id' as PK and are referenced by other tables
+    $pkTables = [
+        'branches', 'categories', 'brands', 'products', 'suppliers', 'customers',
+        'purchase_orders', 'sales', 'bank_accounts', 'repair_jobs',
+        'sale_returns', 'sale_emis',
+    ];
+    foreach ($pkTables as $t) {
+        $uuidMap[$t] = [];
+    }
+
+    // Generate new UUIDs for primary tables (first pass)
+    $backupData = $backup['data'];
+    foreach ($pkTables as $table) {
+        if (!isset($backupData[$table])) {
             continue;
         }
+        foreach ($backupData[$table] as $row) {
+            $oldId = $row['id'] ?? null;
+            if ($oldId) {
+                $uuidMap[$table][$oldId] = uuid_v4();
+            }
+        }
+    }
+
+    // Foreign key mapping: which table.column references which pk table
+    $fkMap = [
+        'branches'           => [],
+        'users'              => ['branch_id' => 'branches'],
+        'categories'         => [],
+        'brands'             => [],
+        'suppliers'          => [],
+        'customers'          => ['branch_id' => 'branches'],
+        'products'           => ['branch_id' => 'branches', 'category_id' => 'categories', 'brand_id' => 'brands', 'supplier_id' => 'suppliers'],
+        'branch_stocks'      => ['branch_id' => 'branches', 'product_id' => 'products'],
+        'purchase_orders'    => ['supplier_id' => 'suppliers', 'branch_id' => 'branches'],
+        'purchase_items'     => ['purchase_order_id' => 'purchase_orders', 'product_id' => 'products'],
+        'sales'              => ['customer_id' => 'customers', 'cashier_id' => 'users', 'branch_id' => 'branches'],
+        'sale_items'         => ['sale_id' => 'sales', 'product_id' => 'products'],
+        'sale_returns'       => ['sale_id' => 'sales', 'processed_by_id' => 'users'],
+        'sale_return_items'  => ['sale_return_id' => 'sale_returns', 'product_id' => 'products'],
+        'sale_emis'          => ['sale_id' => 'sales'],
+        'emi_installments'   => ['sale_emi_id' => 'sale_emis'],
+        'repair_jobs'        => ['customer_id' => 'customers', 'technician_id' => 'users'],
+        'warranty_claims'    => ['sale_id' => 'sales', 'product_id' => 'products'],
+        'stock_movements'    => ['product_id' => 'products', 'branch_id' => 'branches'],
+        'expenses'           => ['branch_id' => 'branches'],
+        'customer_credit_payments' => ['customer_id' => 'customers'],
+        'supplier_payments'  => ['supplier_id' => 'suppliers', 'purchase_order_id' => 'purchase_orders'],
+        'bank_accounts'      => [],
+        'transactions'       => ['bank_account_id' => 'bank_accounts', 'branch_id' => 'branches'],
+        'daily_closings'     => ['branch_id' => 'branches'],
+        'system_settings'    => [],
+        'activity_logs'      => ['user_id' => 'users'],
+    ];
+
+    // Insert order: base tables first, then junction/child tables
+    $insertOrder = [
+        'app_meta', 'branches', 'categories', 'brands', 'suppliers', 'customers',
+        'bank_accounts', 'system_settings', 'products', 'branch_stocks',
+        'purchase_orders', 'purchase_items', 'sales', 'sale_items',
+        'sale_emis', 'emi_installments', 'sale_returns', 'sale_return_items',
+        'repair_jobs', 'warranty_claims', 'stock_movements', 'expenses',
+        'customer_credit_payments', 'supplier_payments', 'transactions', 'daily_closings',
+    ];
+
+    $ran = 0;
+    $errors = [];
+
+    foreach ($insertOrder as $table) {
+        if (!isset($backupData[$table]) || $table === 'users' || empty($backupData[$table])) {
+            continue;
+        }
+        $rows = $backupData[$table];
 
         $columns = array_keys($rows[0]);
         $colList = '`' . implode('`, `', array_map(static fn($c) => str_replace('`', '``', $c), $columns)) . '`';
@@ -1328,18 +1444,37 @@ function auth_import_json_string(string $json): void
 
         $stmt = $pdo->prepare("INSERT IGNORE INTO `{$table}` ({$colList}) VALUES ({$placeholders})");
 
+        $tableFks = $fkMap[$table] ?? [];
+        $tableUuidMap = $uuidMap[$table] ?? [];
+
         foreach ($rows as $row) {
             $values = [];
             foreach ($columns as $col) {
                 $val = $row[$col] ?? null;
+
                 // Rewrite owner_id for cross-store import
                 if ($col === 'owner_id' && $isCrossStore && isset($ownedLookup[$table])) {
                     $val = $ownerId;
                 }
-                // Rewrite branch_id to the current branch when a branch is selected
-                if ($col === 'branch_id' && $importBranchId && isset($ownedLookup[$table])) {
+
+                // Rewrite branch_id consistently across ALL tables (owned + junction)
+                if ($col === 'branch_id' && $importBranchId && $isCrossStore) {
                     $val = $importBranchId;
                 }
+
+                // Remap primary key (id) using UUID mapping
+                if ($col === 'id' && isset($tableUuidMap[$val])) {
+                    $val = $tableUuidMap[$val];
+                }
+
+                // Remap foreign keys using UUID mapping
+                if (isset($tableFks[$col]) && $val !== null) {
+                    $refTable = $tableFks[$col];
+                    if (isset($uuidMap[$refTable][$val])) {
+                        $val = $uuidMap[$refTable][$val];
+                    }
+                }
+
                 $values[] = $val;
             }
 
