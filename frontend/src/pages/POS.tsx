@@ -560,7 +560,7 @@ export default function POS() {
       </div>
 
       {/* POS Cart / Right Panel */}
-      <div className={`${mobileTab === "cart" ? "flex" : "hidden md:flex"} w-full md:w-96 bg-card border border-border rounded-2xl flex flex-col p-4 overflow-hidden h-full min-h-0 max-h-full`}>
+      <div className={`${mobileTab === "cart" ? "flex" : "hidden md:flex"} w-full md:w-96 bg-card border border-border rounded-2xl flex flex-col p-4 h-full min-h-0`}>
 
         {/* Cart Header */}
         <div className="flex items-center justify-between border-b border-border pb-3">
@@ -658,9 +658,9 @@ export default function POS() {
         <div className="border-t border-border pt-4 space-y-3">
 
           {/* Customer Selection */}
-          <div className="flex items-center gap-1.5">
-            <div className="flex-1 flex items-center gap-2 bg-secondary/50 border border-border p-2 rounded-xl">
-              <img src="/icons/pos/customer.png?v=1" alt="" className="w-4 h-4 object-contain opacity-80" draggable={false} />
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2 bg-secondary/50 border border-border p-2 rounded-xl">
+              <img src="/icons/pos/customer.png?v=1" alt="" className="w-4 h-4 object-contain opacity-80 shrink-0" draggable={false} />
               <select
                 value={selectedCustId}
                 onChange={(e) => setSelectedCustId(e.target.value)}
@@ -677,10 +677,10 @@ export default function POS() {
             <button
               type="button"
               onClick={() => setCustModalOpen(true)}
-              className="p-2.5 bg-primary/10 border border-primary/20 hover:bg-primary/20 text-primary rounded-xl transition flex-shrink-0"
+              className="w-full py-2 bg-primary text-white hover:bg-primary/95 rounded-xl transition flex items-center justify-center gap-1.5 text-xs font-bold shadow-sm"
               title="Add New Customer"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5" /> Add New Customer
             </button>
           </div>
 
