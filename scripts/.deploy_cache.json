@@ -68,14 +68,14 @@
   "/htdocs/api/routes/products.php": "3961b3a0dd6ac6f3c28f8ddecbd22c46",
   "/htdocs/api/routes/repairs.php": "9b98a20c35218b4e1b27f898dd61da6f",
   "/htdocs/api/routes/reports.php": "53b96c319ab5c0b49c6d5e27900749a5",
-  "/htdocs/api/routes/sales.php": "adca4c965f59cdd7a97770a7c77c41c9",
+  "/htdocs/api/routes/sales.php": "b142fec404cdf16a317ab736d69fb8fc",
   "/htdocs/api/routes/settings.php": "bcbc0e419e8e761877c2e4999617ca8f",
   "/htdocs/api/sql/add_branch_id.sql": "5b93f5f99e85a7d3f35e0f5b28331ae7",
   "/htdocs/api/sql/add_branch_id_purchase_expenses.sql": "fba6b8aa1db4481cda8e62c8473024a2",
   "/htdocs/api/sql/schema.sql": "b7ab857e4b42682ec0da355c894e3457",
   "/htdocs/api/sql/seed.sql": "de73d782fc4fc60fa3d3c3ca6deca92e",
-  "/htdocs/assets/index-2uPzCRkC.js": "3ddc35bf3b0338eb220ac06a88d85702",
-  "/htdocs/assets/index-A-gWef4r.css": "8ae5fa5be0b5805b6f5ca7e4a928eb59",
+  "/htdocs/assets/index-BcbS6X1s.js": "fa4351c89c2c5fd87a55f7a82fa1a741",
+  "/htdocs/assets/index-CL_zOKyy.css": "5afa3fdb8c42002bf7a3f0444ce9a65f",
   "/htdocs/favicon.png": "f5d45edf1e1431d993413a4b12013b58",
   "/htdocs/favicon.svg": "c1588ba10ce54df07ef0c4811339a5cd",
   "/htdocs/icons/accounting/banks.png": "6ea4acc958e847a126994b9356c7cece",
@@ -175,7 +175,5 @@
   "/htdocs/index.html": "9e8d2ccf46f080b3117d1cb3d1a20292",
   "/htdocs/manifest.json": "e31914c97deedce3d0fe1715f4f9d7d7",
   "/htdocs/service-worker.js": "76f044e58f0913ab1b52ffcc59890927",
-  "/htdocs/uploads/.htaccess": "5cb758e7e20bba1501af71c9501c58f5",
-  "/htdocs/assets/index-BcbS6X1s.js": "fa4351c89c2c5fd87a55f7a82fa1a741",
-  "/htdocs/assets/index-CL_zOKyy.css": "5afa3fdb8c42002bf7a3f0444ce9a65f"
+  "/htdocs/uploads/.htaccess": "5cb758e7e20bba1501af71c9501c58f5"
 }
