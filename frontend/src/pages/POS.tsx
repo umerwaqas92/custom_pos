@@ -824,7 +824,10 @@ export default function POS() {
                   <div>
                     <p className="font-semibold text-foreground">{item.product.name}</p>
                     <p className="text-[9px] text-muted-foreground">
-                      Qty: {item.quantity} @ Rs. {Number(item.unitPrice).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      {Number(item.product.sellingPrice) !== Number(item.unitPrice) ? (
+                        <><span className="line-through text-muted-foreground/60">Rs. {Number(item.product.sellingPrice).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span> → </>
+                      ) : null}
+                      Rs. {Number(item.unitPrice).toLocaleString(undefined, { minimumFractionDigits: 2 })} ×{item.quantity}
                     </p>
                     {(item.serialNumber || item.imei) && (
                       <p className="text-[9px] text-primary/80 font-bold mt-0.5">
@@ -834,7 +837,12 @@ export default function POS() {
                       </p>
                     )}
                   </div>
-                  <span className="font-bold text-foreground">Rs. {Number(item.totalPrice).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  <div className="text-right">
+                    <span className="font-bold text-foreground">Rs. {Number(item.totalPrice).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                    {Number(item.product.sellingPrice) !== Number(item.unitPrice) && (
+                      <p className="text-[9px] text-emerald-400 font-bold">Saved: Rs. {((Number(item.product.sellingPrice) - Number(item.unitPrice)) * item.quantity).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
