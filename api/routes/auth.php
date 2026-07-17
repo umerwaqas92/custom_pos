@@ -1442,6 +1442,34 @@ function auth_import_json_string(string $json): void
         }
         $rows = $backupData[$table];
 
+        // Make SKUs unique in the target branch to avoid (owner_id, sku) conflicts
+        if ($table === 'products') {
+            $skuCheck = $pdo->prepare('SELECT 1 FROM products WHERE owner_id = ? AND sku = ? LIMIT 1');
+            foreach ($rows as &$row) {
+                if (!empty($row['sku'])) {
+                    $skuCheck->execute([$ownerId, $row['sku']]);
+                    if ($skuCheck->fetch()) {
+                        $row['sku'] = $row['sku'] . '-' . substr(bin2hex(random_bytes(3)), 0, 6);
+                    }
+                }
+            }
+            unset($row);
+        }
+
+        // Make customer phones unique in the target branch to avoid (owner_id, phone) conflicts
+        if ($table === 'customers') {
+            $phoneCheck = $pdo->prepare('SELECT 1 FROM customers WHERE owner_id = ? AND phone = ? LIMIT 1');
+            foreach ($rows as &$row) {
+                if (!empty($row['phone'])) {
+                    $phoneCheck->execute([$ownerId, $row['phone']]);
+                    if ($phoneCheck->fetch()) {
+                        $row['phone'] = $row['phone'] . '_' . substr(bin2hex(random_bytes(2)), 0, 4);
+                    }
+                }
+            }
+            unset($row);
+        }
+
         $columns = array_keys($rows[0]);
         $colList = '`' . implode('`, `', array_map(static fn($c) => str_replace('`', '``', $c), $columns)) . '`';
         $placeholders = implode(', ', array_fill(0, count($columns), '?'));
