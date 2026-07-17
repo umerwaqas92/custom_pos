@@ -72,7 +72,10 @@ export default function SalesHistory() {
   /** Year filter: "ALL" or "2026" */
   const [selectedYear, setSelectedYear] = useState(String(new Date().getFullYear()));
   /** Month filter: "ALL" or "01"…"12" */
-  const [selectedMonth, setSelectedMonth] = useState("ALL");
+  const currentMonth = String(new Date().getMonth() + 1).padStart(2, "0");
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  /** Quick date filter: "" | "TODAY" | "LAST7" */
+  const [quickDateFilter, setQuickDateFilter] = useState("");
 
   // Receipt
   const [activeSale, setActiveSale] = useState<any | null>(null);
@@ -390,6 +393,27 @@ export default function SalesHistory() {
     return counts;
   }, [sales, selectedYear]);
 
+  /** Count of sales today */
+  const todayCount = useMemo(() => {
+    const today = new Date();
+    const todayStr = today.toDateString();
+    return sales.filter((s) => {
+      const d = new Date(s.saleDate);
+      return !isNaN(d.getTime()) && d.toDateString() === todayStr;
+    }).length;
+  }, [sales]);
+
+  /** Count of sales in the last 7 days */
+  const last7Count = useMemo(() => {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 6);
+    cutoff.setHours(0, 0, 0, 0);
+    return sales.filter((s) => {
+      const d = new Date(s.saleDate);
+      return !isNaN(d.getTime()) && d >= cutoff;
+    }).length;
+  }, [sales]);
+
   const filteredSales = (Array.isArray(sales) ? sales : []).filter((s) => {
     const matchesSearch =
       s.id.toLowerCase().includes(search.toLowerCase()) ||
@@ -403,12 +427,21 @@ export default function SalesHistory() {
     // Year / month filters (preferred when set)
     let matchesMonthYear = true;
     if (!isNaN(saleDate.getTime())) {
-      if (selectedYear !== "ALL" && String(saleDate.getFullYear()) !== selectedYear) {
-        matchesMonthYear = false;
-      }
-      if (selectedMonth !== "ALL") {
-        const m = String(saleDate.getMonth() + 1).padStart(2, "0");
-        if (m !== selectedMonth) matchesMonthYear = false;
+      if (quickDateFilter === "TODAY") {
+        if (saleDate.toDateString() !== new Date().toDateString()) matchesMonthYear = false;
+      } else if (quickDateFilter === "LAST7") {
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - 6);
+        cutoff.setHours(0, 0, 0, 0);
+        if (saleDate < cutoff) matchesMonthYear = false;
+      } else {
+        if (selectedYear !== "ALL" && String(saleDate.getFullYear()) !== selectedYear) {
+          matchesMonthYear = false;
+        }
+        if (selectedMonth !== "ALL") {
+          const m = String(saleDate.getMonth() + 1).padStart(2, "0");
+          if (m !== selectedMonth) matchesMonthYear = false;
+        }
       }
     }
 
@@ -584,19 +617,19 @@ export default function SalesHistory() {
           </div>
         </div>
 
-        {/* Quick month chips */}
+        {/* Quick date chips */}
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2">
             <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">
-              Quick month
-              {selectedYear !== "ALL" ? ` · ${selectedYear}` : " · all years"}
+              Quick filter
             </span>
-            {(selectedMonth !== "ALL" || selectedYear !== "ALL") && (
+            {(selectedMonth !== "ALL" || selectedYear !== "ALL" || quickDateFilter) && (
               <button
                 type="button"
                 onClick={() => {
                   setSelectedMonth("ALL");
                   setSelectedYear("ALL");
+                  setQuickDateFilter("");
                 }}
                 className="text-[10px] font-bold text-primary hover:underline"
               >
@@ -609,14 +642,64 @@ export default function SalesHistory() {
               type="button"
               onClick={() => {
                 setSelectedMonth("ALL");
+                setQuickDateFilter("");
               }}
               className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition border ${
-                selectedMonth === "ALL"
+                selectedMonth === "ALL" && !quickDateFilter
                   ? "bg-primary text-white border-primary"
                   : "bg-secondary border-border text-muted-foreground hover:text-foreground"
               }`}
             >
               All
+              <span className={`ml-1 text-[9px] ${selectedMonth === "ALL" && !quickDateFilter ? "text-white/80" : "text-muted-foreground"}`}>
+                {sales.length}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedMonth("ALL");
+                setSelectedYear("ALL");
+                setQuickDateFilter("TODAY");
+              }}
+              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition border ${
+                quickDateFilter === "TODAY"
+                  ? "bg-primary text-white border-primary"
+                  : todayCount > 0
+                    ? "bg-secondary border-border text-foreground hover:border-primary/40"
+                    : "bg-secondary/40 border-border/60 text-muted-foreground/60 hover:text-muted-foreground"
+              }`}
+              title={`${todayCount} sales today`}
+            >
+              Today
+              {todayCount > 0 && (
+                <span className={`ml-1 text-[9px] ${quickDateFilter === "TODAY" ? "text-white/80" : "text-muted-foreground"}`}>
+                  {todayCount}
+                </span>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedMonth("ALL");
+                setSelectedYear("ALL");
+                setQuickDateFilter("LAST7");
+              }}
+              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition border ${
+                quickDateFilter === "LAST7"
+                  ? "bg-primary text-white border-primary"
+                  : last7Count > 0
+                    ? "bg-secondary border-border text-foreground hover:border-primary/40"
+                    : "bg-secondary/40 border-border/60 text-muted-foreground/60 hover:text-muted-foreground"
+              }`}
+              title={`${last7Count} sales in last 7 days`}
+            >
+              Last 7
+              {last7Count > 0 && (
+                <span className={`ml-1 text-[9px] ${quickDateFilter === "LAST7" ? "text-white/80" : "text-muted-foreground"}`}>
+                  {last7Count}
+                </span>
+              )}
             </button>
             {MONTH_LABELS.map((m) => {
               const count = monthsWithSales.get(m.value) || 0;
@@ -626,8 +709,8 @@ export default function SalesHistory() {
                   key={m.value}
                   type="button"
                   onClick={() => {
-                    // Month only — do NOT auto-switch year (was forcing 2027)
                     setSelectedMonth(m.value);
+                    setQuickDateFilter("");
                   }}
                   className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition border min-w-[3rem] ${
                     active

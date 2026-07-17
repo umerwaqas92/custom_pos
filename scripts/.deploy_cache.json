@@ -172,8 +172,10 @@
   "/htdocs/icons/sidebar/reports.png": "0bbc841c33a5d5ab64e642fffd087a8a",
   "/htdocs/icons/sidebar/sales-history.png": "6eacbf77bf77c0f89480cccb1798ad7b",
   "/htdocs/icons/sidebar/settings.png": "cf8e3947e0370538e9c97b60f00b061b",
-  "/htdocs/index.html": "0a2abf2c055bb7c9652b22c93754c2f6",
+  "/htdocs/index.html": "9e8d2ccf46f080b3117d1cb3d1a20292",
   "/htdocs/manifest.json": "e31914c97deedce3d0fe1715f4f9d7d7",
   "/htdocs/service-worker.js": "76f044e58f0913ab1b52ffcc59890927",
-  "/htdocs/uploads/.htaccess": "5cb758e7e20bba1501af71c9501c58f5"
+  "/htdocs/uploads/.htaccess": "5cb758e7e20bba1501af71c9501c58f5",
+  "/htdocs/assets/index-BcbS6X1s.js": "fa4351c89c2c5fd87a55f7a82fa1a741",
+  "/htdocs/assets/index-CL_zOKyy.css": "5afa3fdb8c42002bf7a3f0444ce9a65f"
 }
