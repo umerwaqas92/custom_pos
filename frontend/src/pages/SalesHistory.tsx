@@ -547,22 +547,6 @@ export default function SalesHistory() {
           </div>
 
           <div className="flex items-center gap-2 bg-secondary/50 border border-border p-2.5 rounded-xl">
-            <span className="text-[10px] font-bold uppercase text-muted-foreground pl-1.5">Branch:</span>
-            <select
-              value={selectedBranch}
-              onChange={(e) => setSelectedBranch(e.target.value)}
-              className="flex-1 bg-transparent text-xs text-foreground focus:outline-none cursor-pointer"
-            >
-              <option value="ALL">All Branches</option>
-              {branches.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex items-center gap-2 bg-secondary/50 border border-border p-2.5 rounded-xl">
             <span className="text-[10px] font-bold uppercase text-muted-foreground pl-1.5">Customer:</span>
             <select
               value={selectedCustomer}
