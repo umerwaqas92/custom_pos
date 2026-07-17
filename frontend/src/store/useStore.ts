@@ -28,6 +28,7 @@ export interface CartItem {
   name: string;
   sku: string;
   sellingPrice: number;
+  soldPrice?: number; // override unit price (flat, not percentage)
   quantity: number;
   discount: number; // percentage
   tax: number; // percentage

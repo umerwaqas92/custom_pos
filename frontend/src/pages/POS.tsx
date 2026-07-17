@@ -219,15 +219,13 @@ export default function POS() {
 
   // Calculate totals
   const subtotal = cart.reduce((acc, item) => {
-    const base = item.sellingPrice * item.quantity;
-    const disc = base * (item.discount / 100);
-    return acc + (base - disc);
+    const effectivePrice = item.soldPrice ?? item.sellingPrice;
+    return acc + (effectivePrice * item.quantity);
   }, 0);
 
   const finalTax = cart.reduce((acc, item) => {
-    const base = item.sellingPrice * item.quantity;
-    const disc = base * (item.discount / 100);
-    return acc + (base - disc) * (item.tax / 100);
+    const effectivePrice = item.soldPrice ?? item.sellingPrice;
+    return acc + (effectivePrice * item.quantity) * (item.tax / 100);
   }, 0);
 
   const payableAmount = Math.max(0, subtotal - cartDiscount + finalTax);
@@ -277,7 +275,8 @@ export default function POS() {
         items: cart.map(item => ({
           productId: item.productId,
           quantity: item.quantity,
-          discount: item.discount,
+          unitPrice: item.soldPrice ?? item.sellingPrice,
+          discount: 0,
           tax: item.tax,
           serialNumber: item.serialNumber,
           imei: item.imei
@@ -608,69 +607,78 @@ export default function POS() {
             </div>
           ) : (
             cart.map((item) => (
-              <div key={item.productId} className="space-y-2 py-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <h4 className="font-bold text-xs text-foreground truncate">{item.name}</h4>
-                    <p className="text-xs text-muted-foreground">SKU: {item.sku} | Price: Rs. {Number(item.sellingPrice).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+              <div key={item.productId} className="py-2.5 space-y-2">
+                {/* Header row: name + SKU + trash */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <h4 className="font-bold text-sm text-foreground truncate">{item.name}</h4>
+                    <p className="text-[10px] text-muted-foreground">SKU: {item.sku} &middot; List: Rs. {Number(item.sellingPrice).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
                   </div>
-                  <button onClick={() => removeFromCart(item.productId)} className="text-muted-foreground hover:text-destructive">
+                  <button onClick={() => removeFromCart(item.productId)} className="text-muted-foreground hover:text-destructive shrink-0">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
 
-                {/* Expand details link */}
-                <div>
+                {/* Controls row: qty + sold-at + total */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center border border-border rounded-lg bg-secondary">
+                    <button
+                      onClick={() => updateCartQty(item.productId, item.quantity - 1)}
+                      className="p-1.5 text-muted-foreground hover:text-foreground"
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="px-3 text-sm font-bold">{item.quantity}</span>
+                    <button
+                      onClick={() => updateCartQty(item.productId, item.quantity + 1)}
+                      className="p-1.5 text-muted-foreground hover:text-foreground"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div className="flex items-center bg-secondary border border-border rounded text-sm">
+                    <span className="pl-2 text-muted-foreground font-bold">Rs.</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={item.soldPrice ?? item.sellingPrice}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        updateCartItemDetails(item.productId, { soldPrice: val > 0 ? val : undefined });
+                      }}
+                      className="w-20 bg-transparent text-center py-1.5 font-bold text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary rounded [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                  </div>
+                </div>
+
+                {/* S/N & IMEI toggle */}
+                <div className="flex items-center justify-between gap-2">
                   <button
                     type="button"
                     onClick={() => setOpenSerials(prev => ({ ...prev, [item.productId]: !prev[item.productId] }))}
-                    className="text-[9px] text-primary hover:underline font-bold flex items-center gap-0.5"
+                    className="text-[10px] text-primary hover:underline font-bold"
                   >
-                    {openSerials[item.productId] ? "Hide S/N & IMEI" : "+ Add S/N & IMEI"}
+                    {openSerials[item.productId] ? "− Hide S/N & IMEI" : "+ S/N & IMEI"}
                   </button>
                 </div>
-
-                {/* Serial / IMEI input tracking details */}
                 {openSerials[item.productId] && (
                   <div className="flex gap-2">
                     <input
                       type="text"
                       value={item.serialNumber || ""}
                       onChange={(e) => updateCartItemDetails(item.productId, { serialNumber: e.target.value })}
-                      placeholder="S/N (Required)"
-                      className="flex-1 bg-secondary text-[10px] border border-border px-2 py-1 rounded focus:outline-none"
+                      placeholder="Serial No."
+                      className="flex-1 bg-secondary text-xs border border-border px-2 py-1.5 rounded focus:outline-none"
                     />
                     <input
                       type="text"
                       value={item.imei || ""}
                       onChange={(e) => updateCartItemDetails(item.productId, { imei: e.target.value })}
-                      placeholder="IMEI (Mobile)"
-                      className="flex-1 bg-secondary text-[10px] border border-border px-2 py-1 rounded focus:outline-none"
+                      placeholder="IMEI"
+                      className="flex-1 bg-secondary text-xs border border-border px-2 py-1.5 rounded focus:outline-none"
                     />
                   </div>
                 )}
-
-                {/* Adjuster Panel */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center border border-border rounded-lg bg-secondary">
-                    <button
-                      onClick={() => updateCartQty(item.productId, item.quantity - 1)}
-                      className="p-1 text-muted-foreground hover:text-foreground"
-                    >
-                      <Minus className="w-3.5 h-3.5" />
-                    </button>
-                    <span className="px-2.5 text-xs font-bold">{item.quantity}</span>
-                    <button
-                      onClick={() => updateCartQty(item.productId, item.quantity + 1)}
-                      className="p-1 text-muted-foreground hover:text-foreground"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                  <span className="font-bold text-xs text-foreground">
-                    Rs. {Number(((item.sellingPrice * item.quantity) * (1 - item.discount / 100))).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
               </div>
             ))
           )}

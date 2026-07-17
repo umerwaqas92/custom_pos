@@ -290,7 +290,7 @@ function sales_create(array $params): void
                 throw new RuntimeException("Insufficient stock for product {$prod['name']} at this branch.");
             }
 
-            $unit = (float) $prod['selling_price'];
+            $unit = (float) ($item['unitPrice'] ?? $prod['selling_price']);
             $itemDiscount = (float) ($item['discount'] ?? 0);
             $itemTax = $gstRate;
             $baseTotal = $unit * $qty;
