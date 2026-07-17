@@ -67,7 +67,7 @@ export function ToastContainer() {
   const { notifications, clearNotification } = useStore();
 
   return (
-    <div className="fixed top-20 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-sm">
+    <div className="fixed top-20 right-4 z-[100] flex flex-col gap-2 pointer-events-none max-w-sm">
       {notifications.slice(0, 5).map((n) => (
         <Toast key={n.id} notification={n} onClose={clearNotification} />
       ))}
