@@ -184,9 +184,10 @@ export default function Inventory() {
   const [categoryQuery, setCategoryQuery] = useState("");
   const [brandQuery, setBrandQuery] = useState("");
 
-  const [adjustment, setAdjustment] = useState({
-    productId: "", branchId: "", quantity: "", reason: ""
-  });
+  // Adjustment state — table mode
+  const [adjustmentRows, setAdjustmentRows] = useState<Record<string, string>>({});
+  const [adjustmentReason, setAdjustmentReason] = useState("");
+  const [adjustmentSearch, setAdjustmentSearch] = useState("");
 
   const [transfer, setTransfer] = useState({
     productId: "", fromBranchId: "", toBranchId: "", quantity: "", notes: ""
@@ -295,27 +296,37 @@ export default function Inventory() {
     }
   };
 
-  // Adjust stock Submit
+  // Adjust stock Submit — bulk mode
   const handleAdjustStock = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { productId, branchId, quantity, reason } = adjustment;
-    if (!productId || !branchId || !quantity) {
-      addNotification("Please select a product, branch, and quantity.", "warning");
+    const entries = Object.entries(adjustmentRows).filter(([, qty]) => qty.trim() !== "" && qty.trim() !== "0");
+    if (entries.length === 0) {
+      addNotification("Enter quantity for at least one product.", "warning");
       return;
     }
-    try {
-      await axios.post("/api/inventory/adjust", {
-        productId, branchId, quantity: Number(quantity), reason
-      });
-      addNotification("Stock adjusted successfully.", "success");
-      setAdjustOpen(false);
-      loadInventory();
-      checkLowStock();
-      setAdjustment({ productId: "", branchId: "", quantity: "", reason: "" });
-    } catch (err: any) {
-      const msg = err.response?.data?.error || "Failed to adjust stock.";
-      addNotification(msg, "warning");
+    let successCount = 0;
+    let failCount = 0;
+    for (const [productId, quantity] of entries) {
+      try {
+        await axios.post("/api/inventory/adjust", {
+          productId, branchId: selectedBranchId, quantity: Number(quantity), reason: adjustmentReason
+        });
+        successCount++;
+      } catch {
+        failCount++;
+      }
     }
+    if (successCount > 0) {
+      addNotification(`${successCount} product(s) adjusted successfully${failCount > 0 ? `, ${failCount} failed.` : "."}`, "success");
+    } else {
+      addNotification("All adjustments failed.", "warning");
+    }
+    setAdjustOpen(false);
+    loadInventory();
+    checkLowStock();
+    setAdjustmentRows({});
+    setAdjustmentReason("");
+    setAdjustmentSearch("");
   };
 
   // Transfer stock Submit
@@ -960,61 +971,109 @@ export default function Inventory() {
           </div>
       </PortalModal>
 
-      {/* Stock Adjustment Modal */}
-      <PortalModal isOpen={adjustOpen} onClose={() => setAdjustOpen(false)} backdropClass="bg-black/60 backdrop-blur-sm px-4">
-        <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
-            <h3 className="font-bold text-sm text-foreground mb-4">Manual Inventory Adjustment</h3>
+      {/* Stock Adjustment Modal — Table mode */}
+      <PortalModal isOpen={adjustOpen} onClose={() => setAdjustOpen(false)} backdropClass="bg-black/60 backdrop-blur-sm px-4 overflow-y-auto">
+        <div className="bg-card border border-border w-full max-w-3xl p-6 rounded-2xl shadow-2xl relative my-8">
+            <h3 className="font-bold text-sm text-foreground mb-4">
+                Manual Inventory Adjustment
+                {selectedBranchId && (
+                  <span className="ml-2 text-[10px] font-normal text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
+                    Branch: {branches.find(b => b.id === selectedBranchId)?.name || selectedBranchId}
+                  </span>
+                )}
+              </h3>
             <form onSubmit={handleAdjustStock} className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase">Select Product</label>
-                <select
-                  value={adjustment.productId}
-                  onChange={(e) => setAdjustment({ ...adjustment, productId: e.target.value })}
-                  className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
-                >
-                  <option value="">Choose product...</option>
-                  {products.map(p => <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>)}
-                </select>
+              {/* Shared controls */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="space-y-1 flex-1">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Reason / Notes</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Damaged during shipment, local store purchase"
+                    value={adjustmentReason}
+                    onChange={(e) => setAdjustmentReason(e.target.value)}
+                    className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
+                  />
+                </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase">Select Target Branch Location</label>
-                <select
-                  value={adjustment.branchId}
-                  onChange={(e) => setAdjustment({ ...adjustment, branchId: e.target.value })}
-                  className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
-                >
-                  <option value="">Choose branch...</option>
-                  {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase">Quantity Change (+/-)</label>
-                <input
-                  type="number"
-                  placeholder="e.g. 5 for Stock-in, -2 for Damaged"
-                  value={adjustment.quantity}
-                  onChange={(e) => setAdjustment({ ...adjustment, quantity: e.target.value })}
-                  className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase">Reason / Notes</label>
+              {/* Search */}
+              <div className="relative">
+                <img src="/icons/inventory/search.png?v=1" alt="" className="w-4 h-4 object-contain absolute left-3 top-2.5 opacity-70" draggable={false} />
                 <input
                   type="text"
-                  placeholder="e.g. Damaged during shipment, local store purchase"
-                  value={adjustment.reason}
-                  onChange={(e) => setAdjustment({ ...adjustment, reason: e.target.value })}
-                  className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
+                  value={adjustmentSearch}
+                  onChange={(e) => setAdjustmentSearch(e.target.value)}
+                  placeholder="Search products by name, SKU, or barcode..."
+                  className="w-full bg-secondary text-foreground text-sm border border-border pl-9 pr-4 py-2 rounded-xl focus:outline-none"
                 />
               </div>
 
-              <div className="flex gap-3 justify-end pt-4">
+              {/* Products table */}
+              <div className="overflow-x-auto max-h-72 overflow-y-auto border border-border rounded-xl">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead className="sticky top-0 bg-card z-10">
+                    <tr className="border-b border-border text-muted-foreground font-semibold">
+                      <th className="p-2.5">Product</th>
+                      <th className="p-2.5">SKU</th>
+                      <th className="p-2.5 text-center">Current Stock</th>
+                      <th className="p-2.5 text-center w-40">Qty Change (+/-)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/50">
+                    {products
+                      .filter((p) => {
+                        if (!adjustmentSearch) return true;
+                        const q = adjustmentSearch.toLowerCase();
+                        return p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q) || (p.barcode && p.barcode.includes(q));
+                      })
+                      .length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="py-8 text-center text-muted-foreground">No products found.</td>
+                      </tr>
+                    ) : (
+                      products
+                        .filter((p) => {
+                          if (!adjustmentSearch) return true;
+                          const q = adjustmentSearch.toLowerCase();
+                          return p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q) || (p.barcode && p.barcode.includes(q));
+                        })
+                        .map((p) => {
+                          const currentQty = getAvailableQty(p, selectedBranchId);
+                          return (
+                            <tr key={p.id} className="hover:bg-secondary/20 transition">
+                              <td className="p-2.5 font-medium text-foreground max-w-xs truncate">{p.name}</td>
+                              <td className="p-2.5 text-muted-foreground">{p.sku}</td>
+                              <td className="p-2.5 text-center">
+                                <span className="font-bold">{currentQty}</span>
+                              </td>
+                              <td className="p-2.5 text-center">
+                                <input
+                                  type="number"
+                                  step="1"
+                                  placeholder="0"
+                                  value={adjustmentRows[p.id] ?? ""}
+                                  onChange={(e) => setAdjustmentRows(prev => ({ ...prev, [p.id]: e.target.value }))}
+                                  className="w-28 bg-secondary border border-border px-2.5 py-1.5 rounded text-xs focus:outline-none text-center"
+                                />
+                              </td>
+                            </tr>
+                          );
+                        })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex gap-3 justify-end pt-4 border-t border-border">
                 <button
                   type="button"
-                  onClick={() => setAdjustOpen(false)}
+                  onClick={() => {
+                    setAdjustOpen(false);
+                    setAdjustmentRows({});
+                    setAdjustmentReason("");
+                    setAdjustmentSearch("");
+                  }}
                   className="px-4 py-2 border border-border text-xs rounded hover:bg-secondary transition"
                 >
                   Cancel
@@ -1023,7 +1082,7 @@ export default function Inventory() {
                   type="submit"
                   className="px-4 py-2 bg-primary text-white text-xs rounded hover:bg-primary/95 transition"
                 >
-                  Save Adjustment
+                  Save Adjustments
                 </button>
               </div>
             </form>
