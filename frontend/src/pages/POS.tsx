@@ -71,7 +71,6 @@ export default function POS() {
   // New Customer Form State
   const [newCust, setNewCust] = useState({ name: "", phone: "", email: "", address: "", creditLimit: "1000000" });
 
-  const barcodeInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const handleCreateCustomer = async (e: React.FormEvent) => {
@@ -149,16 +148,8 @@ export default function POS() {
         }
       }
 
-      // Focus barcode input if Cmd/Ctrl+B or F2 is pressed
-      if (e.key === "F2" || (isCommandKey && e.key.toLowerCase() === "b")) {
-        e.preventDefault();
-        barcodeInputRef.current?.focus();
-        barcodeInputRef.current?.select();
-        return;
-      }
-
-      // Focus search input if Cmd/Ctrl+K is pressed
-      if (isCommandKey && e.key.toLowerCase() === "k") {
+      // Focus search input if Cmd/Ctrl+K, Cmd/Ctrl+B or F2 is pressed
+      if (e.key === "F2" || (isCommandKey && (e.key.toLowerCase() === "k" || e.key.toLowerCase() === "b"))) {
         e.preventDefault();
         searchInputRef.current?.focus();
         searchInputRef.current?.select();
@@ -414,9 +405,9 @@ export default function POS() {
     doc.close();
   };
 
-  const handleBarcodeSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleBarcodeSubmit = (e: React.FormEvent<HTMLFormElement> | React.KeyboardEvent<HTMLInputElement>) => {
     e.preventDefault();
-    const input = barcodeInputRef.current?.value || "";
+    const input = searchQuery.trim();
     if (!input) return;
 
     // Search product with exact barcode or SKU matches
@@ -436,7 +427,7 @@ export default function POS() {
       addNotification(`Product with sku/barcode "${input}" not found.`, "warning");
     }
 
-    if (barcodeInputRef.current) barcodeInputRef.current.value = "";
+    setSearchQuery("");
   };
 
   const [mobileTab, setMobileTab] = useState<"catalog" | "cart">("catalog");
@@ -471,24 +462,19 @@ export default function POS() {
 
         {/* Search header controls */}
         <div className="flex flex-col sm:flex-row gap-3">
-          <form onSubmit={handleBarcodeSubmit} className="flex-1 relative flex">
-            <input
-              ref={barcodeInputRef}
-              type="text"
-              placeholder="Scan Barcode or Type SKU (F2 or Ctrl/Cmd+B)..."
-              className="w-full bg-secondary text-foreground border border-border pl-10 pr-4 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary placeholder-muted-foreground"
-            />
-            <img src="/icons/pos/barcode.png?v=1" alt="" className="w-5 h-5 object-contain absolute left-3 top-2.5 opacity-80" draggable={false} />
-          </form>
-
-          <div className="relative w-48">
+          <div className="flex-1 relative">
             <img src="/icons/pos/search.png?v=1" alt="" className="w-4 h-4 object-contain absolute left-3 top-3 opacity-80" draggable={false} />
             <input
               ref={searchInputRef}
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search items by name (Ctrl/Cmd+K)..."
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleBarcodeSubmit(e as any);
+                }
+              }}
+              placeholder="Search by name, SKU, or barcode..."
               className="w-full bg-secondary border border-border pl-9 pr-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
@@ -504,8 +490,7 @@ export default function POS() {
         </div>
 
         <div className="hidden sm:flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
-          <span>F2 / Ctrl/Cmd+B: Barcode</span>
-          <span>Ctrl/Cmd+K: Search</span>
+          <span>F2 / Ctrl/Cmd+K / Ctrl/Cmd+B: Search</span>
           <span>Ctrl/Cmd+Enter: Checkout</span>
           <span>Ctrl/Cmd+Shift+C: Clear Cart</span>
           <span>Ctrl/Cmd+Shift+R: Refresh</span>
