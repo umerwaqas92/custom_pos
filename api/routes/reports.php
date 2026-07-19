@@ -852,14 +852,27 @@ function reports_dashboard_stats(array $params): void
     $expensesMonth = $q($pdo, "SELECT COALESCE(SUM(amount),0) AS total FROM expenses WHERE owner_id = ? AND date >= ?", [$ownerId, $monthStart]);
     $expensesAll = $q($pdo, "SELECT COALESCE(SUM(amount),0) AS total FROM expenses WHERE owner_id = ?", [$ownerId]);
 
-    $products = $q(
-        $pdo,
-        "SELECT COUNT(*) AS cnt, COALESCE(SUM(stock_quantity),0) AS units,
-                SUM(CASE WHEN stock_quantity <= min_stock AND stock_quantity > 0 THEN 1 ELSE 0 END) AS low,
-                SUM(CASE WHEN stock_quantity <= 0 THEN 1 ELSE 0 END) AS outq
-         FROM products WHERE owner_id = ?" . ($branchId ? ' AND branch_id = ?' : ''),
-        $branchId ? [$ownerId, $branchId] : [$ownerId]
-    );
+    if ($branchId) {
+        $products = $q(
+            $pdo,
+            "SELECT COUNT(*) AS cnt, COALESCE(SUM(bs.quantity),0) AS units,
+                    SUM(CASE WHEN COALESCE(bs.quantity,0) <= 3 THEN 1 ELSE 0 END) AS low,
+                    SUM(CASE WHEN COALESCE(bs.quantity,0) <= 0 THEN 1 ELSE 0 END) AS outq
+             FROM products p
+             LEFT JOIN branch_stocks bs ON bs.product_id = p.id AND bs.branch_id = ?
+             WHERE p.owner_id = ?",
+            [$branchId, $ownerId]
+        );
+    } else {
+        $products = $q(
+            $pdo,
+            "SELECT COUNT(*) AS cnt, COALESCE(SUM(stock_quantity),0) AS units,
+                    SUM(CASE WHEN stock_quantity <= 3 THEN 1 ELSE 0 END) AS low,
+                    SUM(CASE WHEN stock_quantity <= 0 THEN 1 ELSE 0 END) AS outq
+             FROM products WHERE owner_id = ?",
+            [$ownerId]
+        );
+    }
     $customers = $q(
         $pdo,
         "SELECT COUNT(*) AS cnt FROM customers WHERE owner_id = ?" . ($branchId ? ' AND branch_id = ?' : ''),

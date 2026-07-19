@@ -325,7 +325,7 @@ export default function Inventory() {
     }
     setAdjustOpen(false);
     loadInventory();
-    checkLowStock();
+    checkLowStock(selectedBranchId);
     setAdjustmentRows({});
     setAdjustmentReason("");
     setAdjustmentSearch("");
@@ -350,7 +350,7 @@ export default function Inventory() {
       addNotification("Inventory transferred successfully.", "success");
       setTransferOpen(false);
       loadInventory();
-      checkLowStock();
+      checkLowStock(selectedBranchId);
       setTransfer({ productId: "", fromBranchId: "", toBranchId: "", quantity: "", notes: "" });
     } catch (err: any) {
       const msg = err.response?.data?.error || "Transfer failed.";

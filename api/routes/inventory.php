@@ -213,14 +213,11 @@ function inventory_alerts(array $params): void
     $out = [];
     foreach ($products as $p) {
         $qty = (int) $p['qty'];
-        $min = (int) $p['min_stock'];
         $level = 'OK';
         if ($qty <= 0) {
             $level = 'OUT';
-        } elseif ($qty <= $min) {
+        } elseif ($qty <= $threshold) {
             $level = 'LOW';
-        } elseif ($qty <= $min + $threshold) {
-            $level = 'WATCH';
         }
         if ($level === 'OK') {
             continue;

@@ -71,7 +71,7 @@ interface StateStore {
   toggleTheme: () => void;
   setGstSettings: (enabled: boolean, rate: number) => void;
   loadSettings: () => Promise<void>;
-  checkLowStock: () => Promise<void>;
+  checkLowStock: (branchId?: string) => Promise<void>;
 }
 
 function readStoredUser(): User | null {
@@ -230,9 +230,10 @@ export const useStore = create<StateStore>((set, get) => ({
       return { gstEnabled: enabled, gstRate: rate };
     }),
 
-  checkLowStock: async () => {
+  checkLowStock: async (branchId?: string) => {
     try {
-      const res = await axios.get("/api/inventory/alerts");
+      const params = branchId ? { branchId } : {};
+      const res = await axios.get("/api/inventory/alerts", { params });
       const alerts: any[] = Array.isArray(res.data) ? res.data : [];
       const count = alerts.length;
       const prevCount = get().lowStockCount;
