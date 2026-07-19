@@ -464,7 +464,7 @@ export default function Contacts() {
                       <td className="py-4 text-muted-foreground">{c.phone}</td>
                       <td className="py-4 text-left font-black text-foreground">
                         <span className={c.creditBalance > 0 ? "text-amber-400" : "text-green-400"}>
-                          Rs. {c.creditBalance}
+                          Rs. {Number(c.creditBalance).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </span>
                       </td>
                       <td className="py-4 text-center">
@@ -854,7 +854,7 @@ export default function Contacts() {
               <div className="bg-secondary/50 p-3 rounded-xl border border-border text-[11px] text-muted-foreground">
                 <div className="flex justify-between font-bold text-foreground">
                   <span>Current Outstanding Balance:</span>
-                  <span>Rs. {selectedCust.creditBalance}</span>
+                  <span>Rs. {Number(selectedCust.creditBalance).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                 </div>
               </div>
 

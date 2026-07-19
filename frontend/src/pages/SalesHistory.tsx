@@ -1024,21 +1024,21 @@ export default function SalesHistory() {
               <div className="border-t border-border pt-3 space-y-1 text-[11px]">
                 <div className="flex justify-between text-muted-foreground">
                   <span>Subtotal:</span>
-                  <span>Rs. {activeSale.totalAmount.toFixed(2)}</span>
+                  <span>Rs. {activeSale.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>Discount:</span>
-                  <span>-Rs. {activeSale.discountAmount.toFixed(2)}</span>
+                  <span>-Rs. {activeSale.discountAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>Sales Tax ({activeSale.items[0]?.tax || 0}%):</span>
-                  <span>+Rs. {activeSale.taxAmount.toFixed(2)}</span>
+                  <span>+Rs. {activeSale.taxAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
                 <div className="flex justify-between font-black text-foreground text-xs pt-1 border-t border-border/40">
                   <span>
                     Total Paid ({paymentMethodNames[activeSale.paymentMethod] || activeSale.paymentMethod}):
                   </span>
-                  <span>Rs. {activeSale.paidAmount.toFixed(2)}</span>
+                  <span>Rs. {activeSale.paidAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
               </div>
 
@@ -1058,12 +1058,12 @@ export default function SalesHistory() {
                   {activeSale.paymentMethod === "EMI" ? (
                     <p>
                       Financed Balance:{" "}
-                      <strong>Rs. {Math.max(0, activeSale.payableAmount - activeSale.paidAmount).toFixed(2)}</strong>
+                      <strong>Rs. {Math.max(0, activeSale.payableAmount - activeSale.paidAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                     </p>
                   ) : activeSale.paymentMethod === "CREDIT" ? (
                     <p>
                       Outstanding on Invoice:{" "}
-                      <strong>Rs. {Math.max(0, activeSale.payableAmount - activeSale.paidAmount).toFixed(2)}</strong>
+                      <strong>Rs. {Math.max(0, activeSale.payableAmount - activeSale.paidAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                     </p>
                   ) : null}
                 </div>

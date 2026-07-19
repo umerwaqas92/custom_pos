@@ -378,7 +378,7 @@ export default function Repairs() {
                       <div key={idx} className="flex justify-between items-center bg-card p-1.5 rounded border border-border">
                         <span>{p.name}</span>
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-foreground">Rs. {p.cost}</span>
+                          <span className="font-bold text-foreground">Rs. {Number(p.cost).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                           <button
                             type="button"
                             onClick={() => handleRemovePart(idx)}

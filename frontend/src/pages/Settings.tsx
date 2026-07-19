@@ -748,7 +748,7 @@ export default function Settings() {
                 </div>
                 {gstRateLocal && (
                   <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-extrabold px-3 py-2.5 rounded-xl">
-                    Rs. 100 → Rs. {(100 * (1 + parseFloat(gstRateLocal || "0") / 100)).toFixed(2)}
+                    Rs. 100 → Rs. {(100 * (1 + parseFloat(gstRateLocal || "0") / 100)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                 )}
               </div>

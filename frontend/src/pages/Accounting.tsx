@@ -422,7 +422,7 @@ export default function Accounting() {
                     <td className="py-4 text-muted-foreground">{new Date(exp.date).toLocaleDateString()}</td>
                     <td className="py-4 text-foreground uppercase font-semibold">{exp.paymentMethod}</td>
                     <td className="py-4 text-muted-foreground truncate max-w-xs">{exp.description || "-"}</td>
-                    <td className="py-4 text-right pr-2 font-extrabold text-red-400">Rs. {exp.amount}</td>
+                    <td className="py-4 text-right pr-2 font-extrabold text-red-400">Rs. {Number(exp.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                   </tr>
                 ))}
               </tbody>
@@ -456,7 +456,7 @@ export default function Accounting() {
                     <td className="py-4 text-[10px] text-muted-foreground max-w-xs">
                       {pur.items.map((it: any, idx: number) => <span key={idx} className="block">{it.product.name} (x{it.quantity})</span>)}
                     </td>
-                    <td className="py-4 text-right font-black text-foreground">Rs. {pur.totalAmount}</td>
+                    <td className="py-4 text-right font-black text-foreground">Rs. {Number(pur.totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     <td className="py-4 text-center">
                       <span className={`text-[10px] px-2 py-0.5 rounded font-black uppercase ${pur.status === "RECEIVED" ? "bg-green-500/10 text-green-400" : "bg-amber-500/10 text-amber-400"}`}>{pur.status}</span>
                     </td>
@@ -800,7 +800,7 @@ export default function Accounting() {
                       <span className="font-bold">{it.name}</span>
                       <div className="flex gap-3">
                         <span>Qty: {it.quantity}</span>
-                        <span>Rs. {it.costPrice}</span>
+                        <span>Rs. {Number(it.costPrice).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                         <button type="button" onClick={() => handleRemovePurchaseItem(idx)} className="text-red-400 hover:text-red-300 font-bold">Remove</button>
                       </div>
                     </div>

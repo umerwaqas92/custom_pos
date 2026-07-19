@@ -321,7 +321,7 @@ export default function Installments() {
                       {sale.customer?.name || "Walk-in"}
                     </td>
                     <td className="py-2 text-right font-extrabold text-foreground">
-                      Rs. {sale.payableAmount.toFixed(2)}
+                      Rs. {sale.payableAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                     <td className="py-2 text-right pr-2">
                       <button
@@ -419,10 +419,10 @@ export default function Installments() {
                         {paidInstallments} / {emi.months} months
                       </td>
                       <td className="py-3 text-right font-bold text-foreground">
-                        Rs. {emi.monthlyPayment.toFixed(2)}
+                        Rs. {emi.monthlyPayment.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
                       <td className="py-3 text-right font-extrabold text-foreground">
-                        Rs. {totalRemaining.toFixed(2)}
+                        Rs. {totalRemaining.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
                       <td className="py-3 text-center">
                         <span
@@ -902,7 +902,7 @@ export default function Installments() {
                         Repayment Timeline
                       </span>
                       <p className="text-[10px] text-muted-foreground">
-                        Monthly amount: <strong className="text-foreground">Rs. {emi.monthlyPayment.toFixed(2)}</strong> for {emi.months} months
+                        Monthly amount: <strong className="text-foreground">Rs. {emi.monthlyPayment.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> for {emi.months} months
                       </p>
                     </div>
                     <div className="text-right">
@@ -1074,8 +1074,8 @@ export default function Installments() {
                       )}
                     </td>
                     <td className="py-2 text-center">{item.quantity}</td>
-                    <td className="py-2 text-right">Rs. {item.unitPrice.toFixed(2)}</td>
-                    <td className="py-2 text-right font-bold">Rs. {item.totalPrice.toFixed(2)}</td>
+                    <td className="py-2 text-right">Rs. {item.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td className="py-2 text-right font-bold">Rs. {item.totalPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1087,11 +1087,11 @@ export default function Installments() {
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Original Purchase Total:</span>
-                <span>Rs. {activeContract.payableAmount.toFixed(2)}</span>
+                <span>Rs. {activeContract.payableAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Down Payment Collected:</span>
-                <span>Rs. {activeContract.emiDetails.downPayment.toFixed(2)}</span>
+                <span>Rs. {activeContract.emiDetails.downPayment.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Markup Rate Added:</span>
@@ -1099,7 +1099,7 @@ export default function Installments() {
               </div>
               <div className="flex justify-between font-bold text-foreground">
                 <span>Remaining Financed Amount:</span>
-                <span>Rs. {(activeContract.emiDetails.totalPrincipal - activeContract.emiDetails.downPayment).toFixed(2)}</span>
+                <span>Rs. {(activeContract.emiDetails.totalPrincipal - activeContract.emiDetails.downPayment).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
             </div>
           </div>
@@ -1121,7 +1121,7 @@ export default function Installments() {
                   <tr key={inst.id} className="py-2">
                     <td className="py-2 font-bold">Installment #{inst.installmentNumber}</td>
                     <td className="py-2">{new Date(inst.dueDate).toLocaleDateString()}</td>
-                    <td className="py-2 text-right font-semibold">Rs. {inst.amount.toFixed(2)}</td>
+                    <td className="py-2 text-right font-semibold">Rs. {inst.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     <td className="py-2 text-center">
                       <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${inst.status === "PAID" ? "text-green-500 bg-green-500/10" : "text-amber-500 bg-amber-500/10"}`}>
                         {inst.status}
