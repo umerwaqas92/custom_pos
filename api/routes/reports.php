@@ -936,7 +936,7 @@ function reports_dashboard_stats(array $params): void
         $recentSales[] = [
             'id' => $row['id'],
             'payableAmount' => (float) $row['payable_amount'],
-            'saleDate' => $row['sale_date'],
+            'saleDate' => dt_iso($row['sale_date']),
             'paymentMethod' => $row['payment_method'],
             'customer' => $row['customer_name'] ? ['name' => $row['customer_name']] : null,
         ];
@@ -950,7 +950,7 @@ function reports_dashboard_stats(array $params): void
             'id' => $row['id'],
             'name' => $row['name'],
             'phone' => $row['phone'],
-            'createdAt' => $row['created_at'],
+            'createdAt' => dt_iso($row['created_at']),
         ];
     }
 

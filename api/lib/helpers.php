@@ -21,6 +21,18 @@ function now_sql(): string
 }
 
 /**
+ * Convert a DB datetime string to ISO 8601 with UTC timezone (for JS consumption).
+ * "2026-07-19 09:27:00" → "2026-07-19T09:27:00Z"
+ */
+function dt_iso(?string $dt): ?string
+{
+    if ($dt === null || $dt === '') {
+        return $dt;
+    }
+    return str_replace(' ', 'T', $dt) . 'Z';
+}
+
+/**
  * Convert snake_case keys to camelCase (recursive).
  */
 function keys_to_camel($data)

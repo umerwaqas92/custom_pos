@@ -168,7 +168,7 @@ function inventory_movements(array $params): void
             'branchId' => $r['branch_id'],
             'referenceId' => $r['reference_id'],
             'notes' => $r['notes'],
-            'createdAt' => $r['created_at'],
+            'createdAt' => dt_iso($r['created_at']),
             'product' => [
                 'id' => $r['product_id'],
                 'name' => $r['p_name'],
