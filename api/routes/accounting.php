@@ -24,6 +24,8 @@ function register_accounting_routes(Router $router): void
 
     $router->get('accounting/expenses', 'acct_expenses_list', false, ['OWNER', 'MANAGER']);
     $router->post('accounting/expenses', 'acct_expenses_create', false, ['OWNER', 'MANAGER']);
+    $router->put('accounting/expenses/:id', 'acct_expenses_update', false, ['OWNER', 'MANAGER']);
+    $router->delete('accounting/expenses/:id', 'acct_expenses_delete', false, ['OWNER', 'MANAGER']);
 
     $router->get('accounting/bank-accounts', 'acct_banks_list', false, ['OWNER', 'MANAGER']);
     $router->post('accounting/bank-accounts', 'acct_banks_create', false, ['OWNER', 'MANAGER']);
@@ -548,17 +550,39 @@ function acct_purchases_status(array $p): void
 
 function acct_expenses_list(array $p): void
 {
+    $q = query_params();
     $ownerId = tenant_owner_id();
     $branchId = branch_id();
-    $sql = 'SELECT * FROM expenses WHERE owner_id = ?'
-        . ($branchId ? ' AND branch_id = ?' : '')
-        . ' ORDER BY date DESC';
-    $args = $branchId ? [$ownerId, $branchId] : [$ownerId];
+    $where = 'owner_id = ?';
+    $args = [$ownerId];
+    if ($branchId) {
+        $where .= ' AND branch_id = ?';
+        $args[] = $branchId;
+    }
+
+    // Month/year filter
+    $month = isset($q['month']) && $q['month'] !== '' && $q['month'] !== 'ALL' ? (string) $q['month'] : null;
+    $year = isset($q['year']) && $q['year'] !== '' && $q['year'] !== 'ALL' ? (string) $q['year'] : null;
+    if ($month !== null || $year !== null) {
+        $y = $year !== null ? (int) $year : (int) date('Y');
+        $m = $month !== null ? (int) $month : null;
+        if ($m !== null) {
+            $start = sprintf('%04d-%02d-01 00:00:00', $y, $m);
+            $end = date('Y-m-d H:i:s', strtotime($start . ' +1 month'));
+        } else {
+            $start = sprintf('%04d-01-01 00:00:00', $y);
+            $end = sprintf('%04d-01-01 00:00:00', $y + 1);
+        }
+        $where .= ' AND date >= ? AND date < ?';
+        $args[] = $start;
+        $args[] = $end;
+    }
+
+    $sql = 'SELECT * FROM expenses WHERE ' . $where . ' ORDER BY date DESC';
     $st = Database::pdo()->prepare($sql);
     $st->execute($args);
-    $rows = $st->fetchAll();
     $out = [];
-    foreach ($rows as $r) {
+    foreach ($st->fetchAll() as $r) {
         $out[] = [
             'id' => $r['id'], 'category' => $r['category'], 'amount' => (float) $r['amount'],
             'date' => $r['date'], 'description' => $r['description'], 'paymentMethod' => $r['payment_method'],
@@ -577,12 +601,14 @@ function acct_expenses_create(array $p): void
     $id = uuid_v4();
     $now = now_sql();
     $amount = (float) $b['amount'];
+    // Allow custom date, default to now
+    $expenseDate = !empty($b['date']) ? date('Y-m-d H:i:s', strtotime((string) $b['date'])) : $now;
     $pdo = Database::pdo();
     $ownerId = tenant_owner_id();
     $branchId = branch_id();
     $pdo->prepare(
         'INSERT INTO expenses (id, category, amount, date, description, payment_method, owner_id, branch_id, created_at) VALUES (?,?,?,?,?,?,?,?,?)'
-    )->execute([$id, $b['category'], $amount, $now, $b['description'] ?? null, $b['paymentMethod'], $ownerId, $branchId, $now]);
+    )->execute([$id, $b['category'], $amount, $expenseDate, $b['description'] ?? null, $b['paymentMethod'], $ownerId, $branchId, $now]);
 
     $map = ['CASH' => 'CASH', 'CARD' => 'BANK', 'MOBILE' => 'MOBILE_WALLET'];
     $type = $map[strtoupper((string) $b['paymentMethod'])] ?? 'CASH';
@@ -603,9 +629,103 @@ function acct_expenses_create(array $p): void
             ->execute([$amount, $now, $acc['id'], $ownerId]);
     }
     json_response([
-        'id' => $id, 'category' => $b['category'], 'amount' => $amount, 'date' => $now,
+        'id' => $id, 'category' => $b['category'], 'amount' => $amount, 'date' => $expenseDate,
         'description' => $b['description'] ?? null, 'paymentMethod' => $b['paymentMethod'], 'createdAt' => $now,
     ], 201);
+}
+
+function acct_expenses_update(array $p): void
+{
+    $b = read_json_body();
+    $pdo = Database::pdo();
+    $ownerId = tenant_owner_id();
+    $branchId = branch_id();
+
+    // Verify ownership
+    $chkSql = 'SELECT id FROM expenses WHERE id = ? AND owner_id = ?';
+    $chkArgs = [$p['id'], $ownerId];
+    if ($branchId) {
+        $chkSql .= ' AND (branch_id = ? OR branch_id IS NULL)';
+        $chkArgs[] = $branchId;
+    }
+    $st = $pdo->prepare($chkSql);
+    $st->execute($chkArgs);
+    if (!$st->fetch()) {
+        json_error('Expense not found.', 404);
+    }
+
+    $sets = [];
+    $vals = [];
+    if (isset($b['category'])) {
+        $sets[] = 'category = ?';
+        $vals[] = $b['category'];
+    }
+    if (isset($b['amount'])) {
+        $sets[] = 'amount = ?';
+        $vals[] = (float) $b['amount'];
+    }
+    if (isset($b['date'])) {
+        $sets[] = 'date = ?';
+        $vals[] = date('Y-m-d H:i:s', strtotime((string) $b['date']));
+    }
+    if (array_key_exists('description', $b)) {
+        $sets[] = 'description = ?';
+        $vals[] = $b['description'];
+    }
+    if (isset($b['paymentMethod'])) {
+        $sets[] = 'payment_method = ?';
+        $vals[] = $b['paymentMethod'];
+    }
+
+    if (!$sets) {
+        json_error('No fields to update.', 400);
+    }
+
+    $sets[] = 'updated_at = ?';
+    $vals[] = now_sql();
+    $vals[] = $p['id'];
+    $vals[] = $ownerId;
+    $updSql = 'UPDATE expenses SET ' . implode(', ', $sets) . ' WHERE id = ? AND owner_id = ?';
+    if ($branchId) {
+        $updSql .= ' AND (branch_id = ? OR branch_id IS NULL)';
+        $vals[] = $branchId;
+    }
+    $pdo->prepare($updSql)->execute($vals);
+
+    $st = $pdo->prepare('SELECT * FROM expenses WHERE id = ? AND owner_id = ?');
+    $st->execute([$p['id'], $ownerId]);
+    $r = $st->fetch();
+    json_response([
+        'id' => $r['id'], 'category' => $r['category'], 'amount' => (float) $r['amount'],
+        'date' => $r['date'], 'description' => $r['description'], 'paymentMethod' => $r['payment_method'],
+        'attachment' => $r['attachment'], 'createdAt' => $r['created_at'],
+    ]);
+}
+
+function acct_expenses_delete(array $p): void
+{
+    $pdo = Database::pdo();
+    $ownerId = tenant_owner_id();
+    $branchId = branch_id();
+
+    $chkSql = 'SELECT id FROM expenses WHERE id = ? AND owner_id = ?';
+    $chkArgs = [$p['id'], $ownerId];
+    if ($branchId) {
+        $chkSql .= ' AND (branch_id = ? OR branch_id IS NULL)';
+        $chkArgs[] = $branchId;
+    }
+    $st = $pdo->prepare($chkSql);
+    $st->execute($chkArgs);
+    if (!$st->fetch()) {
+        json_error('Expense not found.', 404);
+    }
+
+    $pdo->prepare('DELETE FROM transactions WHERE reference_type = ? AND reference_id = ? AND owner_id = ?')
+        ->execute(['EXPENSE', $p['id'], $ownerId]);
+    $pdo->prepare('DELETE FROM expenses WHERE id = ? AND owner_id = ?')
+        ->execute([$p['id'], $ownerId]);
+
+    json_response(['message' => 'Expense deleted successfully.']);
 }
 
 function acct_banks_list(array $p): void

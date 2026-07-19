@@ -17,7 +17,9 @@ import {
   ChevronDown,
   ArrowUpRight,
   ArrowDownRight,
-  RefreshCw
+  RefreshCw,
+  Pencil,
+  Trash2
 } from "lucide-react";
 
 type Tab = "EXPENSES" | "PURCHASES" | "BANKS" | "CASHBOOK" | "PNL" | "DAILY_CLOSING";
@@ -61,15 +63,27 @@ export default function Accounting() {
   const [purchaseOpen, setPurchaseOpen] = useState(false);
   const [receiveOpen, setReceiveOpen] = useState(false);
   const [selectedPurchase, setSelectedPurchase] = useState<any | null>(null);
-  const [newExpense, setNewExpense] = useState({ category: "RENT", amount: "", paymentMethod: "CASH", description: "" });
+  const [newExpense, setNewExpense] = useState({ category: "RENT", amount: "", paymentMethod: "CASH", description: "", date: "" });
+  // Expense month/year filter
+  const [expenseMonth, setExpenseMonth] = useState("");
+  const [expenseYear, setExpenseYear] = useState("");
+  // Edit expense
+  const [editExpense, setEditExpense] = useState<any | null>(null);
+  const [editExpenseOpen, setEditExpenseOpen] = useState(false);
+  const [editExpenseForm, setEditExpenseForm] = useState({ category: "", amount: "", paymentMethod: "", description: "", date: "" });
+  // Delete expense confirmation
+  const [deleteExpenseId, setDeleteExpenseId] = useState<string | null>(null);
   const [newPurchase, setNewPurchase] = useState({ supplierId: "", items: [] as any[] });
   const [newPurchaseItem, setNewPurchaseItem] = useState({ productId: "", quantity: "", costPrice: "" });
   const [receiveBranchId, setReceiveBranchId] = useState("");
 
   const loadData = async () => {
     try {
+      const expParams: any = {};
+      if (expenseMonth) expParams.month = expenseMonth;
+      if (expenseYear) expParams.year = expenseYear;
       const [expRes, purRes, suppRes, prodRes] = await Promise.all([
-        axios.get("/api/accounting/expenses"),
+        axios.get("/api/accounting/expenses", { params: expParams }),
         axios.get("/api/accounting/purchases"),
         axios.get("/api/accounting/suppliers"),
         axios.get("/api/products", {
@@ -247,12 +261,36 @@ export default function Accounting() {
     e.preventDefault();
     if (!newExpense.amount) { addNotification("Please specify the amount.", "warning"); return; }
     try {
-      await axios.post("/api/accounting/expenses", newExpense);
+      const payload: any = { category: newExpense.category, amount: newExpense.amount, paymentMethod: newExpense.paymentMethod, description: newExpense.description };
+      if (newExpense.date) payload.date = newExpense.date;
+      await axios.post("/api/accounting/expenses", payload);
       addNotification("Expense logged successfully.", "success");
       setExpenseOpen(false);
       loadData();
-      setNewExpense({ category: "RENT", amount: "", paymentMethod: "CASH", description: "" });
+      setNewExpense({ category: "RENT", amount: "", paymentMethod: "CASH", description: "", date: "" });
     } catch (err) { addNotification("Failed to log expense.", "warning"); }
+  };
+
+  const handleEditExpense = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editExpenseForm.amount) { addNotification("Please specify the amount.", "warning"); return; }
+    try {
+      await axios.put(`/api/accounting/expenses/${editExpense.id}`, editExpenseForm);
+      addNotification("Expense updated successfully.", "success");
+      setEditExpenseOpen(false);
+      setEditExpense(null);
+      loadData();
+    } catch (err) { addNotification("Failed to update expense.", "warning"); }
+  };
+
+  const handleDeleteExpense = async () => {
+    if (!deleteExpenseId) return;
+    try {
+      await axios.delete(`/api/accounting/expenses/${deleteExpenseId}`);
+      addNotification("Expense deleted.", "success");
+      setDeleteExpenseId(null);
+      loadData();
+    } catch (err) { addNotification("Failed to delete expense.", "warning"); }
   };
 
   const handleAddPurchaseItem = () => {
@@ -401,32 +439,78 @@ export default function Accounting() {
 
       {/* ========== EXPENSES TAB ========== */}
       {activeTab === "EXPENSES" && (
-        <div className="bg-card border border-border rounded-2xl p-5">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="border-b border-border text-muted-foreground font-semibold">
-                  <th className="pb-3 pl-2">Category</th>
-                  <th className="pb-3">Date</th>
-                  <th className="pb-3">Payment Method</th>
-                  <th className="pb-3">Description</th>
-                  <th className="pb-3 text-right pr-2">Amount</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/50">
-                {expenses.length === 0 ? (
-                  <tr><td colSpan={5} className="py-8 text-center text-muted-foreground">No expenses logged.</td></tr>
-                ) : expenses.map(exp => (
-                  <tr key={exp.id} className="hover:bg-secondary/20 transition">
-                    <td className="py-4 pl-2 font-bold text-foreground uppercase tracking-wider">{exp.category}</td>
-                    <td className="py-4 text-muted-foreground">{new Date(exp.date).toLocaleDateString()}</td>
-                    <td className="py-4 text-foreground uppercase font-semibold">{exp.paymentMethod}</td>
-                    <td className="py-4 text-muted-foreground truncate max-w-xs">{exp.description || "-"}</td>
-                    <td className="py-4 text-right pr-2 font-extrabold text-red-400">Rs. {Number(exp.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                  </tr>
+        <div className="space-y-4">
+          {/* Month/Year Filter */}
+          <div className="bg-card border border-border rounded-2xl p-4 flex flex-wrap gap-3 items-end">
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase">Month</label>
+              <select value={expenseMonth} onChange={e => setExpenseMonth(e.target.value)} className="bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none">
+                <option value="">All Months</option>
+                {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                  <option key={m} value={String(m)}>{new Date(2000, m - 1, 1).toLocaleString("default", { month: "long" })}</option>
                 ))}
-              </tbody>
-            </table>
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase">Year</label>
+              <select value={expenseYear} onChange={e => setExpenseYear(e.target.value)} className="bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none">
+                <option value="">All Years</option>
+                {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                  <option key={y} value={String(y)}>{y}</option>
+                ))}
+              </select>
+            </div>
+            <button onClick={loadData} className="bg-primary hover:bg-primary/95 text-white text-xs font-bold px-4 py-2 rounded-xl transition flex items-center gap-1">
+              <Search className="w-3.5 h-3.5" /> Filter
+            </button>
+          </div>
+
+          <div className="bg-card border border-border rounded-2xl p-5">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-border text-muted-foreground font-semibold">
+                    <th className="pb-3 pl-2">Category</th>
+                    <th className="pb-3">Date</th>
+                    <th className="pb-3">Payment Method</th>
+                    <th className="pb-3">Description</th>
+                    <th className="pb-3 text-right pr-2">Amount</th>
+                    <th className="pb-3 text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/50">
+                  {expenses.length === 0 ? (
+                    <tr><td colSpan={6} className="py-8 text-center text-muted-foreground">No expenses logged.</td></tr>
+                  ) : expenses.map(exp => (
+                    <tr key={exp.id} className="hover:bg-secondary/20 transition">
+                      <td className="py-4 pl-2 font-bold text-foreground uppercase tracking-wider">{exp.category}</td>
+                      <td className="py-4 text-muted-foreground">{new Date(exp.date).toLocaleDateString()}</td>
+                      <td className="py-4 text-foreground uppercase font-semibold">{exp.paymentMethod}</td>
+                      <td className="py-4 text-muted-foreground truncate max-w-xs">{exp.description || "-"}</td>
+                      <td className="py-4 text-right pr-2 font-extrabold text-red-400">Rs. {Number(exp.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                      <td className="py-4 text-center">
+                        <div className="flex justify-center gap-1">
+                          <button
+                            onClick={() => { setEditExpense(exp); setEditExpenseForm({ category: exp.category, amount: String(exp.amount), paymentMethod: exp.paymentMethod, description: exp.description || "", date: exp.date?.split("T")[0] || exp.date?.substring(0, 10) || "" }); setEditExpenseOpen(true); }}
+                            className="p-1.5 rounded-lg hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition"
+                            title="Edit"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => setDeleteExpenseId(exp.id)}
+                            className="p-1.5 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-400 transition"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
@@ -773,11 +857,73 @@ export default function Accounting() {
                 <label className="text-[10px] font-bold text-muted-foreground uppercase">Description</label>
                 <input type="text" value={newExpense.description} onChange={e => setNewExpense({ ...newExpense, description: e.target.value })} className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none" />
               </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase">Date (optional - defaults to now)</label>
+                <input type="date" value={newExpense.date} onChange={e => setNewExpense({ ...newExpense, date: e.target.value })} className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none" />
+              </div>
               <div className="flex gap-3 justify-end pt-4">
                 <button type="button" onClick={() => setExpenseOpen(false)} className="px-4 py-2 border border-border text-xs rounded hover:bg-secondary transition">Cancel</button>
                 <button type="submit" className="px-4 py-2 bg-primary text-white text-xs rounded hover:bg-primary/95 transition">Log Expense</button>
               </div>
             </form>
+          </div>
+      </PortalModal>
+
+      {/* Edit Expense Modal */}
+      <PortalModal isOpen={editExpenseOpen} onClose={() => { setEditExpenseOpen(false); setEditExpense(null); }} backdropClass="bg-black/60 backdrop-blur-sm px-4">
+        <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
+            <h3 className="font-bold text-sm text-foreground mb-4">Edit Expense</h3>
+            <form onSubmit={handleEditExpense} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase">Category</label>
+                <select value={editExpenseForm.category} onChange={e => setEditExpenseForm({ ...editExpenseForm, category: e.target.value })} className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none">
+                  <option value="RENT">Store Rent</option>
+                  <option value="UTILITIES">Electricity & Internet</option>
+                  <option value="SALARIES">Employee Salaries</option>
+                  <option value="MARKETING">Social Media Ads</option>
+                  <option value="OTHER">Other Miscellaneous</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase">Amount (Rs.) *</label>
+                <input type="text" inputMode="numeric" required value={editExpenseForm.amount ? Number(editExpenseForm.amount).toLocaleString() : ""} onChange={e => {
+                  const raw = e.target.value.replace(/[^0-9]/g, "");
+                  setEditExpenseForm({ ...editExpenseForm, amount: raw ? String(Number(raw)) : "" });
+                }} className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase">Payment Method</label>
+                <select value={editExpenseForm.paymentMethod} onChange={e => setEditExpenseForm({ ...editExpenseForm, paymentMethod: e.target.value })} className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none">
+                  <option value="CASH">Cash Drawer</option>
+                  <option value="BANK_TRANSFER">Bank Wire</option>
+                  <option value="CARD">Company Card</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase">Description</label>
+                <input type="text" value={editExpenseForm.description} onChange={e => setEditExpenseForm({ ...editExpenseForm, description: e.target.value })} className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase">Date</label>
+                <input type="date" value={editExpenseForm.date} onChange={e => setEditExpenseForm({ ...editExpenseForm, date: e.target.value })} className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none" />
+              </div>
+              <div className="flex gap-3 justify-end pt-4">
+                <button type="button" onClick={() => { setEditExpenseOpen(false); setEditExpense(null); }} className="px-4 py-2 border border-border text-xs rounded hover:bg-secondary transition">Cancel</button>
+                <button type="submit" className="px-4 py-2 bg-primary text-white text-xs rounded hover:bg-primary/95 transition">Save Changes</button>
+              </div>
+            </form>
+          </div>
+      </PortalModal>
+
+      {/* Delete Confirmation */}
+      <PortalModal isOpen={deleteExpenseId !== null} onClose={() => setDeleteExpenseId(null)} backdropClass="bg-black/60 backdrop-blur-sm px-4">
+        <div className="bg-card border border-border w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
+            <h3 className="font-bold text-sm text-foreground mb-2 flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-red-400" /> Delete Expense</h3>
+            <p className="text-xs text-muted-foreground mb-6">Are you sure you want to delete this expense? This action cannot be undone.</p>
+            <div className="flex gap-3 justify-end">
+              <button type="button" onClick={() => setDeleteExpenseId(null)} className="px-4 py-2 border border-border text-xs rounded hover:bg-secondary transition">Cancel</button>
+              <button type="button" onClick={handleDeleteExpense} className="px-4 py-2 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition">Delete</button>
+            </div>
           </div>
       </PortalModal>
 
