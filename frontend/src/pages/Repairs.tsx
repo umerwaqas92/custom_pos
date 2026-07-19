@@ -402,10 +402,14 @@ export default function Repairs() {
                     className="flex-1 bg-secondary text-[10px] border border-border px-2 py-1 rounded focus:outline-none"
                   />
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     placeholder="Cost"
-                    value={newPartCost}
-                    onChange={(e) => setNewPartCost(e.target.value)}
+                    value={newPartCost ? Number(newPartCost).toLocaleString() : ""}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/[^0-9]/g, "");
+                      setNewPartCost(raw ? String(Number(raw)) : "");
+                    }}
                     className="w-16 bg-secondary text-[10px] border border-border px-2 py-1 rounded focus:outline-none"
                   />
                   <button
@@ -422,18 +426,22 @@ export default function Repairs() {
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-muted-foreground uppercase">Parts Cost (Rs.)</label>
                   <input
-                    type="number"
+                    type="text"
                     readOnly
-                    value={updateFields.repairCost}
+                    value={updateFields.repairCost.toLocaleString()}
                     className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs text-muted-foreground focus:outline-none"
                   />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-muted-foreground uppercase">Service Charge (Rs.)</label>
                   <input
-                    type="number"
-                    value={updateFields.serviceCharge}
-                    onChange={(e) => setUpdateFields({ ...updateFields, serviceCharge: Number(e.target.value) })}
+                    type="text"
+                    inputMode="numeric"
+                    value={updateFields.serviceCharge.toLocaleString()}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/[^0-9]/g, "");
+                      setUpdateFields({ ...updateFields, serviceCharge: raw ? Number(raw) : 0 });
+                    }}
                     className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
                   />
                 </div>

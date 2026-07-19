@@ -817,11 +817,14 @@ export default function Contacts() {
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-muted-foreground uppercase">Repayment Amount ($) *</label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   required
-                  step="0.01"
-                  value={repayment.amount}
-                  onChange={(e) => setRepayment({ ...repayment, amount: e.target.value })}
+                  value={repayment.amount ? Number(repayment.amount).toLocaleString() : ""}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/[^0-9]/g, "");
+                    setRepayment({ ...repayment, amount: raw ? String(Number(raw)) : "" });
+                  }}
                   className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
                 />
               </div>
