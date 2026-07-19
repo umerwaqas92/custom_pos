@@ -668,6 +668,11 @@ function acct_tx_list(array $p): void
     $where = ['(t.owner_id = ? OR b.owner_id = ?)'];
     $oid = tenant_owner_id();
     $args = [$oid, $oid];
+    $branchId = isset($q['branchId']) && $q['branchId'] !== '' ? (string) $q['branchId'] : branch_id();
+    if ($branchId) {
+        $where[] = 't.branch_id = ?';
+        $args[] = $branchId;
+    }
     if (!empty($q['bankAccountId'])) {
         $where[] = 't.bank_account_id = ?';
         $args[] = $q['bankAccountId'];
@@ -861,8 +866,16 @@ function acct_profit_loss(array $p): void
 
 function acct_closings_list(array $p): void
 {
-    $st = Database::pdo()->prepare('SELECT * FROM daily_closings WHERE owner_id = ? ORDER BY closing_date DESC LIMIT 30');
-    $st->execute([tenant_owner_id()]);
+    $branchId = branch_id();
+    $sql = 'SELECT * FROM daily_closings WHERE owner_id = ?';
+    $args = [tenant_owner_id()];
+    if ($branchId) {
+        $sql .= ' AND branch_id = ?';
+        $args[] = $branchId;
+    }
+    $sql .= ' ORDER BY closing_date DESC LIMIT 30';
+    $st = Database::pdo()->prepare($sql);
+    $st->execute($args);
     $rows = $st->fetchAll();
     $out = [];
     foreach ($rows as $r) {

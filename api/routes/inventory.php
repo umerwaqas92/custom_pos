@@ -142,17 +142,22 @@ function inventory_movements(array $params): void
 {
     $pdo = Database::pdo();
     $limit = min(200, max(1, (int) (query_params()['limit'] ?? 100)));
-    $st = $pdo->prepare(
-        "SELECT sm.*, p.name AS p_name, p.sku AS p_sku, p.brand_id, p.category_id,
+    $branchId = query_params()['branchId'] ?? branch_id();
+    $sql = "SELECT sm.*, p.name AS p_name, p.sku AS p_sku, p.brand_id, p.category_id,
                 b.name AS brand_name, c.name AS cat_name
          FROM stock_movements sm
          LEFT JOIN products p ON p.id = sm.product_id
          LEFT JOIN brands b ON b.id = p.brand_id
          LEFT JOIN categories c ON c.id = p.category_id
-         WHERE sm.owner_id = ?
-         ORDER BY sm.created_at DESC LIMIT {$limit}"
-    );
-    $st->execute([tenant_owner_id()]);
+         WHERE sm.owner_id = ?";
+    $args = [tenant_owner_id()];
+    if ($branchId) {
+        $sql .= ' AND sm.branch_id = ?';
+        $args[] = $branchId;
+    }
+    $sql .= " ORDER BY sm.created_at DESC LIMIT {$limit}";
+    $st = $pdo->prepare($sql);
+    $st->execute($args);
     $out = [];
     foreach ($st->fetchAll() as $r) {
         $out[] = [
@@ -192,10 +197,10 @@ function inventory_alerts(array $params): void
              LEFT JOIN branch_stocks bs ON bs.product_id = p.id AND bs.branch_id = ?
              LEFT JOIN brands b ON b.id = p.brand_id
              LEFT JOIN categories c ON c.id = p.category_id
-             WHERE p.owner_id = ? AND p.branch_id = ?
+             WHERE p.owner_id = ?
              ORDER BY qty ASC'
         );
-        $st->execute([$branchId, $ownerId, $branchId]);
+        $st->execute([$branchId, $ownerId]);
     } else {
         $st = $pdo->prepare(
             'SELECT p.id, p.name, p.sku, p.stock_quantity AS qty, p.min_stock,

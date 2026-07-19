@@ -149,6 +149,10 @@ function reports_compile(string $type, ?string $startDate, ?string $endDate, ?st
                 $expSql .= ' AND date < ?';
                 $expArgs[] = $end;
             }
+            if ($branchId) {
+                $expSql .= ' AND branch_id = ?';
+                $expArgs[] = $branchId;
+            }
             $st = $pdo->prepare($expSql);
             $st->execute($expArgs);
             $exp = $st->fetch();
@@ -372,6 +376,10 @@ function reports_compile(string $type, ?string $startDate, ?string $endDate, ?st
             }
             $sql .= ' WHERE s.owner_id = ?';
             $args[] = $ownerId;
+            if ($branchId) {
+                $sql .= ' AND s.branch_id = ?';
+                $args[] = $branchId;
+            }
             $sql .= ' GROUP BY s.id, s.company, s.contact_person, s.phone ORDER BY total_purchased DESC';
             $st = $pdo->prepare($sql);
             $st->execute($args);
@@ -409,6 +417,10 @@ function reports_compile(string $type, ?string $startDate, ?string $endDate, ?st
             }
             $sql .= ' WHERE c.owner_id = ?';
             $args[] = $ownerId;
+            if ($branchId) {
+                $sql .= ' AND c.branch_id = ?';
+                $args[] = $branchId;
+            }
             $sql .= ' GROUP BY c.id, c.name, c.phone, c.reward_points, c.credit_balance ORDER BY volume DESC';
             $st = $pdo->prepare($sql);
             $st->execute($args);
@@ -752,10 +764,11 @@ function reports_dashboard_period_filter(): array
     return [$where, $args, $label];
 }
 
-/** Expense filter parallel to sales period (uses `date` column, no branch). */
+/** Expense filter parallel to sales period (uses `date` column). */
 function reports_expense_period_filter(): array
 {
     $q = query_params();
+    $branchId = isset($q['branchId']) && $q['branchId'] !== '' ? (string) $q['branchId'] : branch_id();
     $startDate = isset($q['startDate']) && $q['startDate'] !== '' ? (string) $q['startDate'] : null;
     $endDate = isset($q['endDate']) && $q['endDate'] !== '' ? (string) $q['endDate'] : null;
     $month = isset($q['month']) && $q['month'] !== '' && $q['month'] !== 'ALL' ? (string) $q['month'] : null;
@@ -764,6 +777,12 @@ function reports_expense_period_filter(): array
 
     $where = 'owner_id = ?';
     $args = [tenant_owner_id()];
+
+    if ($branchId) {
+        $where .= ' AND branch_id = ?';
+        $args[] = $branchId;
+    }
+
     if ($startDate || $endDate) {
         if ($startDate) {
             $where .= ' AND date >= ?';
@@ -849,8 +868,8 @@ function reports_dashboard_stats(array $params): void
 
     $expensesPeriod = $q($pdo, "SELECT COALESCE(SUM(amount),0) AS total FROM expenses WHERE {$expWhere}", $expArgs);
     $ownerId = tenant_owner_id();
-    $expensesMonth = $q($pdo, "SELECT COALESCE(SUM(amount),0) AS total FROM expenses WHERE owner_id = ? AND date >= ?", [$ownerId, $monthStart]);
-    $expensesAll = $q($pdo, "SELECT COALESCE(SUM(amount),0) AS total FROM expenses WHERE owner_id = ?", [$ownerId]);
+    $expensesMonth = $q($pdo, "SELECT COALESCE(SUM(amount),0) AS total FROM expenses WHERE owner_id = ? AND date >= ?{$branchOnly}", array_merge([$ownerId, $monthStart], $branchArgs));
+    $expensesAll = $q($pdo, "SELECT COALESCE(SUM(amount),0) AS total FROM expenses WHERE owner_id = ?{$branchOnly}", array_merge([$ownerId], $branchArgs));
 
     if ($branchId) {
         $products = $q(
