@@ -756,7 +756,10 @@ export default function Accounting() {
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-muted-foreground uppercase">Amount (Rs.) *</label>
-                <input type="number" required step="0.01" value={newExpense.amount} onChange={e => setNewExpense({ ...newExpense, amount: e.target.value })} className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none" />
+                <input type="text" inputMode="numeric" required value={newExpense.amount ? Number(newExpense.amount).toLocaleString() : ""} onChange={e => {
+                  const raw = e.target.value.replace(/[^0-9]/g, "");
+                  setNewExpense({ ...newExpense, amount: raw ? String(Number(raw)) : "" });
+                }} className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none" />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-muted-foreground uppercase">Payment Method</label>
@@ -813,7 +816,10 @@ export default function Accounting() {
                   </select>
                   <div className="flex gap-2">
                     <input type="number" placeholder="Qty" value={newPurchaseItem.quantity} onChange={e => setNewPurchaseItem({ ...newPurchaseItem, quantity: e.target.value })} className="flex-1 bg-secondary border border-border px-2 py-1 rounded focus:outline-none" />
-                    <input type="number" placeholder="Cost" value={newPurchaseItem.costPrice} onChange={e => setNewPurchaseItem({ ...newPurchaseItem, costPrice: e.target.value })} className="flex-1 bg-secondary border border-border px-2 py-1 rounded focus:outline-none" />
+                    <input type="text" inputMode="numeric" placeholder="Cost" value={newPurchaseItem.costPrice ? Number(newPurchaseItem.costPrice).toLocaleString() : ""} onChange={e => {
+                      const raw = e.target.value.replace(/[^0-9]/g, "");
+                      setNewPurchaseItem({ ...newPurchaseItem, costPrice: raw ? String(Number(raw)) : "" });
+                    }} className="flex-1 bg-secondary border border-border px-2 py-1 rounded focus:outline-none" />
                     <button type="button" onClick={handleAddPurchaseItem} className="bg-primary text-white font-bold px-3 py-1 rounded hover:bg-primary/95">Add</button>
                   </div>
                 </div>
@@ -919,7 +925,10 @@ export default function Accounting() {
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-muted-foreground uppercase">Amount (Rs.) *</label>
-                <input type="number" required step="0.01" value={newTx.amount} onChange={e => setNewTx({ ...newTx, amount: e.target.value })} className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none" />
+                <input type="text" inputMode="numeric" required value={newTx.amount ? Number(newTx.amount).toLocaleString() : ""} onChange={e => {
+                  const raw = e.target.value.replace(/[^0-9]/g, "");
+                  setNewTx({ ...newTx, amount: raw ? String(Number(raw)) : "" });
+                }} className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none" />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-muted-foreground uppercase">Description</label>
@@ -954,7 +963,10 @@ export default function Accounting() {
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-muted-foreground uppercase">Amount (Rs.) *</label>
-                <input type="number" required step="0.01" value={newTransfer.amount} onChange={e => setNewTransfer({ ...newTransfer, amount: e.target.value })} className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none" />
+                <input type="text" inputMode="numeric" required value={newTransfer.amount ? Number(newTransfer.amount).toLocaleString() : ""} onChange={e => {
+                  const raw = e.target.value.replace(/[^0-9]/g, "");
+                  setNewTransfer({ ...newTransfer, amount: raw ? String(Number(raw)) : "" });
+                }} className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none" />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-muted-foreground uppercase">Description</label>

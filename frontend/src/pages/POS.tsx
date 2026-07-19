@@ -764,7 +764,10 @@ export default function POS() {
                 <span className="text-emerald-400 font-bold normal-case">Change: Rs. {(Number(amountPaid) - payableAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
               )}
             </div>
-            <input type="number" value={amountPaid} onChange={(e) => setAmountPaid(e.target.value)} step="0.01"
+            <input type="text" inputMode="numeric" value={amountPaid ? Number(amountPaid).toLocaleString() : ""} onChange={(e) => {
+              const raw = e.target.value.replace(/[^0-9]/g, "");
+              setAmountPaid(raw ? String(Number(raw)) : "");
+            }}
               className="w-full bg-secondary border border-border px-2.5 py-1.5 rounded-lg text-sm font-bold focus:outline-none focus:ring-1 focus:ring-primary text-foreground" />
           </div>
 

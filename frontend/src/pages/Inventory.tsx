@@ -779,20 +779,28 @@ export default function Inventory() {
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-muted-foreground uppercase">Purchase Price *</label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     required
-                    value={newProduct.purchasePrice}
-                    onChange={(e) => setNewProduct({ ...newProduct, purchasePrice: e.target.value })}
+                    value={newProduct.purchasePrice ? Number(newProduct.purchasePrice).toLocaleString() : ""}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/[^0-9]/g, "");
+                      setNewProduct({ ...newProduct, purchasePrice: raw ? String(Number(raw)) : "" });
+                    }}
                     className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
                   />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-muted-foreground uppercase">Selling Price *</label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     required
-                    value={newProduct.sellingPrice}
-                    onChange={(e) => setNewProduct({ ...newProduct, sellingPrice: e.target.value })}
+                    value={newProduct.sellingPrice ? Number(newProduct.sellingPrice).toLocaleString() : ""}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/[^0-9]/g, "");
+                      setNewProduct({ ...newProduct, sellingPrice: raw ? String(Number(raw)) : "" });
+                    }}
                     className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
                   />
                 </div>
@@ -897,22 +905,28 @@ export default function Inventory() {
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-muted-foreground uppercase">Purchase Cost (Rs.) *</label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     required
-                    step="0.01"
-                    value={editProduct.purchasePrice}
-                    onChange={(e) => setEditProduct({ ...editProduct, purchasePrice: e.target.value })}
+                    value={editProduct.purchasePrice ? Number(editProduct.purchasePrice).toLocaleString() : ""}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/[^0-9]/g, "");
+                      setEditProduct({ ...editProduct, purchasePrice: raw ? String(Number(raw)) : "" });
+                    }}
                     className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
                   />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-muted-foreground uppercase">Selling Price (Rs.) *</label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     required
-                    step="0.01"
-                    value={editProduct.sellingPrice}
-                    onChange={(e) => setEditProduct({ ...editProduct, sellingPrice: e.target.value })}
+                    value={editProduct.sellingPrice ? Number(editProduct.sellingPrice).toLocaleString() : ""}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/[^0-9]/g, "");
+                      setEditProduct({ ...editProduct, sellingPrice: raw ? String(Number(raw)) : "" });
+                    }}
                     className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none"
                   />
                 </div>
