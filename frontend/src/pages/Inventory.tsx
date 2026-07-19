@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
+import { useSearchParams } from "react-router-dom";
 import { useStore } from "../store/useStore";
 import PortalModal from "../components/PortalModal";
 import SuggestInput from "../components/SuggestInput";
@@ -36,6 +37,7 @@ function getAvailableQty(p: any, branchId: string | null | undefined): number {
 
 export default function Inventory() {
   const { selectedBranchId, branches, addNotification, checkLowStock } = useStore();
+  const [searchParams] = useSearchParams();
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
@@ -404,6 +406,13 @@ export default function Inventory() {
 
   // Reset page when filters change
   useEffect(() => { setCurrentPage(1); }, [search, selectedCat, selectedBrand, lowStockOnly, sortKey, sortDir]);
+
+  // Handle ?low_stock=true from URL (e.g. dashboard widget click)
+  useEffect(() => {
+    if (searchParams.get("low_stock") === "true") {
+      setLowStockOnly(true);
+    }
+  }, [searchParams]);
 
   const toggleSort = (key: string) => {
     if (sortKey === key) {

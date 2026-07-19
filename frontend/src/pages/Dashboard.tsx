@@ -253,7 +253,7 @@ export default function Dashboard() {
       iconSrc: "/icons/dashboard/low-stock.png",
       color: "bg-orange-500/10 text-orange-400 border-orange-500/20",
       iconBg: "bg-orange-500/15 ring-orange-500/25",
-      to: "/inventory"
+      to: "/inventory?low_stock=true"
     }
   ];
 
