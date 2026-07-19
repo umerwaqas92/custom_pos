@@ -247,7 +247,7 @@ export default function Dashboard() {
     },
     {
       title: "Low Stock",
-      value: stats?.lowStockCount || 0,
+      value: lowStockList.length,
       description: `Qty ≤ ${LOW_STOCK_THRESHOLD} (branch stock)`,
       icon: AlertTriangle,
       iconSrc: "/icons/dashboard/low-stock.png",

@@ -622,10 +622,14 @@ export default function Installments() {
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold text-muted-foreground uppercase">Down Payment</label>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
                       required
-                      value={downPayment}
-                      onChange={(e) => setDownPayment(e.target.value)}
+                      value={downPayment ? Number(downPayment).toLocaleString() : ""}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/[^0-9]/g, "");
+                        setDownPayment(raw ? String(Number(raw)) : "");
+                      }}
                       placeholder="e.g. 5000"
                       className="w-full bg-card text-xs border border-border px-3 py-2 rounded-xl focus:outline-none font-bold text-primary"
                     />

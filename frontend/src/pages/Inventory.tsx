@@ -579,14 +579,13 @@ export default function Inventory() {
                 <SortHeader label="Cost Price" sortField="purchasePrice" />
                 <SortHeader label="Retail Price" sortField="sellingPrice" />
                 <SortHeader label="Total Stock" sortField="stock" />
-                <th className="pb-3 text-center">Location Levels</th>
                 <th className="pb-3 text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/50">
               {paginatedProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={9} className="py-8 text-center text-muted-foreground">
                     No products matching search parameters.
                   </td>
                 </tr>
@@ -616,15 +615,6 @@ export default function Inventory() {
                         }`}>
                           {branchQty} qty
                         </span>
-                      </td>
-                      <td className="py-4 text-center">
-                        <div className="flex flex-col gap-0.5 text-[10px] text-muted-foreground">
-                          {p.branchStocks?.map((bs: any) => (
-                            <span key={bs.id}>
-                              {bs.branch.name}: <strong>{bs.quantity}</strong>
-                            </span>
-                          ))}
-                        </div>
                       </td>
                       <td className="py-4 text-center">
                         <div className="flex justify-center gap-2">

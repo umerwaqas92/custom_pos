@@ -1007,21 +1007,21 @@ export default function Accounting() {
 
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-muted-foreground uppercase">Opening Balance (Rs.)</label>
-                <input type="number" step="0.01" value={closingForm.openingBalance} onChange={e => setClosingForm({ ...closingForm, openingBalance: e.target.value })} className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none" />
+                <input type="text" inputMode="numeric" value={closingForm.openingBalance !== "0" ? Number(closingForm.openingBalance).toLocaleString() : "0"} onChange={e => { const raw = e.target.value.replace(/[^0-9]/g, ""); setClosingForm({ ...closingForm, openingBalance: raw ? String(Number(raw)) : "0" }); }} className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-muted-foreground uppercase">Cash In (Rs.)</label>
-                  <input type="number" step="0.01" value={closingForm.cashIn} onChange={e => setClosingForm({ ...closingForm, cashIn: e.target.value })} className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none" />
+                  <input type="text" inputMode="numeric" value={closingForm.cashIn !== "0" ? Number(closingForm.cashIn).toLocaleString() : "0"} onChange={e => { const raw = e.target.value.replace(/[^0-9]/g, ""); setClosingForm({ ...closingForm, cashIn: raw ? String(Number(raw)) : "0" }); }} className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-muted-foreground uppercase">Cash Out (Rs.)</label>
-                  <input type="number" step="0.01" value={closingForm.cashOut} onChange={e => setClosingForm({ ...closingForm, cashOut: e.target.value })} className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none" />
+                  <input type="text" inputMode="numeric" value={closingForm.cashOut !== "0" ? Number(closingForm.cashOut).toLocaleString() : "0"} onChange={e => { const raw = e.target.value.replace(/[^0-9]/g, ""); setClosingForm({ ...closingForm, cashOut: raw ? String(Number(raw)) : "0" }); }} className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none" />
                 </div>
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-muted-foreground uppercase">Actual Physical Count (Rs.) *</label>
-                <input type="number" required step="0.01" value={closingForm.actualBalance} onChange={e => setClosingForm({ ...closingForm, actualBalance: e.target.value })} className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none" placeholder="Count your cash drawer" />
+                <input type="text" inputMode="numeric" required value={closingForm.actualBalance ? Number(closingForm.actualBalance).toLocaleString() : ""} onChange={e => { const raw = e.target.value.replace(/[^0-9]/g, ""); setClosingForm({ ...closingForm, actualBalance: raw ? String(Number(raw)) : "" }); }} className="w-full bg-secondary border border-border px-3 py-2 rounded text-xs focus:outline-none" placeholder="Count your cash drawer" />
               </div>
 
               {closingPreview && closingForm.actualBalance && (

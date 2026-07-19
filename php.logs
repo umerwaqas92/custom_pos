@@ -34799,3 +34799,1107 @@
 [19-Jul-2026 20:16:38 UTC] [2026-07-19 20:16:38] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
 [19-Jul-2026 20:16:38 UTC] [2026-07-19 20:16:38] ← GET /api/auth/branches → 200 (4.1ms | 2MB)
 [Mon Jul 20 01:16:38 2026] [::1]:55323 Closing
+[Mon Jul 20 01:19:12 2026] [::1]:55356 Accepted
+[Mon Jul 20 01:19:12 2026] [::1]:55357 Accepted
+[19-Jul-2026 20:19:12 UTC] [2026-07-19 20:19:12] → GET /api/products | qs=branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:19:12 UTC] [2026-07-19 20:19:12] ← GET /api/products → 200 (3.5ms | 2MB)
+[Mon Jul 20 01:19:12 2026] [::1]:55356 Closing
+[Mon Jul 20 01:19:12 2026] [::1]:55358 Accepted
+[19-Jul-2026 20:19:12 UTC] [2026-07-19 20:19:12] → GET /api/products/categories | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:19:12 UTC] [2026-07-19 20:19:12] ← GET /api/products/categories → 200 (4.7ms | 2MB)
+[Mon Jul 20 01:19:12 2026] [::1]:55357 Closing
+[Mon Jul 20 01:19:12 2026] [::1]:55360 Accepted
+[19-Jul-2026 20:19:12 UTC] [2026-07-19 20:19:12] → GET /api/products/brands | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:19:12 UTC] [2026-07-19 20:19:12] ← GET /api/products/brands → 200 (2.1ms | 2MB)
+[Mon Jul 20 01:19:12 2026] [::1]:55358 Closing
+[Mon Jul 20 01:19:12 2026] [::1]:55362 Accepted
+[19-Jul-2026 20:19:12 UTC] [2026-07-19 20:19:12] → GET /api/products | qs=branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:19:12 UTC] [2026-07-19 20:19:12] ← GET /api/products → 200 (3.5ms | 2MB)
+[Mon Jul 20 01:19:12 2026] [::1]:55360 Closing
+[Mon Jul 20 01:19:12 2026] [::1]:55364 Accepted
+[19-Jul-2026 20:19:12 UTC] [2026-07-19 20:19:12] → GET /api/products/categories | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:19:12 UTC] [2026-07-19 20:19:12] ← GET /api/products/categories → 200 (1.7ms | 2MB)
+[Mon Jul 20 01:19:12 2026] [::1]:55362 Closing
+[19-Jul-2026 20:19:12 UTC] [2026-07-19 20:19:12] → GET /api/products/brands | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:19:12 UTC] [2026-07-19 20:19:12] ← GET /api/products/brands → 200 (1.4ms | 2MB)
+[Mon Jul 20 01:19:12 2026] [::1]:55364 Closing
+[Mon Jul 20 01:19:23 2026] [::1]:55373 Accepted
+[19-Jul-2026 20:19:23 UTC] [2026-07-19 20:19:23] → GET /api/auth/me | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:19:23 UTC] [2026-07-19 20:19:23] ← GET /api/auth/me → 200 (2.4ms | 2MB)
+[Mon Jul 20 01:19:23 2026] [::1]:55373 Closing
+[Mon Jul 20 01:19:23 2026] [::1]:55375 Accepted
+[19-Jul-2026 20:19:23 UTC] [2026-07-19 20:19:23] → GET /api/settings | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:19:23 UTC] [2026-07-19 20:19:23] ← GET /api/settings → 200 (4.1ms | 2MB)
+[Mon Jul 20 01:19:23 2026] [::1]:55375 Closing
+[Mon Jul 20 01:19:23 2026] [::1]:55376 Accepted
+[19-Jul-2026 20:19:23 UTC] [2026-07-19 20:19:23] → GET /api/auth/me | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:19:23 UTC] [2026-07-19 20:19:23] ← GET /api/auth/me → 200 (3.8ms | 2MB)
+[Mon Jul 20 01:19:23 2026] [::1]:55376 Closing
+[Mon Jul 20 01:19:23 2026] [::1]:55378 Accepted
+[19-Jul-2026 20:19:23 UTC] [2026-07-19 20:19:23] → GET /api/settings | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:19:23 UTC] [2026-07-19 20:19:23] ← GET /api/settings → 200 (3.2ms | 2MB)
+[Mon Jul 20 01:19:23 2026] [::1]:55378 Closing
+[Mon Jul 20 01:19:23 2026] [::1]:55381 Accepted
+[19-Jul-2026 20:19:23 UTC] [2026-07-19 20:19:23] → GET /api/products | qs=branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:19:23 UTC] [2026-07-19 20:19:23] ← GET /api/products → 200 (4.1ms | 2MB)
+[Mon Jul 20 01:19:23 2026] [::1]:55381 Closing
+[Mon Jul 20 01:19:23 2026] [::1]:55383 Accepted
+[19-Jul-2026 20:19:23 UTC] [2026-07-19 20:19:23] → GET /api/products/categories | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:19:23 UTC] [2026-07-19 20:19:23] ← GET /api/products/categories → 200 (2.2ms | 2MB)
+[Mon Jul 20 01:19:23 2026] [::1]:55383 Closing
+[Mon Jul 20 01:19:23 2026] [::1]:55384 Accepted
+[Mon Jul 20 01:19:23 2026] [::1]:55385 Accepted
+[19-Jul-2026 20:19:23 UTC] [2026-07-19 20:19:23] → GET /api/products/brands | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:19:23 UTC] [2026-07-19 20:19:23] ← GET /api/products/brands → 200 (2.5ms | 2MB)
+[Mon Jul 20 01:19:23 2026] [::1]:55384 Closing
+[Mon Jul 20 01:19:23 2026] [::1]:55387 Accepted
+[19-Jul-2026 20:19:23 UTC] [2026-07-19 20:19:23] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:19:23 UTC] [2026-07-19 20:19:23] ← GET /api/inventory/alerts → 200 (4.2ms | 2MB)
+[Mon Jul 20 01:19:23 2026] [::1]:55385 Closing
+[Mon Jul 20 01:19:23 2026] [::1]:55388 Accepted
+[19-Jul-2026 20:19:23 UTC] [2026-07-19 20:19:23] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:19:23 UTC] [2026-07-19 20:19:23] ← GET /api/auth/branches → 200 (2.5ms | 2MB)
+[Mon Jul 20 01:19:23 2026] [::1]:55387 Closing
+[Mon Jul 20 01:19:23 2026] [::1]:55392 Accepted
+[19-Jul-2026 20:19:23 UTC] [2026-07-19 20:19:23] → GET /api/products | qs=branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:19:23 UTC] [2026-07-19 20:19:23] ← GET /api/products → 200 (5.5ms | 2MB)
+[Mon Jul 20 01:19:23 2026] [::1]:55388 Closing
+[19-Jul-2026 20:19:23 UTC] [2026-07-19 20:19:23] → GET /api/products/categories | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:19:23 UTC] [2026-07-19 20:19:23] ← GET /api/products/categories → 200 (6.4ms | 2MB)
+[Mon Jul 20 01:19:23 2026] [::1]:55392 Closing
+[Mon Jul 20 01:19:23 2026] [::1]:55395 Accepted
+[19-Jul-2026 20:19:23 UTC] [2026-07-19 20:19:23] → GET /api/products/brands | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:19:23 UTC] [2026-07-19 20:19:23] ← GET /api/products/brands → 200 (2.1ms | 2MB)
+[Mon Jul 20 01:19:23 2026] [::1]:55395 Closing
+[Mon Jul 20 01:19:23 2026] [::1]:55397 Accepted
+[19-Jul-2026 20:19:23 UTC] [2026-07-19 20:19:23] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:19:23 UTC] [2026-07-19 20:19:23] ← GET /api/inventory/alerts → 200 (3.4ms | 2MB)
+[Mon Jul 20 01:19:23 2026] [::1]:55397 Closing
+[Mon Jul 20 01:19:23 2026] [::1]:55399 Accepted
+[19-Jul-2026 20:19:23 UTC] [2026-07-19 20:19:23] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:19:23 UTC] [2026-07-19 20:19:23] ← GET /api/auth/branches → 200 (2.8ms | 2MB)
+[Mon Jul 20 01:19:23 2026] [::1]:55399 Closing
+[Mon Jul 20 01:20:10 2026] [::1]:55419 Accepted
+[Mon Jul 20 01:20:10 2026] [::1]:55420 Accepted
+[19-Jul-2026 20:20:10 UTC] [2026-07-19 20:20:10] → GET /api/products | qs=branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:20:10 UTC] [2026-07-19 20:20:10] ← GET /api/products → 200 (3.9ms | 2MB)
+[Mon Jul 20 01:20:10 2026] [::1]:55419 Closing
+[Mon Jul 20 01:20:10 2026] [::1]:55421 Accepted
+[19-Jul-2026 20:20:10 UTC] [2026-07-19 20:20:10] → GET /api/products/categories | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:20:10 UTC] [2026-07-19 20:20:10] ← GET /api/products/categories → 200 (2.3ms | 2MB)
+[Mon Jul 20 01:20:10 2026] [::1]:55420 Closing
+[19-Jul-2026 20:20:10 UTC] [2026-07-19 20:20:10] → GET /api/products/brands | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:20:10 UTC] [2026-07-19 20:20:10] ← GET /api/products/brands → 200 (1.9ms | 2MB)
+[Mon Jul 20 01:20:10 2026] [::1]:55421 Closing
+[Mon Jul 20 01:20:20 2026] [::1]:55426 Accepted
+[19-Jul-2026 20:20:20 UTC] [2026-07-19 20:20:20] → GET /api/products | qs=lite=1&branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:20:20 UTC] [2026-07-19 20:20:20] ← GET /api/products → 200 (82.6ms | 2MB)
+[Mon Jul 20 01:20:20 2026] [::1]:55426 Closing
+[Mon Jul 20 01:20:20 2026] [::1]:55428 Accepted
+[Mon Jul 20 01:20:20 2026] [::1]:55429 Accepted
+[19-Jul-2026 20:20:20 UTC] [2026-07-19 20:20:20] → GET /api/products/categories | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:20:20 UTC] [2026-07-19 20:20:20] ← GET /api/products/categories → 200 (8ms | 2MB)
+[Mon Jul 20 01:20:20 2026] [::1]:55428 Closing
+[Mon Jul 20 01:20:20 2026] [::1]:55434 Accepted
+[19-Jul-2026 20:20:20 UTC] [2026-07-19 20:20:20] → GET /api/accounting/customers | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:20:20 UTC] [2026-07-19 20:20:20] ← GET /api/accounting/customers → 200 (5.6ms | 2MB)
+[Mon Jul 20 01:20:20 2026] [::1]:55429 Closing
+[Mon Jul 20 01:20:20 2026] [::1]:55436 Accepted
+[19-Jul-2026 20:20:20 UTC] [2026-07-19 20:20:20] → GET /api/products | qs=lite=1&branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:20:20 UTC] [2026-07-19 20:20:20] ← GET /api/products → 200 (13.5ms | 2MB)
+[Mon Jul 20 01:20:20 2026] [::1]:55434 Closing
+[Mon Jul 20 01:20:20 2026] [::1]:55438 Accepted
+[19-Jul-2026 20:20:20 UTC] [2026-07-19 20:20:20] → GET /api/products/categories | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:20:20 UTC] [2026-07-19 20:20:20] ← GET /api/products/categories → 200 (20.2ms | 2MB)
+[Mon Jul 20 01:20:20 2026] [::1]:55436 Closing
+[19-Jul-2026 20:20:20 UTC] [2026-07-19 20:20:20] → GET /api/accounting/customers | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:20:20 UTC] [2026-07-19 20:20:20] ← GET /api/accounting/customers → 200 (8.1ms | 2MB)
+[Mon Jul 20 01:20:20 2026] [::1]:55438 Closing
+[Mon Jul 20 01:20:47 2026] [::1]:55453 Accepted
+[Mon Jul 20 01:20:47 2026] [::1]:55454 Accepted
+[19-Jul-2026 20:20:47 UTC] [2026-07-19 20:20:47] → GET /api/auth/me | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:20:47 UTC] [2026-07-19 20:20:47] ← GET /api/auth/me → 200 (63.1ms | 2MB)
+[Mon Jul 20 01:20:47 2026] [::1]:55453 Closing
+[19-Jul-2026 20:20:47 UTC] [2026-07-19 20:20:47] → GET /api/settings | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:20:47 UTC] [2026-07-19 20:20:47] ← GET /api/settings → 200 (10.4ms | 2MB)
+[Mon Jul 20 01:20:47 2026] [::1]:55454 Closing
+[Mon Jul 20 01:20:47 2026] [::1]:55456 Accepted
+[Mon Jul 20 01:20:47 2026] [::1]:55458 Accepted
+[19-Jul-2026 20:20:47 UTC] [2026-07-19 20:20:47] → GET /api/auth/me | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:20:47 UTC] [2026-07-19 20:20:47] ← GET /api/auth/me → 200 (9.4ms | 2MB)
+[Mon Jul 20 01:20:47 2026] [::1]:55456 Closing
+[19-Jul-2026 20:20:47 UTC] [2026-07-19 20:20:47] → GET /api/settings | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:20:47 UTC] [2026-07-19 20:20:47] ← GET /api/settings → 200 (4.4ms | 2MB)
+[Mon Jul 20 01:20:47 2026] [::1]:55458 Closing
+[Mon Jul 20 01:20:52 2026] [::1]:55463 Accepted
+[Mon Jul 20 01:20:52 2026] [::1]:55464 Accepted
+[19-Jul-2026 20:20:52 UTC] [2026-07-19 20:20:52] → GET /api/auth/me | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:20:52 UTC] [2026-07-19 20:20:52] ← GET /api/auth/me → 200 (2.8ms | 2MB)
+[Mon Jul 20 01:20:52 2026] [::1]:55463 Closing
+[19-Jul-2026 20:20:52 UTC] [2026-07-19 20:20:52] → GET /api/settings | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:20:52 UTC] [2026-07-19 20:20:52] ← GET /api/settings → 200 (3.2ms | 2MB)
+[Mon Jul 20 01:20:52 2026] [::1]:55464 Closing
+[Mon Jul 20 01:20:52 2026] [::1]:55466 Accepted
+[19-Jul-2026 20:20:52 UTC] [2026-07-19 20:20:52] → GET /api/auth/me | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:20:52 UTC] [2026-07-19 20:20:52] ← GET /api/auth/me → 200 (4.6ms | 2MB)
+[Mon Jul 20 01:20:52 2026] [::1]:55466 Closing
+[Mon Jul 20 01:20:52 2026] [::1]:55468 Accepted
+[19-Jul-2026 20:20:52 UTC] [2026-07-19 20:20:52] → GET /api/settings | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:20:52 UTC] [2026-07-19 20:20:52] ← GET /api/settings → 200 (7.4ms | 2MB)
+[Mon Jul 20 01:20:52 2026] [::1]:55468 Closing
+[Mon Jul 20 01:20:52 2026] [::1]:55471 Accepted
+[Mon Jul 20 01:20:52 2026] [::1]:55472 Accepted
+[19-Jul-2026 20:20:52 UTC] [2026-07-19 20:20:52] → GET /api/products | qs=lite=1&branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:20:52 UTC] [2026-07-19 20:20:52] ← GET /api/products → 200 (25.4ms | 2MB)
+[Mon Jul 20 01:20:52 2026] [::1]:55471 Closing
+[Mon Jul 20 01:20:52 2026] [::1]:55473 Accepted
+[19-Jul-2026 20:20:52 UTC] [2026-07-19 20:20:52] → GET /api/products/categories | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:20:52 UTC] [2026-07-19 20:20:52] ← GET /api/products/categories → 200 (6.6ms | 2MB)
+[Mon Jul 20 01:20:52 2026] [::1]:55472 Closing
+[Mon Jul 20 01:20:52 2026] [::1]:55474 Accepted
+[19-Jul-2026 20:20:52 UTC] [2026-07-19 20:20:52] → GET /api/accounting/customers | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:20:52 UTC] [2026-07-19 20:20:52] ← GET /api/accounting/customers → 200 (11.2ms | 2MB)
+[Mon Jul 20 01:20:52 2026] [::1]:55473 Closing
+[Mon Jul 20 01:20:52 2026] [::1]:55475 Accepted
+[19-Jul-2026 20:20:52 UTC] [2026-07-19 20:20:52] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:20:52 UTC] [2026-07-19 20:20:52] ← GET /api/inventory/alerts → 200 (15.4ms | 2MB)
+[Mon Jul 20 01:20:52 2026] [::1]:55474 Closing
+[Mon Jul 20 01:20:52 2026] [::1]:55477 Accepted
+[19-Jul-2026 20:20:52 UTC] [2026-07-19 20:20:52] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:20:52 UTC] [2026-07-19 20:20:52] ← GET /api/auth/branches → 200 (24.1ms | 2MB)
+[Mon Jul 20 01:20:52 2026] [::1]:55475 Closing
+[Mon Jul 20 01:20:52 2026] [::1]:55479 Accepted
+[19-Jul-2026 20:20:52 UTC] [2026-07-19 20:20:52] → GET /api/products | qs=lite=1&branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:20:52 UTC] [2026-07-19 20:20:52] ← GET /api/products → 200 (15.7ms | 2MB)
+[Mon Jul 20 01:20:52 2026] [::1]:55477 Closing
+[Mon Jul 20 01:20:52 2026] [::1]:55481 Accepted
+[19-Jul-2026 20:20:52 UTC] [2026-07-19 20:20:52] → GET /api/products/categories | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:20:52 UTC] [2026-07-19 20:20:52] ← GET /api/products/categories → 200 (7.8ms | 2MB)
+[Mon Jul 20 01:20:52 2026] [::1]:55479 Closing
+[Mon Jul 20 01:20:52 2026] [::1]:55483 Accepted
+[19-Jul-2026 20:20:52 UTC] [2026-07-19 20:20:52] → GET /api/accounting/customers | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:20:52 UTC] [2026-07-19 20:20:52] ← GET /api/accounting/customers → 200 (5.3ms | 2MB)
+[Mon Jul 20 01:20:52 2026] [::1]:55481 Closing
+[Mon Jul 20 01:20:52 2026] [::1]:55485 Accepted
+[19-Jul-2026 20:20:52 UTC] [2026-07-19 20:20:52] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:20:52 UTC] [2026-07-19 20:20:52] ← GET /api/inventory/alerts → 200 (7.4ms | 2MB)
+[Mon Jul 20 01:20:52 2026] [::1]:55483 Closing
+[19-Jul-2026 20:20:52 UTC] [2026-07-19 20:20:52] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:20:52 UTC] [2026-07-19 20:20:52] ← GET /api/auth/branches → 200 (10.2ms | 2MB)
+[Mon Jul 20 01:20:52 2026] [::1]:55485 Closing
+[Mon Jul 20 01:21:06 2026] [::1]:55494 Accepted
+[Mon Jul 20 01:21:06 2026] [::1]:55495 Accepted
+[19-Jul-2026 20:21:06 UTC] [2026-07-19 20:21:06] → GET /api/products | qs=lite=1&branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:21:06 UTC] [2026-07-19 20:21:06] ← GET /api/products → 200 (3.6ms | 2MB)
+[Mon Jul 20 01:21:06 2026] [::1]:55494 Closing
+[Mon Jul 20 01:21:06 2026] [::1]:55496 Accepted
+[19-Jul-2026 20:21:06 UTC] [2026-07-19 20:21:06] → GET /api/products/categories | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:21:06 UTC] [2026-07-19 20:21:06] ← GET /api/products/categories → 200 (3.8ms | 2MB)
+[Mon Jul 20 01:21:06 2026] [::1]:55495 Closing
+[19-Jul-2026 20:21:06 UTC] [2026-07-19 20:21:06] → GET /api/accounting/customers | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:21:06 UTC] [2026-07-19 20:21:06] ← GET /api/accounting/customers → 200 (5.5ms | 2MB)
+[Mon Jul 20 01:21:06 2026] [::1]:55496 Closing
+[Mon Jul 20 01:22:58 2026] [::1]:55518 Accepted
+[19-Jul-2026 20:22:58 UTC] [2026-07-19 20:22:58] → GET /api/products | qs=lite=1&branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:22:58 UTC] [2026-07-19 20:22:58] ← GET /api/products → 200 (2.3ms | 2MB)
+[Mon Jul 20 01:22:58 2026] [::1]:55518 Closing
+[Mon Jul 20 01:22:58 2026] [::1]:55519 Accepted
+[Mon Jul 20 01:22:58 2026] [::1]:55520 Accepted
+[19-Jul-2026 20:22:58 UTC] [2026-07-19 20:22:58] → GET /api/products/categories | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:22:59 UTC] [2026-07-19 20:22:59] ← GET /api/products/categories → 200 (2.4ms | 2MB)
+[Mon Jul 20 01:22:59 2026] [::1]:55519 Closing
+[19-Jul-2026 20:22:59 UTC] [2026-07-19 20:22:59] → GET /api/accounting/customers | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:22:59 UTC] [2026-07-19 20:22:59] ← GET /api/accounting/customers → 200 (3.1ms | 2MB)
+[Mon Jul 20 01:22:59 2026] [::1]:55520 Closing
+[Mon Jul 20 01:24:47 2026] [::1]:55540 Accepted
+[19-Jul-2026 20:24:47 UTC] [2026-07-19 20:24:47] → GET /api/sales | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:24:47 UTC] [2026-07-19 20:24:47] ← GET /api/sales → 200 (64.2ms | 2MB)
+[Mon Jul 20 01:24:47 2026] [::1]:55540 Closing
+[Mon Jul 20 01:24:47 2026] [::1]:55542 Accepted
+[Mon Jul 20 01:24:47 2026] [::1]:55543 Accepted
+[19-Jul-2026 20:24:47 UTC] [2026-07-19 20:24:47] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:24:47 UTC] [2026-07-19 20:24:47] ← GET /api/auth/branches → 200 (4.6ms | 2MB)
+[Mon Jul 20 01:24:47 2026] [::1]:55542 Closing
+[Mon Jul 20 01:24:47 2026] [::1]:55546 Accepted
+[19-Jul-2026 20:24:47 UTC] [2026-07-19 20:24:47] → GET /api/accounting/customers | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:24:47 UTC] [2026-07-19 20:24:47] ← GET /api/accounting/customers → 200 (13.5ms | 2MB)
+[Mon Jul 20 01:24:47 2026] [::1]:55543 Closing
+[Mon Jul 20 01:24:47 2026] [::1]:55548 Accepted
+[19-Jul-2026 20:24:47 UTC] [2026-07-19 20:24:47] → GET /api/sales | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:24:47 UTC] [2026-07-19 20:24:47] ← GET /api/sales → 200 (81ms | 2MB)
+[Mon Jul 20 01:24:47 2026] [::1]:55546 Closing
+[Mon Jul 20 01:24:47 2026] [::1]:55550 Accepted
+[19-Jul-2026 20:24:47 UTC] [2026-07-19 20:24:47] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:24:47 UTC] [2026-07-19 20:24:47] ← GET /api/auth/branches → 200 (3.1ms | 2MB)
+[Mon Jul 20 01:24:47 2026] [::1]:55548 Closing
+[19-Jul-2026 20:24:47 UTC] [2026-07-19 20:24:47] → GET /api/accounting/customers | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:24:47 UTC] [2026-07-19 20:24:47] ← GET /api/accounting/customers → 200 (6.8ms | 2MB)
+[Mon Jul 20 01:24:47 2026] [::1]:55550 Closing
+[Mon Jul 20 01:24:49 2026] [::1]:55557 Accepted
+[19-Jul-2026 20:24:49 UTC] [2026-07-19 20:24:49] → GET /api/sales | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:24:49 UTC] [2026-07-19 20:24:49] ← GET /api/sales → 200 (19.8ms | 2MB)
+[Mon Jul 20 01:24:49 2026] [::1]:55557 Closing
+[Mon Jul 20 01:24:49 2026] [::1]:55559 Accepted
+[19-Jul-2026 20:24:49 UTC] [2026-07-19 20:24:49] → GET /api/sales | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:24:49 UTC] [2026-07-19 20:24:49] ← GET /api/sales → 200 (17.5ms | 2MB)
+[Mon Jul 20 01:24:49 2026] [::1]:55559 Closing
+[Mon Jul 20 01:24:50 2026] [::1]:55562 Accepted
+[19-Jul-2026 20:24:50 UTC] [2026-07-19 20:24:50] → GET /api/products | qs=branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:24:50 UTC] [2026-07-19 20:24:50] ← GET /api/products → 200 (2.9ms | 2MB)
+[Mon Jul 20 01:24:50 2026] [::1]:55562 Closing
+[Mon Jul 20 01:24:50 2026] [::1]:55564 Accepted
+[Mon Jul 20 01:24:50 2026] [::1]:55565 Accepted
+[19-Jul-2026 20:24:50 UTC] [2026-07-19 20:24:50] → GET /api/products/categories | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:24:50 UTC] [2026-07-19 20:24:50] ← GET /api/products/categories → 200 (5.1ms | 2MB)
+[Mon Jul 20 01:24:50 2026] [::1]:55564 Closing
+[Mon Jul 20 01:24:50 2026] [::1]:55566 Accepted
+[19-Jul-2026 20:24:50 UTC] [2026-07-19 20:24:50] → GET /api/products/brands | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:24:50 UTC] [2026-07-19 20:24:50] ← GET /api/products/brands → 200 (4.9ms | 2MB)
+[Mon Jul 20 01:24:50 2026] [::1]:55565 Closing
+[Mon Jul 20 01:24:50 2026] [::1]:55571 Accepted
+[19-Jul-2026 20:24:50 UTC] [2026-07-19 20:24:50] → GET /api/products | qs=branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:24:50 UTC] [2026-07-19 20:24:50] ← GET /api/products → 200 (64.2ms | 2MB)
+[Mon Jul 20 01:24:50 2026] [::1]:55566 Closing
+[Mon Jul 20 01:24:50 2026] [::1]:55573 Accepted
+[19-Jul-2026 20:24:50 UTC] [2026-07-19 20:24:50] → GET /api/products/categories | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:24:50 UTC] [2026-07-19 20:24:50] ← GET /api/products/categories → 200 (2.3ms | 2MB)
+[Mon Jul 20 01:24:50 2026] [::1]:55571 Closing
+[19-Jul-2026 20:24:50 UTC] [2026-07-19 20:24:50] → GET /api/products/brands | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:24:50 UTC] [2026-07-19 20:24:50] ← GET /api/products/brands → 200 (2.6ms | 2MB)
+[Mon Jul 20 01:24:50 2026] [::1]:55573 Closing
+[Mon Jul 20 01:25:02 2026] [::1]:55577 Accepted
+[19-Jul-2026 20:25:02 UTC] [2026-07-19 20:25:02] → GET /api/reports/dashboard-stats | qs=branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:02 UTC] [2026-07-19 20:25:02] ← GET /api/reports/dashboard-stats → 200 (14.1ms | 2MB)
+[Mon Jul 20 01:25:02 2026] [::1]:55577 Closing
+[Mon Jul 20 01:25:02 2026] [::1]:55579 Accepted
+[Mon Jul 20 01:25:02 2026] [::1]:55580 Accepted
+[19-Jul-2026 20:25:02 UTC] [2026-07-19 20:25:02] → GET /api/reports/charts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:02 UTC] [2026-07-19 20:25:02] ← GET /api/reports/charts → 200 (12.3ms | 2MB)
+[Mon Jul 20 01:25:02 2026] [::1]:55579 Closing
+[Mon Jul 20 01:25:02 2026] [::1]:55581 Accepted
+[19-Jul-2026 20:25:02 UTC] [2026-07-19 20:25:02] → GET /api/reports/top-selling | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:02 UTC] [2026-07-19 20:25:02] ← GET /api/reports/top-selling → 200 (2.6ms | 2MB)
+[Mon Jul 20 01:25:02 2026] [::1]:55580 Closing
+[Mon Jul 20 01:25:02 2026] [::1]:55582 Accepted
+[19-Jul-2026 20:25:02 UTC] [2026-07-19 20:25:02] → GET /api/inventory/alerts | qs=branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:02 UTC] [2026-07-19 20:25:02] ← GET /api/inventory/alerts → 200 (3.5ms | 2MB)
+[Mon Jul 20 01:25:02 2026] [::1]:55581 Closing
+[Mon Jul 20 01:25:02 2026] [::1]:55584 Accepted
+[19-Jul-2026 20:25:02 UTC] [2026-07-19 20:25:02] → GET /api/reports/dashboard-stats | qs=branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:02 UTC] [2026-07-19 20:25:02] ← GET /api/reports/dashboard-stats → 200 (9ms | 2MB)
+[Mon Jul 20 01:25:02 2026] [::1]:55582 Closing
+[Mon Jul 20 01:25:02 2026] [::1]:55586 Accepted
+[19-Jul-2026 20:25:02 UTC] [2026-07-19 20:25:02] → GET /api/reports/charts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:02 UTC] [2026-07-19 20:25:02] ← GET /api/reports/charts → 200 (6.6ms | 2MB)
+[Mon Jul 20 01:25:02 2026] [::1]:55584 Closing
+[Mon Jul 20 01:25:02 2026] [::1]:55588 Accepted
+[19-Jul-2026 20:25:02 UTC] [2026-07-19 20:25:02] → GET /api/reports/top-selling | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:02 UTC] [2026-07-19 20:25:02] ← GET /api/reports/top-selling → 200 (3.6ms | 2MB)
+[Mon Jul 20 01:25:02 2026] [::1]:55586 Closing
+[19-Jul-2026 20:25:02 UTC] [2026-07-19 20:25:02] → GET /api/inventory/alerts | qs=branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:02 UTC] [2026-07-19 20:25:02] ← GET /api/inventory/alerts → 200 (4.8ms | 2MB)
+[Mon Jul 20 01:25:02 2026] [::1]:55588 Closing
+[Mon Jul 20 01:25:04 2026] [::1]:55602 Accepted
+[19-Jul-2026 20:25:04 UTC] [2026-07-19 20:25:04] → GET /api/products | qs=lite=1&branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:04 UTC] [2026-07-19 20:25:04] ← GET /api/products → 200 (5.9ms | 2MB)
+[Mon Jul 20 01:25:04 2026] [::1]:55602 Closing
+[Mon Jul 20 01:25:04 2026] [::1]:55604 Accepted
+[Mon Jul 20 01:25:04 2026] [::1]:55605 Accepted
+[Mon Jul 20 01:25:04 2026] [::1]:55606 Accepted
+[19-Jul-2026 20:25:04 UTC] [2026-07-19 20:25:04] → GET /api/products/categories | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:04 UTC] [2026-07-19 20:25:04] ← GET /api/products/categories → 200 (10.2ms | 2MB)
+[Mon Jul 20 01:25:04 2026] [::1]:55604 Closing
+[19-Jul-2026 20:25:04 UTC] [2026-07-19 20:25:04] → GET /api/accounting/customers | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:04 UTC] [2026-07-19 20:25:04] ← GET /api/accounting/customers → 200 (2.9ms | 2MB)
+[Mon Jul 20 01:25:04 2026] [::1]:55605 Closing
+[19-Jul-2026 20:25:04 UTC] [2026-07-19 20:25:04] → GET /api/products | qs=lite=1&branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:04 UTC] [2026-07-19 20:25:04] ← GET /api/products → 200 (3.2ms | 2MB)
+[Mon Jul 20 01:25:04 2026] [::1]:55606 Closing
+[Mon Jul 20 01:25:04 2026] [::1]:55608 Accepted
+[Mon Jul 20 01:25:04 2026] [::1]:55610 Accepted
+[19-Jul-2026 20:25:04 UTC] [2026-07-19 20:25:04] → GET /api/products/categories | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:04 UTC] [2026-07-19 20:25:04] ← GET /api/products/categories → 200 (2.6ms | 2MB)
+[Mon Jul 20 01:25:04 2026] [::1]:55608 Closing
+[19-Jul-2026 20:25:04 UTC] [2026-07-19 20:25:04] → GET /api/accounting/customers | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:04 UTC] [2026-07-19 20:25:04] ← GET /api/accounting/customers → 200 (2.2ms | 2MB)
+[Mon Jul 20 01:25:04 2026] [::1]:55610 Closing
+[Mon Jul 20 01:25:23 2026] [::1]:55625 Accepted
+[19-Jul-2026 20:25:23 UTC] [2026-07-19 20:25:23] → GET /api/sales | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:23 UTC] [2026-07-19 20:25:23] ← GET /api/sales → 200 (7.1ms | 2MB)
+[Mon Jul 20 01:25:23 2026] [::1]:55625 Closing
+[Mon Jul 20 01:25:23 2026] [::1]:55628 Accepted
+[Mon Jul 20 01:25:23 2026] [::1]:55629 Accepted
+[19-Jul-2026 20:25:23 UTC] [2026-07-19 20:25:23] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:23 UTC] [2026-07-19 20:25:23] ← GET /api/auth/branches → 200 (19.8ms | 2MB)
+[Mon Jul 20 01:25:23 2026] [::1]:55628 Closing
+[Mon Jul 20 01:25:23 2026] [::1]:55630 Accepted
+[19-Jul-2026 20:25:23 UTC] [2026-07-19 20:25:23] → GET /api/accounting/customers | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:23 UTC] [2026-07-19 20:25:23] ← GET /api/accounting/customers → 200 (4.1ms | 2MB)
+[Mon Jul 20 01:25:23 2026] [::1]:55629 Closing
+[Mon Jul 20 01:25:23 2026] [::1]:55634 Accepted
+[19-Jul-2026 20:25:23 UTC] [2026-07-19 20:25:23] → GET /api/sales | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:23 UTC] [2026-07-19 20:25:23] ← GET /api/sales → 200 (5.1ms | 2MB)
+[Mon Jul 20 01:25:23 2026] [::1]:55630 Closing
+[Mon Jul 20 01:25:23 2026] [::1]:55636 Accepted
+[19-Jul-2026 20:25:23 UTC] [2026-07-19 20:25:23] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:23 UTC] [2026-07-19 20:25:23] ← GET /api/auth/branches → 200 (3.1ms | 2MB)
+[Mon Jul 20 01:25:23 2026] [::1]:55634 Closing
+[19-Jul-2026 20:25:23 UTC] [2026-07-19 20:25:23] → GET /api/accounting/customers | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:23 UTC] [2026-07-19 20:25:23] ← GET /api/accounting/customers → 200 (4.1ms | 2MB)
+[Mon Jul 20 01:25:23 2026] [::1]:55636 Closing
+[Mon Jul 20 01:25:26 2026] [::1]:55640 Accepted
+[19-Jul-2026 20:25:26 UTC] [2026-07-19 20:25:26] → GET /api/sales | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:26 UTC] [2026-07-19 20:25:26] ← GET /api/sales → 200 (31.4ms | 2MB)
+[Mon Jul 20 01:25:26 2026] [::1]:55640 Closing
+[Mon Jul 20 01:25:26 2026] [::1]:55642 Accepted
+[19-Jul-2026 20:25:26 UTC] [2026-07-19 20:25:26] → GET /api/sales | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:26 UTC] [2026-07-19 20:25:26] ← GET /api/sales → 200 (10.1ms | 2MB)
+[Mon Jul 20 01:25:26 2026] [::1]:55642 Closing
+[Mon Jul 20 01:25:28 2026] [::1]:55644 Accepted
+[19-Jul-2026 20:25:28 UTC] [2026-07-19 20:25:28] → GET /api/products/categories | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:28 UTC] [2026-07-19 20:25:28] ← GET /api/products/categories → 200 (31.6ms | 2MB)
+[Mon Jul 20 01:25:28 2026] [::1]:55644 Closing
+[Mon Jul 20 01:25:28 2026] [::1]:55646 Accepted
+[19-Jul-2026 20:25:28 UTC] [2026-07-19 20:25:28] → GET /api/products/brands | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:28 UTC] [2026-07-19 20:25:28] ← GET /api/products/brands → 200 (2.2ms | 2MB)
+[Mon Jul 20 01:25:28 2026] [::1]:55646 Closing
+[Mon Jul 20 01:25:28 2026] [::1]:55648 Accepted
+[19-Jul-2026 20:25:28 UTC] [2026-07-19 20:25:28] → GET /api/products/categories | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:28 UTC] [2026-07-19 20:25:28] ← GET /api/products/categories → 200 (2.6ms | 2MB)
+[Mon Jul 20 01:25:28 2026] [::1]:55648 Closing
+[Mon Jul 20 01:25:28 2026] [::1]:55650 Accepted
+[19-Jul-2026 20:25:28 UTC] [2026-07-19 20:25:28] → GET /api/products/brands | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:28 UTC] [2026-07-19 20:25:28] ← GET /api/products/brands → 200 (2.4ms | 2MB)
+[Mon Jul 20 01:25:28 2026] [::1]:55650 Closing
+[Mon Jul 20 01:25:30 2026] [::1]:55654 Accepted
+[19-Jul-2026 20:25:30 UTC] [2026-07-19 20:25:30] → GET /api/accounting/customers | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:30 UTC] [2026-07-19 20:25:30] ← GET /api/accounting/customers → 200 (5.3ms | 2MB)
+[Mon Jul 20 01:25:30 2026] [::1]:55654 Closing
+[Mon Jul 20 01:25:30 2026] [::1]:55656 Accepted
+[19-Jul-2026 20:25:30 UTC] [2026-07-19 20:25:30] → GET /api/accounting/suppliers | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:30 UTC] [2026-07-19 20:25:30] ← GET /api/accounting/suppliers → 200 (8.2ms | 2MB)
+[Mon Jul 20 01:25:30 2026] [::1]:55656 Closing
+[Mon Jul 20 01:25:30 2026] [::1]:55657 Accepted
+[19-Jul-2026 20:25:30 UTC] [2026-07-19 20:25:30] → GET /api/accounting/customers | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:30 UTC] [2026-07-19 20:25:30] ← GET /api/accounting/customers → 200 (8.5ms | 2MB)
+[Mon Jul 20 01:25:30 2026] [::1]:55657 Closing
+[Mon Jul 20 01:25:30 2026] [::1]:55659 Accepted
+[19-Jul-2026 20:25:30 UTC] [2026-07-19 20:25:30] → GET /api/accounting/suppliers | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:30 UTC] [2026-07-19 20:25:30] ← GET /api/accounting/suppliers → 200 (2.3ms | 2MB)
+[Mon Jul 20 01:25:30 2026] [::1]:55659 Closing
+[Mon Jul 20 01:25:34 2026] [::1]:55662 Accepted
+[19-Jul-2026 20:25:34 UTC] [2026-07-19 20:25:34] → OPTIONS /api/accounting/customers/d81b75c2-bf89-4d7a-8ccc-790e7e006043/statement | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:34 UTC] [2026-07-19 20:25:34] ← OPTIONS /api/accounting/customers/d81b75c2-bf89-4d7a-8ccc-790e7e006043/statement → 204 (0.1ms | 2MB)
+[Mon Jul 20 01:25:34 2026] [::1]:55662 Closing
+[Mon Jul 20 01:25:34 2026] [::1]:55663 Accepted
+[19-Jul-2026 20:25:34 UTC] [2026-07-19 20:25:34] → GET /api/accounting/customers/d81b75c2-bf89-4d7a-8ccc-790e7e006043/statement | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:34 UTC] [2026-07-19 20:25:34] ← GET /api/accounting/customers/d81b75c2-bf89-4d7a-8ccc-790e7e006043/statement → 200 (2.5ms | 2MB)
+[Mon Jul 20 01:25:34 2026] [::1]:55663 Closing
+[Mon Jul 20 01:25:44 2026] [::1]:55665 Accepted
+[19-Jul-2026 20:25:44 UTC] [2026-07-19 20:25:44] → OPTIONS /api/accounting/customers/b0ad5d41-0e9b-478a-81f5-e96d1993367b/statement | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:44 UTC] [2026-07-19 20:25:44] ← OPTIONS /api/accounting/customers/b0ad5d41-0e9b-478a-81f5-e96d1993367b/statement → 204 (0.2ms | 2MB)
+[Mon Jul 20 01:25:44 2026] [::1]:55665 Closing
+[Mon Jul 20 01:25:44 2026] [::1]:55666 Accepted
+[19-Jul-2026 20:25:44 UTC] [2026-07-19 20:25:44] → GET /api/accounting/customers/b0ad5d41-0e9b-478a-81f5-e96d1993367b/statement | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:44 UTC] [2026-07-19 20:25:44] ← GET /api/accounting/customers/b0ad5d41-0e9b-478a-81f5-e96d1993367b/statement → 200 (2.5ms | 2MB)
+[Mon Jul 20 01:25:44 2026] [::1]:55666 Closing
+[Mon Jul 20 01:25:49 2026] [::1]:55668 Accepted
+[19-Jul-2026 20:25:49 UTC] [2026-07-19 20:25:49] → GET /api/accounting/expenses | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:49 UTC] [2026-07-19 20:25:49] ← GET /api/accounting/expenses → 200 (20.2ms | 2MB)
+[Mon Jul 20 01:25:49 2026] [::1]:55668 Closing
+[Mon Jul 20 01:25:49 2026] [::1]:55671 Accepted
+[Mon Jul 20 01:25:49 2026] [::1]:55672 Accepted
+[19-Jul-2026 20:25:49 UTC] [2026-07-19 20:25:49] → GET /api/accounting/purchases | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:49 UTC] [2026-07-19 20:25:49] ← GET /api/accounting/purchases → 200 (2.5ms | 2MB)
+[Mon Jul 20 01:25:49 2026] [::1]:55671 Closing
+[Mon Jul 20 01:25:49 2026] [::1]:55673 Accepted
+[19-Jul-2026 20:25:49 UTC] [2026-07-19 20:25:49] → GET /api/accounting/suppliers | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:49 UTC] [2026-07-19 20:25:49] ← GET /api/accounting/suppliers → 200 (16.3ms | 2MB)
+[Mon Jul 20 01:25:49 2026] [::1]:55672 Closing
+[Mon Jul 20 01:25:49 2026] [::1]:55677 Accepted
+[19-Jul-2026 20:25:49 UTC] [2026-07-19 20:25:49] → GET /api/products | qs=lite=1 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:49 UTC] [2026-07-19 20:25:49] ← GET /api/products → 200 (3ms | 2MB)
+[Mon Jul 20 01:25:49 2026] [::1]:55673 Closing
+[Mon Jul 20 01:25:49 2026] [::1]:55679 Accepted
+[19-Jul-2026 20:25:49 UTC] [2026-07-19 20:25:49] → GET /api/accounting/expenses | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:49 UTC] [2026-07-19 20:25:49] ← GET /api/accounting/expenses → 200 (1.6ms | 2MB)
+[Mon Jul 20 01:25:49 2026] [::1]:55677 Closing
+[Mon Jul 20 01:25:49 2026] [::1]:55681 Accepted
+[19-Jul-2026 20:25:49 UTC] [2026-07-19 20:25:49] → GET /api/accounting/purchases | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:49 UTC] [2026-07-19 20:25:49] ← GET /api/accounting/purchases → 200 (1.6ms | 2MB)
+[Mon Jul 20 01:25:49 2026] [::1]:55679 Closing
+[Mon Jul 20 01:25:49 2026] [::1]:55683 Accepted
+[19-Jul-2026 20:25:49 UTC] [2026-07-19 20:25:49] → GET /api/accounting/suppliers | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:49 UTC] [2026-07-19 20:25:49] ← GET /api/accounting/suppliers → 200 (1.5ms | 2MB)
+[Mon Jul 20 01:25:49 2026] [::1]:55681 Closing
+[19-Jul-2026 20:25:49 UTC] [2026-07-19 20:25:49] → GET /api/products | qs=lite=1 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:49 UTC] [2026-07-19 20:25:49] ← GET /api/products → 200 (6.1ms | 2MB)
+[Mon Jul 20 01:25:49 2026] [::1]:55683 Closing
+[Mon Jul 20 01:25:51 2026] [::1]:55688 Accepted
+[19-Jul-2026 20:25:51 UTC] [2026-07-19 20:25:51] → GET /api/accounting/bank-accounts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:51 UTC] [2026-07-19 20:25:51] ← GET /api/accounting/bank-accounts → 200 (2.3ms | 2MB)
+[Mon Jul 20 01:25:51 2026] [::1]:55688 Closing
+[Mon Jul 20 01:25:52 2026] [::1]:55690 Accepted
+[19-Jul-2026 20:25:52 UTC] [2026-07-19 20:25:52] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:52 UTC] [2026-07-19 20:25:52] ← GET /api/inventory/alerts → 200 (1.9ms | 2MB)
+[Mon Jul 20 01:25:52 2026] [::1]:55690 Closing
+[Mon Jul 20 01:25:53 2026] [::1]:55692 Accepted
+[Mon Jul 20 01:25:53 2026] [::1]:55693 Accepted
+[19-Jul-2026 20:25:53 UTC] [2026-07-19 20:25:53] → GET /api/accounting/bank-accounts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:53 UTC] [2026-07-19 20:25:53] ← GET /api/accounting/bank-accounts → 200 (2.3ms | 2MB)
+[Mon Jul 20 01:25:53 2026] [::1]:55692 Closing
+[19-Jul-2026 20:25:53 UTC] [2026-07-19 20:25:53] → GET /api/accounting/transactions | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:25:53 UTC] [2026-07-19 20:25:53] ← GET /api/accounting/transactions → 200 (2.4ms | 2MB)
+[Mon Jul 20 01:25:53 2026] [::1]:55693 Closing
+[Mon Jul 20 01:26:00 2026] [::1]:55698 Accepted
+[19-Jul-2026 20:26:00 UTC] [2026-07-19 20:26:00] → GET /api/accounting/profit-loss | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:00 UTC] [2026-07-19 20:26:00] ← GET /api/accounting/profit-loss → 200 (2.7ms | 2MB)
+[Mon Jul 20 01:26:00 2026] [::1]:55698 Closing
+[Mon Jul 20 01:26:02 2026] [::1]:55700 Accepted
+[19-Jul-2026 20:26:02 UTC] [2026-07-19 20:26:02] → GET /api/accounting/profit-loss | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:02 UTC] [2026-07-19 20:26:02] ← GET /api/accounting/profit-loss → 200 (2.6ms | 2MB)
+[Mon Jul 20 01:26:02 2026] [::1]:55700 Closing
+[Mon Jul 20 01:26:03 2026] [::1]:55702 Accepted
+[19-Jul-2026 20:26:03 UTC] [2026-07-19 20:26:03] → GET /api/accounting/daily-closings | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:03 UTC] [2026-07-19 20:26:03] ← GET /api/accounting/daily-closings → 200 (1.5ms | 2MB)
+[Mon Jul 20 01:26:03 2026] [::1]:55702 Closing
+[Mon Jul 20 01:26:04 2026] [::1]:55704 Accepted
+[19-Jul-2026 20:26:04 UTC] [2026-07-19 20:26:04] → OPTIONS /api/accounting/daily-closings/preview | qs=date=2026-07-19 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:04 UTC] [2026-07-19 20:26:04] ← OPTIONS /api/accounting/daily-closings/preview → 204 (0.1ms | 2MB)
+[Mon Jul 20 01:26:04 2026] [::1]:55704 Closing
+[Mon Jul 20 01:26:04 2026] [::1]:55705 Accepted
+[19-Jul-2026 20:26:04 UTC] [2026-07-19 20:26:04] → GET /api/accounting/daily-closings/preview | qs=date=2026-07-19 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:04 UTC] [2026-07-19 20:26:04] ← GET /api/accounting/daily-closings/preview → 200 (2.2ms | 2MB)
+[Mon Jul 20 01:26:04 2026] [::1]:55705 Closing
+[Mon Jul 20 01:26:06 2026] [::1]:55714 Accepted
+[Mon Jul 20 01:26:06 2026] [::1]:55715 Accepted
+[19-Jul-2026 20:26:06 UTC] [2026-07-19 20:26:06] → GET /api/auth/me | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:06 UTC] [2026-07-19 20:26:06] ← GET /api/auth/me → 200 (2.6ms | 2MB)
+[Mon Jul 20 01:26:06 2026] [::1]:55714 Closing
+[19-Jul-2026 20:26:06 UTC] [2026-07-19 20:26:06] → GET /api/settings | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:06 UTC] [2026-07-19 20:26:06] ← GET /api/settings → 200 (23.3ms | 2MB)
+[Mon Jul 20 01:26:06 2026] [::1]:55715 Closing
+[Mon Jul 20 01:26:06 2026] [::1]:55717 Accepted
+[19-Jul-2026 20:26:06 UTC] [2026-07-19 20:26:06] → GET /api/auth/me | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:06 UTC] [2026-07-19 20:26:06] ← GET /api/auth/me → 200 (3.5ms | 2MB)
+[Mon Jul 20 01:26:06 2026] [::1]:55717 Closing
+[Mon Jul 20 01:26:06 2026] [::1]:55719 Accepted
+[19-Jul-2026 20:26:06 UTC] [2026-07-19 20:26:06] → GET /api/settings | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:06 UTC] [2026-07-19 20:26:06] ← GET /api/settings → 200 (6.9ms | 2MB)
+[Mon Jul 20 01:26:06 2026] [::1]:55719 Closing
+[Mon Jul 20 01:26:06 2026] [::1]:55722 Accepted
+[19-Jul-2026 20:26:06 UTC] [2026-07-19 20:26:06] → GET /api/accounting/expenses | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:06 UTC] [2026-07-19 20:26:06] ← GET /api/accounting/expenses → 200 (52ms | 2MB)
+[Mon Jul 20 01:26:06 2026] [::1]:55722 Closing
+[Mon Jul 20 01:26:06 2026] [::1]:55724 Accepted
+[Mon Jul 20 01:26:06 2026] [::1]:55725 Accepted
+[19-Jul-2026 20:26:06 UTC] [2026-07-19 20:26:06] → GET /api/accounting/purchases | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:06 UTC] [2026-07-19 20:26:06] ← GET /api/accounting/purchases → 200 (5.7ms | 2MB)
+[Mon Jul 20 01:26:06 2026] [::1]:55724 Closing
+[Mon Jul 20 01:26:06 2026] [::1]:55726 Accepted
+[19-Jul-2026 20:26:06 UTC] [2026-07-19 20:26:06] → GET /api/accounting/suppliers | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:06 UTC] [2026-07-19 20:26:06] ← GET /api/accounting/suppliers → 200 (11.3ms | 2MB)
+[Mon Jul 20 01:26:06 2026] [::1]:55725 Closing
+[Mon Jul 20 01:26:06 2026] [::1]:55727 Accepted
+[19-Jul-2026 20:26:06 UTC] [2026-07-19 20:26:06] → GET /api/products | qs=lite=1 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:06 UTC] [2026-07-19 20:26:06] ← GET /api/products → 200 (8.9ms | 2MB)
+[Mon Jul 20 01:26:06 2026] [::1]:55726 Closing
+[Mon Jul 20 01:26:06 2026] [::1]:55728 Accepted
+[19-Jul-2026 20:26:06 UTC] [2026-07-19 20:26:06] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:06 UTC] [2026-07-19 20:26:06] ← GET /api/inventory/alerts → 200 (26.7ms | 2MB)
+[Mon Jul 20 01:26:06 2026] [::1]:55727 Closing
+[Mon Jul 20 01:26:06 2026] [::1]:55730 Accepted
+[19-Jul-2026 20:26:06 UTC] [2026-07-19 20:26:06] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:06 UTC] [2026-07-19 20:26:06] ← GET /api/auth/branches → 200 (11.7ms | 2MB)
+[Mon Jul 20 01:26:06 2026] [::1]:55728 Closing
+[Mon Jul 20 01:26:06 2026] [::1]:55732 Accepted
+[19-Jul-2026 20:26:06 UTC] [2026-07-19 20:26:06] → GET /api/accounting/expenses | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:06 UTC] [2026-07-19 20:26:06] ← GET /api/accounting/expenses → 200 (3.3ms | 2MB)
+[Mon Jul 20 01:26:06 2026] [::1]:55730 Closing
+[Mon Jul 20 01:26:06 2026] [::1]:55734 Accepted
+[19-Jul-2026 20:26:06 UTC] [2026-07-19 20:26:06] → GET /api/accounting/purchases | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:06 UTC] [2026-07-19 20:26:06] ← GET /api/accounting/purchases → 200 (3.2ms | 2MB)
+[Mon Jul 20 01:26:06 2026] [::1]:55732 Closing
+[Mon Jul 20 01:26:06 2026] [::1]:55736 Accepted
+[19-Jul-2026 20:26:06 UTC] [2026-07-19 20:26:06] → GET /api/accounting/suppliers | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:06 UTC] [2026-07-19 20:26:06] ← GET /api/accounting/suppliers → 200 (5.3ms | 2MB)
+[Mon Jul 20 01:26:06 2026] [::1]:55734 Closing
+[Mon Jul 20 01:26:06 2026] [::1]:55738 Accepted
+[19-Jul-2026 20:26:06 UTC] [2026-07-19 20:26:06] → GET /api/products | qs=lite=1 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:06 UTC] [2026-07-19 20:26:06] ← GET /api/products → 200 (4.6ms | 2MB)
+[Mon Jul 20 01:26:06 2026] [::1]:55736 Closing
+[Mon Jul 20 01:26:06 2026] [::1]:55740 Accepted
+[19-Jul-2026 20:26:06 UTC] [2026-07-19 20:26:06] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:06 UTC] [2026-07-19 20:26:06] ← GET /api/inventory/alerts → 200 (3.1ms | 2MB)
+[Mon Jul 20 01:26:06 2026] [::1]:55738 Closing
+[19-Jul-2026 20:26:06 UTC] [2026-07-19 20:26:06] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:06 UTC] [2026-07-19 20:26:06] ← GET /api/auth/branches → 200 (3.3ms | 2MB)
+[Mon Jul 20 01:26:06 2026] [::1]:55740 Closing
+[Mon Jul 20 01:26:37 2026] [::1]:55759 Accepted
+[19-Jul-2026 20:26:37 UTC] [2026-07-19 20:26:37] → GET /api/reports/dashboard-stats | qs=branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:37 UTC] [2026-07-19 20:26:37] ← GET /api/reports/dashboard-stats → 200 (60ms | 2MB)
+[Mon Jul 20 01:26:37 2026] [::1]:55759 Closing
+[Mon Jul 20 01:26:37 2026] [::1]:55761 Accepted
+[Mon Jul 20 01:26:37 2026] [::1]:55762 Accepted
+[19-Jul-2026 20:26:37 UTC] [2026-07-19 20:26:37] → GET /api/reports/charts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:37 UTC] [2026-07-19 20:26:37] ← GET /api/reports/charts → 200 (15.8ms | 2MB)
+[Mon Jul 20 01:26:37 2026] [::1]:55761 Closing
+[Mon Jul 20 01:26:37 2026] [::1]:55763 Accepted
+[19-Jul-2026 20:26:37 UTC] [2026-07-19 20:26:37] → GET /api/reports/top-selling | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:37 UTC] [2026-07-19 20:26:37] ← GET /api/reports/top-selling → 200 (6.1ms | 2MB)
+[Mon Jul 20 01:26:37 2026] [::1]:55762 Closing
+[Mon Jul 20 01:26:37 2026] [::1]:55764 Accepted
+[19-Jul-2026 20:26:37 UTC] [2026-07-19 20:26:37] → GET /api/inventory/alerts | qs=branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:37 UTC] [2026-07-19 20:26:37] ← GET /api/inventory/alerts → 200 (5.2ms | 2MB)
+[Mon Jul 20 01:26:37 2026] [::1]:55763 Closing
+[Mon Jul 20 01:26:37 2026] [::1]:55766 Accepted
+[19-Jul-2026 20:26:37 UTC] [2026-07-19 20:26:37] → GET /api/reports/dashboard-stats | qs=branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:37 UTC] [2026-07-19 20:26:37] ← GET /api/reports/dashboard-stats → 200 (121.2ms | 2MB)
+[Mon Jul 20 01:26:37 2026] [::1]:55764 Closing
+[Mon Jul 20 01:26:37 2026] [::1]:55768 Accepted
+[19-Jul-2026 20:26:37 UTC] [2026-07-19 20:26:37] → GET /api/reports/charts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:37 UTC] [2026-07-19 20:26:37] ← GET /api/reports/charts → 200 (16.8ms | 2MB)
+[Mon Jul 20 01:26:37 2026] [::1]:55766 Closing
+[Mon Jul 20 01:26:37 2026] [::1]:55770 Accepted
+[19-Jul-2026 20:26:37 UTC] [2026-07-19 20:26:37] → GET /api/reports/top-selling | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:37 UTC] [2026-07-19 20:26:37] ← GET /api/reports/top-selling → 200 (5.2ms | 2MB)
+[Mon Jul 20 01:26:37 2026] [::1]:55768 Closing
+[19-Jul-2026 20:26:37 UTC] [2026-07-19 20:26:37] → GET /api/inventory/alerts | qs=branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:37 UTC] [2026-07-19 20:26:37] ← GET /api/inventory/alerts → 200 (17.4ms | 2MB)
+[Mon Jul 20 01:26:37 2026] [::1]:55770 Closing
+[Mon Jul 20 01:26:40 2026] [::1]:55783 Accepted
+[Mon Jul 20 01:26:40 2026] [::1]:55784 Accepted
+[19-Jul-2026 20:26:40 UTC] [2026-07-19 20:26:40] → GET /api/products | qs=lite=1&branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:40 UTC] [2026-07-19 20:26:40] ← GET /api/products → 200 (86.9ms | 2MB)
+[Mon Jul 20 01:26:40 2026] [::1]:55783 Closing
+[Mon Jul 20 01:26:40 2026] [::1]:55785 Accepted
+[19-Jul-2026 20:26:40 UTC] [2026-07-19 20:26:40] → GET /api/products/categories | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:40 UTC] [2026-07-19 20:26:40] ← GET /api/products/categories → 200 (2.7ms | 2MB)
+[Mon Jul 20 01:26:40 2026] [::1]:55784 Closing
+[Mon Jul 20 01:26:40 2026] [::1]:55788 Accepted
+[19-Jul-2026 20:26:40 UTC] [2026-07-19 20:26:40] → GET /api/accounting/customers | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:40 UTC] [2026-07-19 20:26:40] ← GET /api/accounting/customers → 200 (6.9ms | 2MB)
+[Mon Jul 20 01:26:40 2026] [::1]:55785 Closing
+[Mon Jul 20 01:26:40 2026] [::1]:55790 Accepted
+[19-Jul-2026 20:26:40 UTC] [2026-07-19 20:26:40] → GET /api/products | qs=lite=1&branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:40 UTC] [2026-07-19 20:26:40] ← GET /api/products → 200 (5.5ms | 2MB)
+[Mon Jul 20 01:26:40 2026] [::1]:55788 Closing
+[Mon Jul 20 01:26:40 2026] [::1]:55792 Accepted
+[19-Jul-2026 20:26:40 UTC] [2026-07-19 20:26:40] → GET /api/products/categories | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:40 UTC] [2026-07-19 20:26:40] ← GET /api/products/categories → 200 (3.7ms | 2MB)
+[Mon Jul 20 01:26:40 2026] [::1]:55790 Closing
+[19-Jul-2026 20:26:40 UTC] [2026-07-19 20:26:40] → GET /api/accounting/customers | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:26:40 UTC] [2026-07-19 20:26:40] ← GET /api/accounting/customers → 200 (7.1ms | 2MB)
+[Mon Jul 20 01:26:40 2026] [::1]:55792 Closing
+[Mon Jul 20 01:27:32 2026] [::1]:55809 Accepted
+[19-Jul-2026 20:27:32 UTC] [2026-07-19 20:27:32] → GET /api/auth/me | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:27:32 UTC] [2026-07-19 20:27:32] ← GET /api/auth/me → 200 (2.6ms | 2MB)
+[Mon Jul 20 01:27:32 2026] [::1]:55809 Closing
+[Mon Jul 20 01:27:32 2026] [::1]:55811 Accepted
+[Mon Jul 20 01:27:33 2026] [::1]:55812 Accepted
+[19-Jul-2026 20:27:33 UTC] [2026-07-19 20:27:33] → GET /api/settings | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:27:33 UTC] [2026-07-19 20:27:33] ← GET /api/settings → 200 (102.9ms | 2MB)
+[Mon Jul 20 01:27:33 2026] [::1]:55811 Closing
+[19-Jul-2026 20:27:33 UTC] [2026-07-19 20:27:33] → GET /api/auth/me | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:27:33 UTC] [2026-07-19 20:27:33] ← GET /api/auth/me → 200 (12.1ms | 2MB)
+[Mon Jul 20 01:27:33 2026] [::1]:55812 Closing
+[Mon Jul 20 01:27:33 2026] [::1]:55814 Accepted
+[19-Jul-2026 20:27:33 UTC] [2026-07-19 20:27:33] → GET /api/settings | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:27:33 UTC] [2026-07-19 20:27:33] ← GET /api/settings → 200 (20.8ms | 2MB)
+[Mon Jul 20 01:27:33 2026] [::1]:55814 Closing
+[Mon Jul 20 01:27:33 2026] [::1]:55818 Accepted
+[Mon Jul 20 01:27:33 2026] [::1]:55819 Accepted
+[19-Jul-2026 20:27:33 UTC] [2026-07-19 20:27:33] → GET /api/products | qs=lite=1&branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:27:33 UTC] [2026-07-19 20:27:33] ← GET /api/products → 200 (114ms | 2MB)
+[Mon Jul 20 01:27:33 2026] [::1]:55818 Closing
+[Mon Jul 20 01:27:33 2026] [::1]:55820 Accepted
+[19-Jul-2026 20:27:33 UTC] [2026-07-19 20:27:33] → GET /api/products/categories | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:27:33 UTC] [2026-07-19 20:27:33] ← GET /api/products/categories → 200 (4.2ms | 2MB)
+[Mon Jul 20 01:27:33 2026] [::1]:55819 Closing
+[Mon Jul 20 01:27:33 2026] [::1]:55822 Accepted
+[19-Jul-2026 20:27:33 UTC] [2026-07-19 20:27:33] → GET /api/accounting/customers | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:27:33 UTC] [2026-07-19 20:27:33] ← GET /api/accounting/customers → 200 (2.8ms | 2MB)
+[Mon Jul 20 01:27:33 2026] [::1]:55820 Closing
+[Mon Jul 20 01:27:33 2026] [::1]:55823 Accepted
+[19-Jul-2026 20:27:33 UTC] [2026-07-19 20:27:33] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:27:33 UTC] [2026-07-19 20:27:33] ← GET /api/inventory/alerts → 200 (5.4ms | 2MB)
+[Mon Jul 20 01:27:33 2026] [::1]:55822 Closing
+[Mon Jul 20 01:27:33 2026] [::1]:55824 Accepted
+[19-Jul-2026 20:27:33 UTC] [2026-07-19 20:27:33] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:27:33 UTC] [2026-07-19 20:27:33] ← GET /api/auth/branches → 200 (3.9ms | 2MB)
+[Mon Jul 20 01:27:33 2026] [::1]:55823 Closing
+[19-Jul-2026 20:27:33 UTC] [2026-07-19 20:27:33] → GET /api/products | qs=lite=1&branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:27:33 UTC] [2026-07-19 20:27:33] ← GET /api/products → 200 (6.8ms | 2MB)
+[Mon Jul 20 01:27:33 2026] [::1]:55824 Closing
+[Mon Jul 20 01:27:33 2026] [::1]:55830 Accepted
+[Mon Jul 20 01:27:33 2026] [::1]:55831 Accepted
+[Mon Jul 20 01:27:33 2026] [::1]:55832 Accepted
+[19-Jul-2026 20:27:33 UTC] [2026-07-19 20:27:33] → GET /api/products/categories | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:27:33 UTC] [2026-07-19 20:27:33] ← GET /api/products/categories → 200 (3.5ms | 2MB)
+[Mon Jul 20 01:27:33 2026] [::1]:55830 Closing
+[Mon Jul 20 01:27:33 2026] [::1]:55833 Accepted
+[19-Jul-2026 20:27:33 UTC] [2026-07-19 20:27:33] → GET /api/accounting/customers | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:27:33 UTC] [2026-07-19 20:27:33] ← GET /api/accounting/customers → 200 (4ms | 2MB)
+[Mon Jul 20 01:27:33 2026] [::1]:55831 Closing
+[19-Jul-2026 20:27:33 UTC] [2026-07-19 20:27:33] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:27:33 UTC] [2026-07-19 20:27:33] ← GET /api/inventory/alerts → 200 (3.4ms | 2MB)
+[Mon Jul 20 01:27:33 2026] [::1]:55832 Closing
+[19-Jul-2026 20:27:33 UTC] [2026-07-19 20:27:33] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:27:33 UTC] [2026-07-19 20:27:33] ← GET /api/auth/branches → 200 (3.9ms | 2MB)
+[Mon Jul 20 01:27:33 2026] [::1]:55833 Closing
+[Mon Jul 20 01:27:57 2026] [::1]:55847 Accepted
+[19-Jul-2026 20:27:57 UTC] [2026-07-19 20:27:57] → GET /api/auth/me | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:27:57 UTC] [2026-07-19 20:27:57] ← GET /api/auth/me → 200 (41.6ms | 2MB)
+[Mon Jul 20 01:27:57 2026] [::1]:55847 Closing
+[Mon Jul 20 01:27:57 2026] [::1]:55849 Accepted
+[19-Jul-2026 20:27:57 UTC] [2026-07-19 20:27:57] → GET /api/settings | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:27:57 UTC] [2026-07-19 20:27:57] ← GET /api/settings → 200 (4.7ms | 2MB)
+[Mon Jul 20 01:27:57 2026] [::1]:55849 Closing
+[Mon Jul 20 01:27:57 2026] [::1]:55850 Accepted
+[19-Jul-2026 20:27:57 UTC] [2026-07-19 20:27:57] → GET /api/auth/me | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:27:57 UTC] [2026-07-19 20:27:57] ← GET /api/auth/me → 200 (7ms | 2MB)
+[Mon Jul 20 01:27:57 2026] [::1]:55850 Closing
+[Mon Jul 20 01:27:57 2026] [::1]:55852 Accepted
+[19-Jul-2026 20:27:57 UTC] [2026-07-19 20:27:57] → GET /api/settings | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:27:57 UTC] [2026-07-19 20:27:57] ← GET /api/settings → 200 (19ms | 2MB)
+[Mon Jul 20 01:27:57 2026] [::1]:55852 Closing
+[Mon Jul 20 01:27:57 2026] [::1]:55855 Accepted
+[19-Jul-2026 20:27:57 UTC] [2026-07-19 20:27:57] → GET /api/products | qs=lite=1&branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:27:57 UTC] [2026-07-19 20:27:57] ← GET /api/products → 200 (25.9ms | 2MB)
+[Mon Jul 20 01:27:57 2026] [::1]:55855 Closing
+[Mon Jul 20 01:27:57 2026] [::1]:55857 Accepted
+[Mon Jul 20 01:27:57 2026] [::1]:55858 Accepted
+[19-Jul-2026 20:27:57 UTC] [2026-07-19 20:27:57] → GET /api/products/categories | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:27:57 UTC] [2026-07-19 20:27:57] ← GET /api/products/categories → 200 (8.2ms | 2MB)
+[Mon Jul 20 01:27:57 2026] [::1]:55857 Closing
+[Mon Jul 20 01:27:57 2026] [::1]:55859 Accepted
+[19-Jul-2026 20:27:57 UTC] [2026-07-19 20:27:57] → GET /api/accounting/customers | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:27:57 UTC] [2026-07-19 20:27:57] ← GET /api/accounting/customers → 200 (2.9ms | 2MB)
+[Mon Jul 20 01:27:57 2026] [::1]:55858 Closing
+[Mon Jul 20 01:27:57 2026] [::1]:55860 Accepted
+[19-Jul-2026 20:27:57 UTC] [2026-07-19 20:27:57] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:27:57 UTC] [2026-07-19 20:27:57] ← GET /api/inventory/alerts → 200 (11ms | 2MB)
+[Mon Jul 20 01:27:57 2026] [::1]:55859 Closing
+[Mon Jul 20 01:27:57 2026] [::1]:55861 Accepted
+[19-Jul-2026 20:27:57 UTC] [2026-07-19 20:27:57] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:27:57 UTC] [2026-07-19 20:27:57] ← GET /api/auth/branches → 200 (63.2ms | 2MB)
+[Mon Jul 20 01:27:57 2026] [::1]:55860 Closing
+[Mon Jul 20 01:27:57 2026] [::1]:55865 Accepted
+[19-Jul-2026 20:27:57 UTC] [2026-07-19 20:27:57] → GET /api/products | qs=lite=1&branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:27:57 UTC] [2026-07-19 20:27:57] ← GET /api/products → 200 (4.4ms | 2MB)
+[Mon Jul 20 01:27:57 2026] [::1]:55861 Closing
+[Mon Jul 20 01:27:57 2026] [::1]:55866 Accepted
+[19-Jul-2026 20:27:57 UTC] [2026-07-19 20:27:57] → GET /api/products/categories | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:27:57 UTC] [2026-07-19 20:27:57] ← GET /api/products/categories → 200 (13.3ms | 2MB)
+[Mon Jul 20 01:27:57 2026] [::1]:55865 Closing
+[Mon Jul 20 01:27:57 2026] [::1]:55868 Accepted
+[19-Jul-2026 20:27:57 UTC] [2026-07-19 20:27:57] → GET /api/accounting/customers | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:27:57 UTC] [2026-07-19 20:27:57] ← GET /api/accounting/customers → 200 (18.4ms | 2MB)
+[Mon Jul 20 01:27:57 2026] [::1]:55866 Closing
+[Mon Jul 20 01:27:57 2026] [::1]:55869 Accepted
+[19-Jul-2026 20:27:57 UTC] [2026-07-19 20:27:57] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:27:57 UTC] [2026-07-19 20:27:57] ← GET /api/inventory/alerts → 200 (8.5ms | 2MB)
+[Mon Jul 20 01:27:57 2026] [::1]:55868 Closing
+[19-Jul-2026 20:27:57 UTC] [2026-07-19 20:27:57] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:27:57 UTC] [2026-07-19 20:27:57] ← GET /api/auth/branches → 200 (5.8ms | 2MB)
+[Mon Jul 20 01:27:57 2026] [::1]:55869 Closing
+[Mon Jul 20 01:28:17 2026] [::1]:55877 Accepted
+[19-Jul-2026 20:28:17 UTC] [2026-07-19 20:28:17] → GET /api/sales | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:28:17 UTC] [2026-07-19 20:28:17] ← GET /api/sales → 200 (84.3ms | 2MB)
+[Mon Jul 20 01:28:17 2026] [::1]:55877 Closing
+[Mon Jul 20 01:28:17 2026] [::1]:55879 Accepted
+[Mon Jul 20 01:28:17 2026] [::1]:55880 Accepted
+[19-Jul-2026 20:28:17 UTC] [2026-07-19 20:28:17] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:28:17 UTC] [2026-07-19 20:28:17] ← GET /api/auth/branches → 200 (2.6ms | 2MB)
+[Mon Jul 20 01:28:17 2026] [::1]:55879 Closing
+[Mon Jul 20 01:28:17 2026] [::1]:55882 Accepted
+[19-Jul-2026 20:28:17 UTC] [2026-07-19 20:28:17] → GET /api/accounting/customers | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:28:17 UTC] [2026-07-19 20:28:17] ← GET /api/accounting/customers → 200 (3.1ms | 2MB)
+[Mon Jul 20 01:28:17 2026] [::1]:55880 Closing
+[Mon Jul 20 01:28:17 2026] [::1]:55884 Accepted
+[19-Jul-2026 20:28:17 UTC] [2026-07-19 20:28:17] → GET /api/sales | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:28:17 UTC] [2026-07-19 20:28:17] ← GET /api/sales → 200 (81.4ms | 2MB)
+[Mon Jul 20 01:28:17 2026] [::1]:55882 Closing
+[Mon Jul 20 01:28:17 2026] [::1]:55886 Accepted
+[19-Jul-2026 20:28:17 UTC] [2026-07-19 20:28:17] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:28:17 UTC] [2026-07-19 20:28:17] ← GET /api/auth/branches → 200 (8ms | 2MB)
+[Mon Jul 20 01:28:17 2026] [::1]:55884 Closing
+[19-Jul-2026 20:28:17 UTC] [2026-07-19 20:28:17] → GET /api/accounting/customers | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:28:17 UTC] [2026-07-19 20:28:17] ← GET /api/accounting/customers → 200 (7.5ms | 2MB)
+[Mon Jul 20 01:28:17 2026] [::1]:55886 Closing
+[Mon Jul 20 01:28:18 2026] [::1]:55890 Accepted
+[19-Jul-2026 20:28:18 UTC] [2026-07-19 20:28:18] → GET /api/sales | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:28:18 UTC] [2026-07-19 20:28:18] ← GET /api/sales → 200 (106.5ms | 2MB)
+[Mon Jul 20 01:28:18 2026] [::1]:55890 Closing
+[Mon Jul 20 01:28:18 2026] [::1]:55892 Accepted
+[19-Jul-2026 20:28:18 UTC] [2026-07-19 20:28:18] → GET /api/sales | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:28:18 UTC] [2026-07-19 20:28:18] ← GET /api/sales → 200 (9.3ms | 2MB)
+[Mon Jul 20 01:28:18 2026] [::1]:55892 Closing
+[Mon Jul 20 01:28:19 2026] [::1]:55894 Accepted
+[19-Jul-2026 20:28:19 UTC] [2026-07-19 20:28:19] → GET /api/products | qs=branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:28:19 UTC] [2026-07-19 20:28:19] ← GET /api/products → 200 (20.4ms | 2MB)
+[Mon Jul 20 01:28:19 2026] [::1]:55894 Closing
+[Mon Jul 20 01:28:19 2026] [::1]:55896 Accepted
+[Mon Jul 20 01:28:19 2026] [::1]:55897 Accepted
+[19-Jul-2026 20:28:19 UTC] [2026-07-19 20:28:19] → GET /api/products/categories | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:28:19 UTC] [2026-07-19 20:28:19] ← GET /api/products/categories → 200 (8.7ms | 2MB)
+[Mon Jul 20 01:28:19 2026] [::1]:55896 Closing
+[Mon Jul 20 01:28:19 2026] [::1]:55901 Accepted
+[19-Jul-2026 20:28:19 UTC] [2026-07-19 20:28:19] → GET /api/products/brands | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:28:19 UTC] [2026-07-19 20:28:19] ← GET /api/products/brands → 200 (5.4ms | 2MB)
+[Mon Jul 20 01:28:19 2026] [::1]:55897 Closing
+[Mon Jul 20 01:28:19 2026] [::1]:55903 Accepted
+[19-Jul-2026 20:28:19 UTC] [2026-07-19 20:28:19] → GET /api/products | qs=branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:28:19 UTC] [2026-07-19 20:28:19] ← GET /api/products → 200 (19.3ms | 2MB)
+[Mon Jul 20 01:28:19 2026] [::1]:55901 Closing
+[Mon Jul 20 01:28:19 2026] [::1]:55905 Accepted
+[19-Jul-2026 20:28:19 UTC] [2026-07-19 20:28:19] → GET /api/products/categories | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:28:19 UTC] [2026-07-19 20:28:19] ← GET /api/products/categories → 200 (2.2ms | 2MB)
+[Mon Jul 20 01:28:19 2026] [::1]:55903 Closing
+[19-Jul-2026 20:28:19 UTC] [2026-07-19 20:28:19] → GET /api/products/brands | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:28:19 UTC] [2026-07-19 20:28:19] ← GET /api/products/brands → 200 (2.3ms | 2MB)
+[Mon Jul 20 01:28:19 2026] [::1]:55905 Closing
+[Mon Jul 20 01:28:21 2026] [::1]:55909 Accepted
+[19-Jul-2026 20:28:21 UTC] [2026-07-19 20:28:21] → GET /api/products/categories | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:28:21 UTC] [2026-07-19 20:28:21] ← GET /api/products/categories → 200 (58.2ms | 2MB)
+[Mon Jul 20 01:28:21 2026] [::1]:55909 Closing
+[Mon Jul 20 01:28:21 2026] [::1]:55911 Accepted
+[19-Jul-2026 20:28:21 UTC] [2026-07-19 20:28:21] → GET /api/products/brands | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:28:21 UTC] [2026-07-19 20:28:21] ← GET /api/products/brands → 200 (9ms | 2MB)
+[Mon Jul 20 01:28:21 2026] [::1]:55911 Closing
+[Mon Jul 20 01:28:21 2026] [::1]:55912 Accepted
+[19-Jul-2026 20:28:21 UTC] [2026-07-19 20:28:21] → GET /api/products/categories | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:28:21 UTC] [2026-07-19 20:28:21] ← GET /api/products/categories → 200 (5ms | 2MB)
+[Mon Jul 20 01:28:21 2026] [::1]:55912 Closing
+[Mon Jul 20 01:28:21 2026] [::1]:55914 Accepted
+[19-Jul-2026 20:28:21 UTC] [2026-07-19 20:28:21] → GET /api/products/brands | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:28:21 UTC] [2026-07-19 20:28:21] ← GET /api/products/brands → 200 (2.3ms | 2MB)
+[Mon Jul 20 01:28:21 2026] [::1]:55914 Closing
+[Mon Jul 20 01:28:22 2026] [::1]:55917 Accepted
+[19-Jul-2026 20:28:22 UTC] [2026-07-19 20:28:22] → GET /api/accounting/expenses | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:28:22 UTC] [2026-07-19 20:28:22] ← GET /api/accounting/expenses → 200 (4.4ms | 2MB)
+[Mon Jul 20 01:28:22 2026] [::1]:55917 Closing
+[Mon Jul 20 01:28:22 2026] [::1]:55919 Accepted
+[Mon Jul 20 01:28:22 2026] [::1]:55920 Accepted
+[19-Jul-2026 20:28:22 UTC] [2026-07-19 20:28:22] → GET /api/accounting/purchases | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:28:22 UTC] [2026-07-19 20:28:22] ← GET /api/accounting/purchases → 200 (14.9ms | 2MB)
+[Mon Jul 20 01:28:22 2026] [::1]:55919 Closing
+[Mon Jul 20 01:28:22 2026] [::1]:55921 Accepted
+[19-Jul-2026 20:28:22 UTC] [2026-07-19 20:28:22] → GET /api/accounting/suppliers | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:28:22 UTC] [2026-07-19 20:28:22] ← GET /api/accounting/suppliers → 200 (42.6ms | 2MB)
+[Mon Jul 20 01:28:22 2026] [::1]:55920 Closing
+[Mon Jul 20 01:28:22 2026] [::1]:55922 Accepted
+[19-Jul-2026 20:28:22 UTC] [2026-07-19 20:28:22] → GET /api/products | qs=lite=1 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:28:22 UTC] [2026-07-19 20:28:22] ← GET /api/products → 200 (23.3ms | 2MB)
+[Mon Jul 20 01:28:22 2026] [::1]:55921 Closing
+[Mon Jul 20 01:28:22 2026] [::1]:55924 Accepted
+[19-Jul-2026 20:28:22 UTC] [2026-07-19 20:28:22] → GET /api/accounting/expenses | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:28:22 UTC] [2026-07-19 20:28:22] ← GET /api/accounting/expenses → 200 (4.1ms | 2MB)
+[Mon Jul 20 01:28:22 2026] [::1]:55922 Closing
+[Mon Jul 20 01:28:22 2026] [::1]:55926 Accepted
+[19-Jul-2026 20:28:22 UTC] [2026-07-19 20:28:22] → GET /api/accounting/purchases | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:28:22 UTC] [2026-07-19 20:28:22] ← GET /api/accounting/purchases → 200 (2.5ms | 2MB)
+[Mon Jul 20 01:28:22 2026] [::1]:55924 Closing
+[Mon Jul 20 01:28:22 2026] [::1]:55928 Accepted
+[19-Jul-2026 20:28:22 UTC] [2026-07-19 20:28:22] → GET /api/accounting/suppliers | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:28:22 UTC] [2026-07-19 20:28:22] ← GET /api/accounting/suppliers → 200 (2.6ms | 2MB)
+[Mon Jul 20 01:28:22 2026] [::1]:55926 Closing
+[19-Jul-2026 20:28:22 UTC] [2026-07-19 20:28:22] → GET /api/products | qs=lite=1 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:28:22 UTC] [2026-07-19 20:28:22] ← GET /api/products → 200 (3.6ms | 2MB)
+[Mon Jul 20 01:28:22 2026] [::1]:55928 Closing
+[Mon Jul 20 01:32:01 2026] [::1]:56056 Accepted
+[19-Jul-2026 20:32:01 UTC] [2026-07-19 20:32:01] → GET /api/reports/dashboard-stats | qs=branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:01 UTC] [2026-07-19 20:32:01] ← GET /api/reports/dashboard-stats → 200 (42.3ms | 2MB)
+[Mon Jul 20 01:32:01 2026] [::1]:56056 Closing
+[Mon Jul 20 01:32:01 2026] [::1]:56058 Accepted
+[Mon Jul 20 01:32:01 2026] [::1]:56059 Accepted
+[19-Jul-2026 20:32:01 UTC] [2026-07-19 20:32:01] → GET /api/reports/charts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:01 UTC] [2026-07-19 20:32:01] ← GET /api/reports/charts → 200 (14.1ms | 2MB)
+[Mon Jul 20 01:32:01 2026] [::1]:56058 Closing
+[Mon Jul 20 01:32:01 2026] [::1]:56060 Accepted
+[19-Jul-2026 20:32:01 UTC] [2026-07-19 20:32:01] → GET /api/reports/top-selling | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:01 UTC] [2026-07-19 20:32:01] ← GET /api/reports/top-selling → 200 (2.7ms | 2MB)
+[Mon Jul 20 01:32:01 2026] [::1]:56059 Closing
+[Mon Jul 20 01:32:01 2026] [::1]:56062 Accepted
+[19-Jul-2026 20:32:01 UTC] [2026-07-19 20:32:01] → GET /api/inventory/alerts | qs=branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:01 UTC] [2026-07-19 20:32:01] ← GET /api/inventory/alerts → 200 (3.7ms | 2MB)
+[Mon Jul 20 01:32:01 2026] [::1]:56060 Closing
+[Mon Jul 20 01:32:01 2026] [::1]:56064 Accepted
+[19-Jul-2026 20:32:01 UTC] [2026-07-19 20:32:01] → GET /api/reports/dashboard-stats | qs=branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:01 UTC] [2026-07-19 20:32:01] ← GET /api/reports/dashboard-stats → 200 (11.4ms | 2MB)
+[Mon Jul 20 01:32:01 2026] [::1]:56062 Closing
+[Mon Jul 20 01:32:01 2026] [::1]:56066 Accepted
+[19-Jul-2026 20:32:01 UTC] [2026-07-19 20:32:01] → GET /api/reports/charts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:01 UTC] [2026-07-19 20:32:01] ← GET /api/reports/charts → 200 (26.4ms | 2MB)
+[Mon Jul 20 01:32:01 2026] [::1]:56064 Closing
+[Mon Jul 20 01:32:01 2026] [::1]:56069 Accepted
+[19-Jul-2026 20:32:01 UTC] [2026-07-19 20:32:01] → GET /api/reports/top-selling | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:01 UTC] [2026-07-19 20:32:01] ← GET /api/reports/top-selling → 200 (9.6ms | 2MB)
+[Mon Jul 20 01:32:01 2026] [::1]:56066 Closing
+[19-Jul-2026 20:32:01 UTC] [2026-07-19 20:32:01] → GET /api/inventory/alerts | qs=branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:01 UTC] [2026-07-19 20:32:01] ← GET /api/inventory/alerts → 200 (23.7ms | 2MB)
+[Mon Jul 20 01:32:01 2026] [::1]:56069 Closing
+[Mon Jul 20 01:32:07 2026] [::1]:56078 Accepted
+[19-Jul-2026 20:32:07 UTC] [2026-07-19 20:32:07] → GET /api/sales | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:07 UTC] [2026-07-19 20:32:07] ← GET /api/sales → 200 (81.8ms | 2MB)
+[Mon Jul 20 01:32:07 2026] [::1]:56078 Closing
+[Mon Jul 20 01:32:07 2026] [::1]:56080 Accepted
+[Mon Jul 20 01:32:07 2026] [::1]:56081 Accepted
+[19-Jul-2026 20:32:07 UTC] [2026-07-19 20:32:07] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:07 UTC] [2026-07-19 20:32:07] ← GET /api/auth/branches → 200 (3.2ms | 2MB)
+[Mon Jul 20 01:32:07 2026] [::1]:56080 Closing
+[Mon Jul 20 01:32:07 2026] [::1]:56082 Accepted
+[19-Jul-2026 20:32:07 UTC] [2026-07-19 20:32:07] → GET /api/accounting/customers | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:07 UTC] [2026-07-19 20:32:07] ← GET /api/accounting/customers → 200 (3.1ms | 2MB)
+[Mon Jul 20 01:32:07 2026] [::1]:56081 Closing
+[Mon Jul 20 01:32:07 2026] [::1]:56084 Accepted
+[19-Jul-2026 20:32:07 UTC] [2026-07-19 20:32:07] → GET /api/sales | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:07 UTC] [2026-07-19 20:32:07] ← GET /api/sales → 200 (9.5ms | 2MB)
+[Mon Jul 20 01:32:07 2026] [::1]:56082 Closing
+[Mon Jul 20 01:32:07 2026] [::1]:56086 Accepted
+[19-Jul-2026 20:32:07 UTC] [2026-07-19 20:32:07] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:07 UTC] [2026-07-19 20:32:07] ← GET /api/auth/branches → 200 (4.3ms | 2MB)
+[Mon Jul 20 01:32:07 2026] [::1]:56084 Closing
+[19-Jul-2026 20:32:07 UTC] [2026-07-19 20:32:07] → GET /api/accounting/customers | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:07 UTC] [2026-07-19 20:32:07] ← GET /api/accounting/customers → 200 (9ms | 2MB)
+[Mon Jul 20 01:32:07 2026] [::1]:56086 Closing
+[Mon Jul 20 01:32:52 2026] [::1]:56100 Accepted
+[19-Jul-2026 20:32:52 UTC] [2026-07-19 20:32:52] → GET /api/reports/dashboard-stats | qs=branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:53 UTC] [2026-07-19 20:32:53] ← GET /api/reports/dashboard-stats → 200 (67.2ms | 2MB)
+[Mon Jul 20 01:32:53 2026] [::1]:56100 Closing
+[Mon Jul 20 01:32:53 2026] [::1]:56102 Accepted
+[Mon Jul 20 01:32:53 2026] [::1]:56103 Accepted
+[19-Jul-2026 20:32:53 UTC] [2026-07-19 20:32:53] → GET /api/reports/charts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:53 UTC] [2026-07-19 20:32:53] ← GET /api/reports/charts → 200 (12.4ms | 2MB)
+[Mon Jul 20 01:32:53 2026] [::1]:56102 Closing
+[Mon Jul 20 01:32:53 2026] [::1]:56104 Accepted
+[19-Jul-2026 20:32:53 UTC] [2026-07-19 20:32:53] → GET /api/reports/top-selling | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:53 UTC] [2026-07-19 20:32:53] ← GET /api/reports/top-selling → 200 (10.6ms | 2MB)
+[Mon Jul 20 01:32:53 2026] [::1]:56103 Closing
+[Mon Jul 20 01:32:53 2026] [::1]:56105 Accepted
+[19-Jul-2026 20:32:53 UTC] [2026-07-19 20:32:53] → GET /api/inventory/alerts | qs=branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:53 UTC] [2026-07-19 20:32:53] ← GET /api/inventory/alerts → 200 (4.2ms | 2MB)
+[Mon Jul 20 01:32:53 2026] [::1]:56104 Closing
+[Mon Jul 20 01:32:53 2026] [::1]:56107 Accepted
+[19-Jul-2026 20:32:53 UTC] [2026-07-19 20:32:53] → GET /api/reports/dashboard-stats | qs=branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:53 UTC] [2026-07-19 20:32:53] ← GET /api/reports/dashboard-stats → 200 (102.3ms | 2MB)
+[Mon Jul 20 01:32:53 2026] [::1]:56105 Closing
+[Mon Jul 20 01:32:53 2026] [::1]:56109 Accepted
+[19-Jul-2026 20:32:53 UTC] [2026-07-19 20:32:53] → GET /api/reports/charts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:53 UTC] [2026-07-19 20:32:53] ← GET /api/reports/charts → 200 (7.9ms | 2MB)
+[Mon Jul 20 01:32:53 2026] [::1]:56107 Closing
+[Mon Jul 20 01:32:53 2026] [::1]:56111 Accepted
+[19-Jul-2026 20:32:53 UTC] [2026-07-19 20:32:53] → GET /api/reports/top-selling | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:53 UTC] [2026-07-19 20:32:53] ← GET /api/reports/top-selling → 200 (4.9ms | 2MB)
+[Mon Jul 20 01:32:53 2026] [::1]:56109 Closing
+[19-Jul-2026 20:32:53 UTC] [2026-07-19 20:32:53] → GET /api/inventory/alerts | qs=branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:53 UTC] [2026-07-19 20:32:53] ← GET /api/inventory/alerts → 200 (3.9ms | 2MB)
+[Mon Jul 20 01:32:53 2026] [::1]:56111 Closing
+[Mon Jul 20 01:32:56 2026] [::1]:56125 Accepted
+[19-Jul-2026 20:32:56 UTC] [2026-07-19 20:32:56] → GET /api/auth/me | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:56 UTC] [2026-07-19 20:32:56] ← GET /api/auth/me → 200 (9.1ms | 2MB)
+[Mon Jul 20 01:32:56 2026] [::1]:56125 Closing
+[Mon Jul 20 01:32:56 2026] [::1]:56127 Accepted
+[19-Jul-2026 20:32:56 UTC] [2026-07-19 20:32:56] → GET /api/settings | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:56 UTC] [2026-07-19 20:32:56] ← GET /api/settings → 200 (11.2ms | 2MB)
+[Mon Jul 20 01:32:56 2026] [::1]:56127 Closing
+[Mon Jul 20 01:32:56 2026] [::1]:56128 Accepted
+[19-Jul-2026 20:32:56 UTC] [2026-07-19 20:32:56] → GET /api/auth/me | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:56 UTC] [2026-07-19 20:32:56] ← GET /api/auth/me → 200 (3.3ms | 2MB)
+[Mon Jul 20 01:32:56 2026] [::1]:56128 Closing
+[Mon Jul 20 01:32:56 2026] [::1]:56130 Accepted
+[19-Jul-2026 20:32:56 UTC] [2026-07-19 20:32:56] → GET /api/settings | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:56 UTC] [2026-07-19 20:32:56] ← GET /api/settings → 200 (2.4ms | 2MB)
+[Mon Jul 20 01:32:56 2026] [::1]:56130 Closing
+[Mon Jul 20 01:32:56 2026] [::1]:56133 Accepted
+[19-Jul-2026 20:32:56 UTC] [2026-07-19 20:32:56] → GET /api/reports/dashboard-stats | qs=branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:56 UTC] [2026-07-19 20:32:56] ← GET /api/reports/dashboard-stats → 200 (61.7ms | 2MB)
+[Mon Jul 20 01:32:56 2026] [::1]:56133 Closing
+[Mon Jul 20 01:32:56 2026] [::1]:56135 Accepted
+[Mon Jul 20 01:32:56 2026] [::1]:56136 Accepted
+[19-Jul-2026 20:32:56 UTC] [2026-07-19 20:32:56] → GET /api/reports/charts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:56 UTC] [2026-07-19 20:32:56] ← GET /api/reports/charts → 200 (8.8ms | 2MB)
+[Mon Jul 20 01:32:56 2026] [::1]:56135 Closing
+[Mon Jul 20 01:32:56 2026] [::1]:56137 Accepted
+[19-Jul-2026 20:32:56 UTC] [2026-07-19 20:32:56] → GET /api/reports/top-selling | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:56 UTC] [2026-07-19 20:32:56] ← GET /api/reports/top-selling → 200 (35.1ms | 2MB)
+[Mon Jul 20 01:32:56 2026] [::1]:56136 Closing
+[Mon Jul 20 01:32:56 2026] [::1]:56138 Accepted
+[19-Jul-2026 20:32:56 UTC] [2026-07-19 20:32:56] → GET /api/inventory/alerts | qs=branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:56 UTC] [2026-07-19 20:32:56] ← GET /api/inventory/alerts → 200 (8.7ms | 2MB)
+[Mon Jul 20 01:32:56 2026] [::1]:56137 Closing
+[Mon Jul 20 01:32:56 2026] [::1]:56139 Accepted
+[19-Jul-2026 20:32:56 UTC] [2026-07-19 20:32:56] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:56 UTC] [2026-07-19 20:32:56] ← GET /api/inventory/alerts → 200 (15.2ms | 2MB)
+[Mon Jul 20 01:32:56 2026] [::1]:56138 Closing
+[Mon Jul 20 01:32:56 2026] [::1]:56140 Accepted
+[19-Jul-2026 20:32:56 UTC] [2026-07-19 20:32:56] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:56 UTC] [2026-07-19 20:32:56] ← GET /api/auth/branches → 200 (2.1ms | 2MB)
+[Mon Jul 20 01:32:56 2026] [::1]:56139 Closing
+[Mon Jul 20 01:32:56 2026] [::1]:56142 Accepted
+[19-Jul-2026 20:32:56 UTC] [2026-07-19 20:32:56] → GET /api/reports/dashboard-stats | qs=branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:56 UTC] [2026-07-19 20:32:56] ← GET /api/reports/dashboard-stats → 200 (15ms | 2MB)
+[Mon Jul 20 01:32:56 2026] [::1]:56140 Closing
+[Mon Jul 20 01:32:56 2026] [::1]:56145 Accepted
+[19-Jul-2026 20:32:56 UTC] [2026-07-19 20:32:56] → GET /api/reports/charts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:56 UTC] [2026-07-19 20:32:56] ← GET /api/reports/charts → 200 (6.5ms | 2MB)
+[Mon Jul 20 01:32:56 2026] [::1]:56142 Closing
+[Mon Jul 20 01:32:56 2026] [::1]:56147 Accepted
+[19-Jul-2026 20:32:56 UTC] [2026-07-19 20:32:56] → GET /api/reports/top-selling | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:56 UTC] [2026-07-19 20:32:56] ← GET /api/reports/top-selling → 200 (5.8ms | 2MB)
+[Mon Jul 20 01:32:56 2026] [::1]:56145 Closing
+[Mon Jul 20 01:32:56 2026] [::1]:56149 Accepted
+[19-Jul-2026 20:32:56 UTC] [2026-07-19 20:32:56] → GET /api/inventory/alerts | qs=branchId=844d36b8-9a34-460b-b5b5-947c469023c8 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:56 UTC] [2026-07-19 20:32:56] ← GET /api/inventory/alerts → 200 (5.5ms | 2MB)
+[Mon Jul 20 01:32:56 2026] [::1]:56147 Closing
+[Mon Jul 20 01:32:56 2026] [::1]:56151 Accepted
+[19-Jul-2026 20:32:56 UTC] [2026-07-19 20:32:56] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:56 UTC] [2026-07-19 20:32:56] ← GET /api/inventory/alerts → 200 (3.3ms | 2MB)
+[Mon Jul 20 01:32:56 2026] [::1]:56149 Closing
+[19-Jul-2026 20:32:56 UTC] [2026-07-19 20:32:56] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:56 UTC] [2026-07-19 20:32:56] ← GET /api/auth/branches → 200 (2.9ms | 2MB)
+[Mon Jul 20 01:32:56 2026] [::1]:56151 Closing
+[Mon Jul 20 01:32:58 2026] [::1]:56157 Accepted
+[19-Jul-2026 20:32:58 UTC] [2026-07-19 20:32:58] → OPTIONS /api/reports/dashboard-stats | qs=branchId=de8f4981-bd32-4324-a01a-004ccee973da | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:58 UTC] [2026-07-19 20:32:58] ← OPTIONS /api/reports/dashboard-stats → 204 (0.2ms | 2MB)
+[Mon Jul 20 01:32:58 2026] [::1]:56157 Closing
+[Mon Jul 20 01:32:58 2026] [::1]:56158 Accepted
+[19-Jul-2026 20:32:58 UTC] [2026-07-19 20:32:58] → OPTIONS /api/inventory/alerts | qs=branchId=de8f4981-bd32-4324-a01a-004ccee973da | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:58 UTC] [2026-07-19 20:32:58] ← OPTIONS /api/inventory/alerts → 204 (0.3ms | 2MB)
+[Mon Jul 20 01:32:58 2026] [::1]:56158 Closing
+[Mon Jul 20 01:32:59 2026] [::1]:56160 Accepted
+[19-Jul-2026 20:32:59 UTC] [2026-07-19 20:32:59] → GET /api/auth/me | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:59 UTC] [2026-07-19 20:32:59] ← GET /api/auth/me → 200 (4.5ms | 2MB)
+[Mon Jul 20 01:32:59 2026] [::1]:56160 Closing
+[Mon Jul 20 01:32:59 2026] [::1]:56162 Accepted
+[19-Jul-2026 20:32:59 UTC] [2026-07-19 20:32:59] → GET /api/settings | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:59 UTC] [2026-07-19 20:32:59] ← GET /api/settings → 200 (2.4ms | 2MB)
+[Mon Jul 20 01:32:59 2026] [::1]:56162 Closing
+[Mon Jul 20 01:32:59 2026] [::1]:56164 Accepted
+[19-Jul-2026 20:32:59 UTC] [2026-07-19 20:32:59] → GET /api/auth/me | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:59 UTC] [2026-07-19 20:32:59] ← GET /api/auth/me → 200 (2.5ms | 2MB)
+[Mon Jul 20 01:32:59 2026] [::1]:56164 Closing
+[Mon Jul 20 01:32:59 2026] [::1]:56165 Accepted
+[19-Jul-2026 20:32:59 UTC] [2026-07-19 20:32:59] → GET /api/settings | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:59 UTC] [2026-07-19 20:32:59] ← GET /api/settings → 200 (2.3ms | 2MB)
+[Mon Jul 20 01:32:59 2026] [::1]:56165 Closing
+[Mon Jul 20 01:32:59 2026] [::1]:56170 Accepted
+[19-Jul-2026 20:32:59 UTC] [2026-07-19 20:32:59] → GET /api/reports/dashboard-stats | qs=branchId=de8f4981-bd32-4324-a01a-004ccee973da | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:59 UTC] [2026-07-19 20:32:59] ← GET /api/reports/dashboard-stats → 200 (54.2ms | 2MB)
+[Mon Jul 20 01:32:59 2026] [::1]:56170 Closing
+[Mon Jul 20 01:32:59 2026] [::1]:56172 Accepted
+[Mon Jul 20 01:32:59 2026] [::1]:56173 Accepted
+[19-Jul-2026 20:32:59 UTC] [2026-07-19 20:32:59] → GET /api/reports/charts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:59 UTC] [2026-07-19 20:32:59] ← GET /api/reports/charts → 200 (34.6ms | 2MB)
+[Mon Jul 20 01:32:59 2026] [::1]:56172 Closing
+[Mon Jul 20 01:32:59 2026] [::1]:56174 Accepted
+[19-Jul-2026 20:32:59 UTC] [2026-07-19 20:32:59] → GET /api/reports/top-selling | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:59 UTC] [2026-07-19 20:32:59] ← GET /api/reports/top-selling → 200 (5.7ms | 2MB)
+[Mon Jul 20 01:32:59 2026] [::1]:56173 Closing
+[Mon Jul 20 01:32:59 2026] [::1]:56175 Accepted
+[19-Jul-2026 20:32:59 UTC] [2026-07-19 20:32:59] → GET /api/inventory/alerts | qs=branchId=de8f4981-bd32-4324-a01a-004ccee973da | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:59 UTC] [2026-07-19 20:32:59] ← GET /api/inventory/alerts → 200 (5.3ms | 2MB)
+[Mon Jul 20 01:32:59 2026] [::1]:56174 Closing
+[Mon Jul 20 01:32:59 2026] [::1]:56176 Accepted
+[19-Jul-2026 20:32:59 UTC] [2026-07-19 20:32:59] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:59 UTC] [2026-07-19 20:32:59] ← GET /api/inventory/alerts → 200 (17.1ms | 2MB)
+[Mon Jul 20 01:32:59 2026] [::1]:56175 Closing
+[Mon Jul 20 01:32:59 2026] [::1]:56178 Accepted
+[19-Jul-2026 20:32:59 UTC] [2026-07-19 20:32:59] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:59 UTC] [2026-07-19 20:32:59] ← GET /api/auth/branches → 200 (4.2ms | 2MB)
+[Mon Jul 20 01:32:59 2026] [::1]:56176 Closing
+[Mon Jul 20 01:32:59 2026] [::1]:56180 Accepted
+[19-Jul-2026 20:32:59 UTC] [2026-07-19 20:32:59] → GET /api/reports/dashboard-stats | qs=branchId=de8f4981-bd32-4324-a01a-004ccee973da | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:59 UTC] [2026-07-19 20:32:59] ← GET /api/reports/dashboard-stats → 200 (10.6ms | 2MB)
+[Mon Jul 20 01:32:59 2026] [::1]:56178 Closing
+[Mon Jul 20 01:32:59 2026] [::1]:56182 Accepted
+[19-Jul-2026 20:32:59 UTC] [2026-07-19 20:32:59] → GET /api/reports/charts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:59 UTC] [2026-07-19 20:32:59] ← GET /api/reports/charts → 200 (5.3ms | 2MB)
+[Mon Jul 20 01:32:59 2026] [::1]:56180 Closing
+[Mon Jul 20 01:32:59 2026] [::1]:56184 Accepted
+[19-Jul-2026 20:32:59 UTC] [2026-07-19 20:32:59] → GET /api/reports/top-selling | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:59 UTC] [2026-07-19 20:32:59] ← GET /api/reports/top-selling → 200 (11.6ms | 2MB)
+[Mon Jul 20 01:32:59 2026] [::1]:56182 Closing
+[Mon Jul 20 01:32:59 2026] [::1]:56186 Accepted
+[19-Jul-2026 20:32:59 UTC] [2026-07-19 20:32:59] → GET /api/inventory/alerts | qs=branchId=de8f4981-bd32-4324-a01a-004ccee973da | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:59 UTC] [2026-07-19 20:32:59] ← GET /api/inventory/alerts → 200 (51.4ms | 2MB)
+[Mon Jul 20 01:32:59 2026] [::1]:56184 Closing
+[Mon Jul 20 01:32:59 2026] [::1]:56188 Accepted
+[19-Jul-2026 20:32:59 UTC] [2026-07-19 20:32:59] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:59 UTC] [2026-07-19 20:32:59] ← GET /api/inventory/alerts → 200 (5.3ms | 2MB)
+[Mon Jul 20 01:32:59 2026] [::1]:56186 Closing
+[19-Jul-2026 20:32:59 UTC] [2026-07-19 20:32:59] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:32:59 UTC] [2026-07-19 20:32:59] ← GET /api/auth/branches → 200 (3.3ms | 2MB)
+[Mon Jul 20 01:32:59 2026] [::1]:56188 Closing
+[Mon Jul 20 01:33:01 2026] [::1]:56194 Accepted
+[19-Jul-2026 20:33:01 UTC] [2026-07-19 20:33:01] → OPTIONS /api/reports/dashboard-stats | qs=branchId=b12abc90-0f42-4238-aa03-168a07060a94 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:33:01 UTC] [2026-07-19 20:33:01] ← OPTIONS /api/reports/dashboard-stats → 204 (0.4ms | 2MB)
+[Mon Jul 20 01:33:01 2026] [::1]:56194 Closing
+[Mon Jul 20 01:33:01 2026] [::1]:56195 Accepted
+[19-Jul-2026 20:33:01 UTC] [2026-07-19 20:33:01] → OPTIONS /api/inventory/alerts | qs=branchId=b12abc90-0f42-4238-aa03-168a07060a94 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:33:01 UTC] [2026-07-19 20:33:01] ← OPTIONS /api/inventory/alerts → 204 (2.3ms | 2MB)
+[Mon Jul 20 01:33:01 2026] [::1]:56195 Closing
+[Mon Jul 20 01:33:01 2026] [::1]:56197 Accepted
+[19-Jul-2026 20:33:01 UTC] [2026-07-19 20:33:01] → GET /api/auth/me | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:33:01 UTC] [2026-07-19 20:33:01] ← GET /api/auth/me → 200 (13.3ms | 2MB)
+[Mon Jul 20 01:33:01 2026] [::1]:56197 Closing
+[Mon Jul 20 01:33:01 2026] [::1]:56199 Accepted
+[19-Jul-2026 20:33:01 UTC] [2026-07-19 20:33:01] → GET /api/settings | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:33:01 UTC] [2026-07-19 20:33:01] ← GET /api/settings → 200 (10ms | 2MB)
+[Mon Jul 20 01:33:01 2026] [::1]:56199 Closing
+[Mon Jul 20 01:33:01 2026] [::1]:56200 Accepted
+[19-Jul-2026 20:33:01 UTC] [2026-07-19 20:33:01] → GET /api/auth/me | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:33:01 UTC] [2026-07-19 20:33:01] ← GET /api/auth/me → 200 (2.5ms | 2MB)
+[Mon Jul 20 01:33:01 2026] [::1]:56200 Closing
+[Mon Jul 20 01:33:01 2026] [::1]:56202 Accepted
+[19-Jul-2026 20:33:01 UTC] [2026-07-19 20:33:01] → GET /api/settings | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:33:01 UTC] [2026-07-19 20:33:01] ← GET /api/settings → 200 (27.6ms | 2MB)
+[Mon Jul 20 01:33:01 2026] [::1]:56202 Closing
+[Mon Jul 20 01:33:02 2026] [::1]:56205 Accepted
+[19-Jul-2026 20:33:02 UTC] [2026-07-19 20:33:02] → GET /api/reports/dashboard-stats | qs=branchId=b12abc90-0f42-4238-aa03-168a07060a94 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:33:02 UTC] [2026-07-19 20:33:02] ← GET /api/reports/dashboard-stats → 200 (19.1ms | 2MB)
+[Mon Jul 20 01:33:02 2026] [::1]:56205 Closing
+[Mon Jul 20 01:33:02 2026] [::1]:56207 Accepted
+[Mon Jul 20 01:33:02 2026] [::1]:56208 Accepted
+[19-Jul-2026 20:33:02 UTC] [2026-07-19 20:33:02] → GET /api/reports/charts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:33:02 UTC] [2026-07-19 20:33:02] ← GET /api/reports/charts → 200 (15.1ms | 2MB)
+[Mon Jul 20 01:33:02 2026] [::1]:56207 Closing
+[Mon Jul 20 01:33:02 2026] [::1]:56209 Accepted
+[19-Jul-2026 20:33:02 UTC] [2026-07-19 20:33:02] → GET /api/reports/top-selling | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:33:02 UTC] [2026-07-19 20:33:02] ← GET /api/reports/top-selling → 200 (4ms | 2MB)
+[Mon Jul 20 01:33:02 2026] [::1]:56208 Closing
+[Mon Jul 20 01:33:02 2026] [::1]:56210 Accepted
+[19-Jul-2026 20:33:02 UTC] [2026-07-19 20:33:02] → GET /api/inventory/alerts | qs=branchId=b12abc90-0f42-4238-aa03-168a07060a94 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:33:02 UTC] [2026-07-19 20:33:02] ← GET /api/inventory/alerts → 200 (4.1ms | 2MB)
+[Mon Jul 20 01:33:02 2026] [::1]:56209 Closing
+[Mon Jul 20 01:33:02 2026] [::1]:56211 Accepted
+[19-Jul-2026 20:33:02 UTC] [2026-07-19 20:33:02] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:33:02 UTC] [2026-07-19 20:33:02] ← GET /api/inventory/alerts → 200 (5.4ms | 2MB)
+[Mon Jul 20 01:33:02 2026] [::1]:56210 Closing
+[Mon Jul 20 01:33:02 2026] [::1]:56213 Accepted
+[19-Jul-2026 20:33:02 UTC] [2026-07-19 20:33:02] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:33:02 UTC] [2026-07-19 20:33:02] ← GET /api/auth/branches → 200 (5.3ms | 2MB)
+[Mon Jul 20 01:33:02 2026] [::1]:56211 Closing
+[Mon Jul 20 01:33:02 2026] [::1]:56215 Accepted
+[19-Jul-2026 20:33:02 UTC] [2026-07-19 20:33:02] → GET /api/reports/dashboard-stats | qs=branchId=b12abc90-0f42-4238-aa03-168a07060a94 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:33:02 UTC] [2026-07-19 20:33:02] ← GET /api/reports/dashboard-stats → 200 (11.8ms | 2MB)
+[Mon Jul 20 01:33:02 2026] [::1]:56213 Closing
+[Mon Jul 20 01:33:02 2026] [::1]:56217 Accepted
+[19-Jul-2026 20:33:02 UTC] [2026-07-19 20:33:02] → GET /api/reports/charts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:33:02 UTC] [2026-07-19 20:33:02] ← GET /api/reports/charts → 200 (14.7ms | 2MB)
+[Mon Jul 20 01:33:02 2026] [::1]:56215 Closing
+[Mon Jul 20 01:33:02 2026] [::1]:56219 Accepted
+[19-Jul-2026 20:33:02 UTC] [2026-07-19 20:33:02] → GET /api/reports/top-selling | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:33:02 UTC] [2026-07-19 20:33:02] ← GET /api/reports/top-selling → 200 (3.4ms | 2MB)
+[Mon Jul 20 01:33:02 2026] [::1]:56217 Closing
+[Mon Jul 20 01:33:02 2026] [::1]:56221 Accepted
+[19-Jul-2026 20:33:02 UTC] [2026-07-19 20:33:02] → GET /api/inventory/alerts | qs=branchId=b12abc90-0f42-4238-aa03-168a07060a94 | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:33:02 UTC] [2026-07-19 20:33:02] ← GET /api/inventory/alerts → 200 (33.6ms | 2MB)
+[Mon Jul 20 01:33:02 2026] [::1]:56219 Closing
+[Mon Jul 20 01:33:02 2026] [::1]:56223 Accepted
+[19-Jul-2026 20:33:02 UTC] [2026-07-19 20:33:02] → GET /api/inventory/alerts | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:33:02 UTC] [2026-07-19 20:33:02] ← GET /api/inventory/alerts → 200 (7.2ms | 2MB)
+[Mon Jul 20 01:33:02 2026] [::1]:56221 Closing
+[19-Jul-2026 20:33:02 UTC] [2026-07-19 20:33:02] → GET /api/auth/branches | qs=- | ip=::1 | ua=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+[19-Jul-2026 20:33:02 UTC] [2026-07-19 20:33:02] ← GET /api/auth/branches → 200 (6ms | 2MB)
+[Mon Jul 20 01:33:02 2026] [::1]:56223 Closing
